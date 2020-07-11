@@ -49,6 +49,11 @@ coverage.cobertura.xml
 .env
 .env.local
 appsettings.local.json
+appsettings.Development.json
+
+## NuGet packages
+packages/
+*.nupkg
 
 ## Temporary files
 *.tmp
