@@ -7,6 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>DotNetRealtimePipeline.Tests</RootNamespace>
+    <RepositoryUrl>https://github.com/sarmkadan/dotnet-realtime-pipeline</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Vladyslav Zaiets</Authors>
   </PropertyGroup>
 
   <ItemGroup>

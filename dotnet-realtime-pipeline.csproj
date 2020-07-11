@@ -8,6 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DotNetRealtimePipeline</RootNamespace>
     <AssemblyName>dotnet-realtime-pipeline</AssemblyName>
+    <RepositoryUrl>https://github.com/sarmkadan/dotnet-realtime-pipeline</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Vladyslav Zaiets</Authors>
   </PropertyGroup>
 
   <ItemGroup>
