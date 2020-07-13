@@ -1,8 +1,8 @@
 # Real-Time Data Processing Pipeline for .NET
 
-[![Build Status](https://github.com/Sarmkadan/dotnet-realtime-pipeline/workflows/build/badge.svg)](https://github.com/Sarmkadan/dotnet-realtime-pipeline/actions)
+[![Build](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET 10.0](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 
 A high-performance, production-grade real-time data processing pipeline built with .NET 10. Designed for systems requiring low-latency ingestion, intelligent backpressure management, time-window aggregation, and comprehensive metrics collection.
 
