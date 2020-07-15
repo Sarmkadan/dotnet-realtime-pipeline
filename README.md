@@ -1,8 +1,8 @@
-# Real-Time Data Processing Pipeline for .NET
-
 [![Build](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+
+# Real-Time Data Processing Pipeline for .NET
 
 A high-performance, production-grade real-time data processing pipeline built with .NET 10. Designed for systems requiring low-latency ingestion, intelligent backpressure management, time-window aggregation, and comprehensive metrics collection.
 
@@ -19,6 +19,7 @@ A high-performance, production-grade real-time data processing pipeline built wi
 - [CLI Reference](#cli-reference)
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
+- [Testing](#testing)
 - [Related Projects](#related-projects)
 - [Contributing](#contributing)
 - [License](#license)
@@ -904,6 +905,26 @@ services.AddPipelineServices(config =>
 
 > See [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) for full profiling methodology and hardware profiles.
 
+## Testing
+
+```bash
+# Run all tests
+dotnet test
+
+# Run with verbose output
+dotnet test --verbosity detailed
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov
+```
+
+The test suite covers:
+
+- **Unit tests** (`tests/Unit/`) — service logic, repository operations, and domain model invariants
+- **Integration tests** (`tests/Integration/`) — full pipeline lifecycle and end-to-end data flow
+
+See [`docs/TESTING.md`](docs/TESTING.md) for detailed guidance on writing and running tests.
+
 ## Related Projects
 
 - [dotnet-event-bus](https://github.com/sarmkadan/dotnet-event-bus) - In-process and distributed event bus for .NET - pub/sub, request/reply, dead letter, polymorphic handlers
@@ -987,11 +1008,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 ## Security
 
-If you discover a security vulnerability, please email vladyslav.zaiets@amdaris.com with:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if available)
+If you discover a security vulnerability, please report it responsibly. See [SECURITY.md](SECURITY.md) for the full disclosure policy. Do not open a public GitHub issue for security vulnerabilities.
 
 ---
 
