@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-19
+
+### Added
+- Multi-stage Dockerfile with named build stages (`build`, `final`) and non-root user
+- Docker Compose stack with Prometheus, Grafana, and PostgreSQL services
+- `HEALTHCHECK` instruction in Dockerfile (wget-based, 30s interval)
+- Migration guide (`docs/MIGRATION_v2.md`) covering all breaking changes
+
+### Changed
+- **BREAKING:** Default application port changed from 5000 to 8080
+- Dockerfile now sets `ASPNETCORE_URLS=http://+:8080` and `UseAppHost=false`
+- Docker Compose `resources` block moved under `deploy` per v3 spec
+- Updated all health check endpoints to port 8080
+- Bumped version labels and package version to 2.0.0
+
 ## [1.0.0] - 2025-09-22
 
 ### Added
