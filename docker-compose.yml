@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # Main application service
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dotnet-realtime-pipeline
+    ports:
+      - "5000:5000"
+    environment:
+      # Core Configuration
+      MAX_BUFFER_SIZE: 50000
+      BUFFER_FLUSH_INTERVAL_MS: 1000
+      MAX_CONCURRENT_CONSUMERS: 8
+
+      # Windowing Configuration
+      WINDOW_SIZE_MS: 10000
+      WINDOW_SLIDE_MS: 5000
+      WINDOW_TYPE: "SLIDING"
+
+      # Processing Configuration
+      MAX_RETRIES: 3
+      PROCESSING_TIMEOUT_MS: 30000
+
+      # Backpressure Configuration
+      BACKPRESSURE_THRESHOLD: "0.8"
+      BACKPRESSURE_STRATEGY: "Block"
+
+      # Quality Control
+      MIN_QUALITY_SCORE: "0.5"
+      ENABLE_QUALITY_ANALYSIS: "true"
+
+      # Monitoring
+      ENABLE_METRICS: "true"
+      METRICS_HISTORY_SIZE: 1000
+
+      # Logging
+      LOG_LEVEL: "Information"
+
+    resources:
+      limits:
+        cpus: '2'
+        memory: 2G
+      reservations:
+        cpus: '1'
+        memory: 1G
+
+    restart: unless-stopped
+    networks:
+      - pipeline-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    restart: unless-stopped
+    networks:
+      - pipeline-network
+    depends_on:
+      - pipeline
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    restart: unless-stopped
+    networks:
+      - pipeline-network
+    depends_on:
+      - prometheus
+
+  # PostgreSQL for optional persistent storage
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: pipeline
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: pipeline123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - pipeline-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipeline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  pipeline-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  postgres_data:
+    driver: local
