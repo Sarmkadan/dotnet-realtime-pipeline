@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -49,8 +50,8 @@ public class WindowingService
     /// </summary>
     public bool TryAddDataPointToWindow(DataPoint dataPoint, WindowEvent window)
     {
-        if (dataPoint == null) throw new ArgumentNullException(nameof(dataPoint));
-        if (window == null) throw new ArgumentNullException(nameof(window));
+        if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
+        if (window is null) throw new ArgumentNullException(nameof(window));
 
         return window.TryAddDataPoint(dataPoint);
     }
@@ -60,7 +61,7 @@ public class WindowingService
     /// </summary>
     public List<WindowEvent> AssignDataPointsToWindows(List<DataPoint> dataPoints)
     {
-        if (dataPoints == null || dataPoints.Count == 0)
+        if (dataPoints is null || dataPoints.Count == 0)
             return new();
 
         var windows = new Dictionary<long, WindowEvent>();
@@ -86,7 +87,7 @@ public class WindowingService
     /// </summary>
     public Dictionary<string, object> AggregateWindow(WindowEvent window)
     {
-        if (window == null) throw new ArgumentNullException(nameof(window));
+        if (window is null) throw new ArgumentNullException(nameof(window));
         if (window.DataPoints.Count == 0)
             throw new WindowingException("Cannot aggregate window with no data points", window.WindowId);
 
@@ -106,7 +107,7 @@ public class WindowingService
     /// </summary>
     public WindowStatistics CalculateWindowStatistics(WindowEvent window)
     {
-        if (window == null) throw new ArgumentNullException(nameof(window));
+        if (window is null) throw new ArgumentNullException(nameof(window));
         if (window.DataPoints.Count == 0)
             return new WindowStatistics { WindowId = window.WindowId, DataPointCount = 0 };
 
@@ -131,7 +132,7 @@ public class WindowingService
     /// </summary>
     public bool IsWindowComplete(WindowEvent window)
     {
-        if (window == null) throw new ArgumentNullException(nameof(window));
+        if (window is null) throw new ArgumentNullException(nameof(window));
 
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         return now > window.WindowEndMs;
@@ -142,7 +143,7 @@ public class WindowingService
     /// </summary>
     public WindowEmissionResult EmitWindow(WindowEvent window)
     {
-        if (window == null) throw new ArgumentNullException(nameof(window));
+        if (window is null) throw new ArgumentNullException(nameof(window));
 
         window.MarkComplete();
 
@@ -165,7 +166,7 @@ public class WindowingService
     /// </summary>
     public WindowEvent MergeWindows(List<WindowEvent> windows)
     {
-        if (windows == null || windows.Count == 0)
+        if (windows is null || windows.Count == 0)
             throw new ArgumentException("Must provide at least one window to merge");
 
         var merged = new WindowEvent(
@@ -177,7 +178,7 @@ public class WindowingService
 
         foreach (var window in windows)
         {
-            if (window.DataPoints != null)
+            if (window.DataPoints is not null)
             {
                 foreach (var dataPoint in window.DataPoints)
                 {

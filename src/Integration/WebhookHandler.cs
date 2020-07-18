@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -229,7 +230,7 @@ public class InboundWebhookHandler
     /// </summary>
     public async Task ProcessWebhookAsync(WebhookPayload payload)
     {
-        if (payload == null)
+        if (payload is null)
         {
             _logger.LogWarning("Null webhook payload received");
             return;

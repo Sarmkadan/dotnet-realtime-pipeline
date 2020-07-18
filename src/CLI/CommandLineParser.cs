@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -35,7 +36,7 @@ public class CommandLineParser
     /// </summary>
     public ParsedCommand Parse(string[] args)
     {
-        if (args == null || args.Length == 0)
+        if (args is null || args.Length == 0)
         {
             return new ParsedCommand { Verb = "help", IsValid = true };
         }
@@ -99,7 +100,7 @@ public class CommandLineParser
     /// </summary>
     private bool ValidateCommand(ParsedCommand command)
     {
-        if (command.RequiredOptions == null || command.RequiredOptions.Count == 0)
+        if (command.RequiredOptions is null || command.RequiredOptions.Count == 0)
             return true;
 
         foreach (var required in command.RequiredOptions)

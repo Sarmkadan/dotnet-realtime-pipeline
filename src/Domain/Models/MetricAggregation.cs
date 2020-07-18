@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -123,7 +124,7 @@ public class MetricAggregation
     /// </summary>
     public void ComputeAverageProcessingTime(List<double> processingTimes)
     {
-        if (processingTimes == null || processingTimes.Count == 0)
+        if (processingTimes is null || processingTimes.Count == 0)
         {
             AverageProcessingTimeMs = 0;
             return;
