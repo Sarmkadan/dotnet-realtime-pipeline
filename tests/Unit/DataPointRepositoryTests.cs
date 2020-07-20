@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class DataPointRepositoryTests
+public sealed class DataPointRepositoryTests
 {
     private readonly IDataPointRepository _repository;
 

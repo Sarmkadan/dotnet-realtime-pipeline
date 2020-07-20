@@ -15,7 +15,7 @@ using System.Linq;
 /// Helper class for performance measurements, profiling, and optimization analysis.
 /// Provides utilities for benchmarking, memory tracking, and performance trending.
 /// </summary>
-public class PerformanceHelper
+public sealed class PerformanceHelper
 {
     /// <summary>
     /// Measures the execution time of a synchronous operation.
@@ -116,7 +116,7 @@ public class PerformanceHelper
 /// <summary>
 /// Results from a benchmark operation.
 /// </summary>
-public class BenchmarkResult
+public sealed class BenchmarkResult
 {
     public int Iterations { get; set; }
     public List<long> Measurements { get; set; } = new();
@@ -136,7 +136,7 @@ public class BenchmarkResult
 /// <summary>
 /// Memory usage statistics.
 /// </summary>
-public class MemoryStats
+public sealed class MemoryStats
 {
     public double WorkingSetMb { get; set; }
     public double PrivateMemoryMb { get; set; }
@@ -155,7 +155,7 @@ public class MemoryStats
 /// <summary>
 /// Helper for tracking performance metrics over time.
 /// </summary>
-public class PerformanceTracker
+public sealed class PerformanceTracker
 {
     private readonly List<PerformanceSample> _samples = new();
     private readonly object _lockObject = new();
@@ -250,7 +250,7 @@ public class PerformanceTracker
 /// <summary>
 /// Represents a single performance sample.
 /// </summary>
-public class PerformanceSample
+public sealed class PerformanceSample
 {
     public string MetricName { get; set; }
     public double Value { get; set; }
@@ -260,7 +260,7 @@ public class PerformanceSample
 /// <summary>
 /// Represents performance statistics for a metric.
 /// </summary>
-public class PerformanceStats
+public sealed class PerformanceStats
 {
     public int SampleCount { get; set; }
     public double Average { get; set; }

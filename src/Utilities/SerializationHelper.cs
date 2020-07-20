@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 /// Helper class for serialization and deserialization of pipeline objects.
 /// Supports JSON, CSV, and TSV formats with compression support.
 /// </summary>
-public class SerializationHelper
+public sealed class SerializationHelper
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -129,7 +129,7 @@ public class SerializationHelper
 /// <summary>
 /// Helper for batch serialization with streaming support.
 /// </summary>
-public class BatchSerializationHelper
+public sealed class BatchSerializationHelper
 {
     /// <summary>
     /// Writes data points to a file asynchronously.
@@ -204,7 +204,7 @@ public class BatchSerializationHelper
 /// <summary>
 /// Helper for timestamp and date conversion in serialization contexts.
 /// </summary>
-public class DateTimeSerializationHelper
+public sealed class DateTimeSerializationHelper
 {
     /// <summary>
     /// Converts a Unix timestamp to ISO 8601 string.
@@ -236,7 +236,7 @@ public class DateTimeSerializationHelper
 /// <summary>
 /// Helper for object-to-dictionary conversion for flexible serialization.
 /// </summary>
-public class DictionaryConversionHelper
+public sealed class DictionaryConversionHelper
 {
     /// <summary>
     /// Converts a DataPoint to a dictionary.

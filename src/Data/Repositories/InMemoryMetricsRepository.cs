@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 /// In-memory implementation of the metrics repository.
 /// Maintains a rolling history of metrics for analysis.
 /// </summary>
-public class InMemoryMetricsRepository : IMetricsRepository
+public sealed class InMemoryMetricsRepository : IMetricsRepository
 {
     private readonly List<MetricAggregation> _metrics = new();
     private readonly object _lockObject = new();

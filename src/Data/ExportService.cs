@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// Service for exporting pipeline data in various formats.
 /// Handles data serialization, file writing, and batch processing.
 /// </summary>
-public class ExportService
+public sealed class ExportService
 {
     private readonly IOutputFormatter _formatter;
     private readonly ILogger<ExportService> _logger;
@@ -193,7 +193,7 @@ public class ExportService
 /// <summary>
 /// Result of an export operation.
 /// </summary>
-public class ExportResult
+public sealed class ExportResult
 {
     public bool Success { get; set; }
     public string OutputPath { get; set; }
@@ -219,7 +219,7 @@ public class ExportResult
 /// <summary>
 /// Batch export processor for large datasets.
 /// </summary>
-public class BatchExportProcessor
+public sealed class BatchExportProcessor
 {
     private readonly ExportService _exportService;
     private readonly ILogger<BatchExportProcessor> _logger;
@@ -310,7 +310,7 @@ public class BatchExportProcessor
 /// <summary>
 /// Result of a batch export operation.
 /// </summary>
-public class BatchExportResult
+public sealed class BatchExportResult
 {
     public bool Success { get; set; }
     public int ExportedRecords { get; set; }
