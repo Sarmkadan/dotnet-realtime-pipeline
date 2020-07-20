@@ -1,0 +1,49 @@
+# Prometheus configuration for dotnet-realtime-pipeline
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'dotnet-realtime-pipeline'
+
+# Scrape configurations
+scrape_configs:
+  # Pipeline metrics
+  - job_name: 'realtime-pipeline'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ['localhost:5000']
+        labels:
+          service: 'pipeline'
+          environment: 'development'
+    relabel_configs:
+      - source_labels: [__scheme__]
+        target_label: __scheme__
+        replacement: 'http'
+    metrics_path: '/metrics'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Optional: Host metrics (requires node_exporter)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Alert rules
+rule_files:
+  - 'alert_rules.yml'
