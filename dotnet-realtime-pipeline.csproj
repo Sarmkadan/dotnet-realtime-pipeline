@@ -9,7 +9,7 @@
     <RootNamespace>DotNetRealtimePipeline</RootNamespace>
     <AssemblyName>dotnet-realtime-pipeline</AssemblyName>
     <PackageId>Zaiets.dotnet.realtime.pipeline</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Real-time data processing pipeline for .NET - backpressure, windowing, aggregation, System.IO.Pipelines</Description>
     <PackageTags>realtime data pipeline backpressure windowing aggregation</PackageTags>
