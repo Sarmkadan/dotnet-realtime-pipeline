@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -19,7 +20,7 @@ public static class ValidationHelper
     /// </summary>
     public static ValidationResult ValidateDataPoints(List<DataPoint> dataPoints)
     {
-        if (dataPoints == null)
+        if (dataPoints is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Data points collection is null" };
 
         if (dataPoints.Count == 0)
@@ -59,13 +60,13 @@ public static class ValidationHelper
     /// </summary>
     public static ValidationResult ValidatePipelineConfig(PipelineConfig config)
     {
-        if (config == null)
+        if (config is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Configuration is null" };
 
         if (!config.Validate())
             return new ValidationResult { IsValid = false, ErrorMessage = "Configuration validation failed" };
 
-        if (config.Stages == null || config.Stages.Count == 0)
+        if (config.Stages is null || config.Stages.Count == 0)
             return new ValidationResult { IsValid = false, ErrorMessage = "No pipeline stages configured" };
 
         return new ValidationResult { IsValid = true };
@@ -76,7 +77,7 @@ public static class ValidationHelper
     /// </summary>
     public static ValidationResult ValidateProcessingResults(List<ProcessingResult> results)
     {
-        if (results == null)
+        if (results is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Results collection is null" };
 
         var invalidResults = new List<long>();
@@ -107,13 +108,13 @@ public static class ValidationHelper
     /// </summary>
     public static ValidationResult ValidateWindowEvent(WindowEvent window)
     {
-        if (window == null)
+        if (window is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Window is null" };
 
         if (window.WindowStartMs >= window.WindowEndMs)
             return new ValidationResult { IsValid = false, ErrorMessage = "Window start time must be before end time" };
 
-        if (window.DataPoints == null)
+        if (window.DataPoints is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Window data points collection is null" };
 
         return new ValidationResult { IsValid = true };
