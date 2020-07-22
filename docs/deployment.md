@@ -9,7 +9,7 @@ This guide covers deploying dotnet-realtime-pipeline to production environments.
 #### Build Docker Image
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:10.0 as build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 COPY . .
 RUN dotnet build -c Release
@@ -31,7 +31,7 @@ docker run \
   --name pipeline \
   --memory=2g \
   --cpus="2" \
-  -p 5000:5000 \
+  -p 8080:8080 \
   -e MAX_BUFFER_SIZE=50000 \
   -e WINDOW_SIZE_MS=10000 \
   dotnet-realtime-pipeline:latest
@@ -117,7 +117,7 @@ spec:
         image: dotnet-realtime-pipeline:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 5000
+        - containerPort: 8080
           name: api
         envFrom:
         - configMapRef:
@@ -520,7 +520,7 @@ find "$BACKUP_DIR" -name "backup_*.tar.gz" -mtime +30 -delete
 sudo systemctl stop dotnet-realtime-pipeline
 
 # Restore backup
-BACKUP_FILE="/backup/pipeline/backup_20260101_000000.tar.gz"
+BACKUP_FILE="/backup/pipeline/backup_$(date +%Y%m%d_%H%M%S).tar.gz"
 tar -xzf "$BACKUP_FILE" -C /
 
 # Restart service
