@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class MetricAggregationTests
+public sealed class MetricAggregationTests
 {
     private static MetricAggregation BuildMetric(
         long startMs, long endMs,

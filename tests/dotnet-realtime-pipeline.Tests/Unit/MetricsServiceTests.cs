@@ -13,7 +13,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class MetricsServiceTests
+public sealed class MetricsServiceTests
 {
     private readonly Mock<IMetricsRepository> _repoMock = new();
     private readonly MetricsService _service;

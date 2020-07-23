@@ -28,7 +28,7 @@ public interface IMetricsExporter
 /// <summary>
 /// Prometheus format metrics exporter.
 /// </summary>
-public class PrometheusMetricsExporter : IMetricsExporter
+public sealed class PrometheusMetricsExporter : IMetricsExporter
 {
     private readonly ILogger<PrometheusMetricsExporter> _logger;
 
@@ -70,7 +70,7 @@ public class PrometheusMetricsExporter : IMetricsExporter
 /// <summary>
 /// HTTP-based metrics exporter for pushing metrics to remote endpoints.
 /// </summary>
-public class HttpMetricsExporter : IMetricsExporter
+public sealed class HttpMetricsExporter : IMetricsExporter
 {
     private readonly string _endpoint;
     private readonly HttpClient _httpClient;
@@ -141,7 +141,7 @@ public class HttpMetricsExporter : IMetricsExporter
 /// <summary>
 /// Composite metrics exporter supporting multiple export targets.
 /// </summary>
-public class CompositeMetricsExporter : IMetricsExporter
+public sealed class CompositeMetricsExporter : IMetricsExporter
 {
     private readonly List<IMetricsExporter> _exporters = new();
     private readonly ILogger<CompositeMetricsExporter> _logger;

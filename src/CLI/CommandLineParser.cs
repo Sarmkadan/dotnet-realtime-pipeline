@@ -14,7 +14,7 @@ using System.Linq;
 /// Parses command-line arguments into structured command objects.
 /// Supports verb-based commands with options and flags.
 /// </summary>
-public class CommandLineParser
+public sealed class CommandLineParser
 {
     private readonly Dictionary<string, Func<ParsedCommand>> _commandRegistry = new(StringComparer.OrdinalIgnoreCase);
 
@@ -158,7 +158,7 @@ public abstract class ParsedCommand
     public abstract Task<int> ExecuteAsync();
 }
 
-public class HelpCommand : ParsedCommand
+public sealed class HelpCommand : ParsedCommand
 {
     public override Task<int> ExecuteAsync()
     {
@@ -173,7 +173,7 @@ public class HelpCommand : ParsedCommand
     }
 }
 
-public class IngestCommand : ParsedCommand
+public sealed class IngestCommand : ParsedCommand
 {
     public IngestCommand()
     {
@@ -190,7 +190,7 @@ public class IngestCommand : ParsedCommand
     }
 }
 
-public class QueryCommand : ParsedCommand
+public sealed class QueryCommand : ParsedCommand
 {
     public QueryCommand()
     {
@@ -208,7 +208,7 @@ public class QueryCommand : ParsedCommand
     }
 }
 
-public class StatusCommand : ParsedCommand
+public sealed class StatusCommand : ParsedCommand
 {
     public override Task<int> ExecuteAsync()
     {
@@ -218,7 +218,7 @@ public class StatusCommand : ParsedCommand
     }
 }
 
-public class ExportCommand : ParsedCommand
+public sealed class ExportCommand : ParsedCommand
 {
     public ExportCommand()
     {

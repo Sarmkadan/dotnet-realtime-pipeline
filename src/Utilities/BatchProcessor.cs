@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 /// Generic batch processor for processing large collections in chunks.
 /// Handles batching, parallel processing, and result aggregation.
 /// </summary>
-public class BatchProcessor<TInput, TOutput>
+public sealed class BatchProcessor<TInput, TOutput>
 {
     private readonly int _batchSize;
     private readonly int _maxDegreeOfParallelism;
@@ -100,7 +100,7 @@ public class BatchProcessor<TInput, TOutput>
 /// <summary>
 /// Exception thrown during batch processing.
 /// </summary>
-public class BatchProcessingException : Exception
+public sealed class BatchProcessingException : Exception
 {
     public BatchProcessingException(string message, Exception innerException)
         : base(message, innerException)
@@ -111,7 +111,7 @@ public class BatchProcessingException : Exception
 /// <summary>
 /// Progress tracker for batch operations.
 /// </summary>
-public class BatchProcessingProgress
+public sealed class BatchProcessingProgress
 {
     public int TotalBatches { get; set; }
     public int ProcessedBatches { get; set; }
@@ -141,7 +141,7 @@ public class BatchProcessingProgress
 /// <summary>
 /// Pipeline-specific batch processor for DataPoints.
 /// </summary>
-public class DataPointBatchProcessor
+public sealed class DataPointBatchProcessor
 {
     private readonly BatchProcessor<Domain.Models.DataPoint, Domain.Models.ProcessingResult> _processor;
 

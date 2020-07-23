@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// Middleware for centralized error handling and exception transformation.
 /// Converts exceptions to application-level error responses with proper logging and recovery.
 /// </summary>
-public class ErrorHandlingMiddleware
+public sealed class ErrorHandlingMiddleware
 {
     private readonly ILogger<ErrorHandlingMiddleware> _logger;
     private readonly Dictionary<Type, Func<Exception, ErrorResponse>> _errorMappers = new();
@@ -177,7 +177,7 @@ public class ErrorHandlingMiddleware
 /// <summary>
 /// Represents a standardized error response with recovery information.
 /// </summary>
-public class ErrorResponse
+public sealed class ErrorResponse
 {
     public string ErrorCode { get; set; } = "ERROR";
     public string Message { get; set; } = string.Empty;
@@ -189,7 +189,7 @@ public class ErrorResponse
 /// <summary>
 /// Generic error response with data payload.
 /// </summary>
-public class ErrorResponse<T> : ErrorResponse
+public sealed class ErrorResponse<T> : ErrorResponse
 {
     public bool Success { get; set; }
     public T Data { get; set; }
@@ -198,7 +198,7 @@ public class ErrorResponse<T> : ErrorResponse
 /// <summary>
 /// Middleware for automatic retry logic with exponential backoff.
 /// </summary>
-public class RetryMiddleware
+public sealed class RetryMiddleware
 {
     private readonly ILogger<RetryMiddleware> _logger;
     private readonly int _maxRetries;
@@ -243,7 +243,7 @@ public class RetryMiddleware
 /// <summary>
 /// Middleware for circuit breaker pattern to prevent cascade failures.
 /// </summary>
-public class CircuitBreakerMiddleware
+public sealed class CircuitBreakerMiddleware
 {
     private readonly ILogger<CircuitBreakerMiddleware> _logger;
     private int _failureCount;

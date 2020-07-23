@@ -16,7 +16,7 @@ using System.Linq;
 /// Manages pipeline state and lifecycle transitions.
 /// Tracks state history and provides state queries.
 /// </summary>
-public class PipelineStateManager
+public sealed class PipelineStateManager
 {
     private volatile PipelineState _currentState = PipelineState.Stopped;
     private readonly List<StateTransition> _stateHistory = new();
@@ -159,7 +159,7 @@ public enum PipelineState
 /// <summary>
 /// Represents a state transition.
 /// </summary>
-public class StateTransition
+public sealed class StateTransition
 {
     public PipelineState FromState { get; set; }
     public PipelineState ToState { get; set; }
@@ -167,7 +167,7 @@ public class StateTransition
     public string Reason { get; set; }
 }
 
-internal class StateChangeListener
+internal sealed class StateChangeListener
 {
     public Action<PipelineState, PipelineState> Callback { get; set; }
 }
@@ -175,7 +175,7 @@ internal class StateChangeListener
 /// <summary>
 /// Manages configuration state and overrides.
 /// </summary>
-public class ConfigurationStateManager
+public sealed class ConfigurationStateManager
 {
     private readonly ConcurrentDictionary<string, object> _overrides = new();
     private readonly ILogger<ConfigurationStateManager> _logger;
@@ -236,7 +236,7 @@ public class ConfigurationStateManager
 /// <summary>
 /// Tracks operation metrics and statistics.
 /// </summary>
-public class OperationMetricsTracker
+public sealed class OperationMetricsTracker
 {
     private readonly ConcurrentDictionary<string, OperationMetrics> _metrics = new();
     private readonly ILogger<OperationMetricsTracker> _logger;
@@ -288,7 +288,7 @@ public class OperationMetricsTracker
 /// <summary>
 /// Metrics for a specific operation.
 /// </summary>
-public class OperationMetrics
+public sealed class OperationMetrics
 {
     public long TotalExecutions { get; set; }
     public long SuccessfulExecutions { get; set; }

@@ -140,7 +140,7 @@ public static class ValidationHelper
 /// <summary>
 /// Result of a validation operation.
 /// </summary>
-public class ValidationResult
+public sealed class ValidationResult
 {
     public bool IsValid { get; set; }
     public string ErrorMessage { get; set; } = "";

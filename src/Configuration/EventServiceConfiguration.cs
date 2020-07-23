@@ -151,7 +151,7 @@ public static class WorkerServiceConfiguration
 /// <summary>
 /// Configuration options for background workers.
 /// </summary>
-public class WorkerOptions
+public sealed class WorkerOptions
 {
     public int MetricsAggregationIntervalMs { get; set; } = 5000;
     public int HealthCheckIntervalMs { get; set; } = 10000;
@@ -221,7 +221,7 @@ public static class MiddlewareConfiguration
 /// <summary>
 /// Configuration builder for complete pipeline setup with all components.
 /// </summary>
-public class CompleteConfigurationBuilder
+public sealed class CompleteConfigurationBuilder
 {
     private readonly IServiceCollection _services;
     private readonly ILogger<CompleteConfigurationBuilder> _logger;

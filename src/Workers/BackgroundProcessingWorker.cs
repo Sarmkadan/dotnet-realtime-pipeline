@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// Background worker for continuous pipeline processing.
 /// Manages long-running data processing tasks with graceful shutdown.
 /// </summary>
-public class BackgroundProcessingWorker : IDisposable
+public sealed class BackgroundProcessingWorker : IDisposable
 {
     private readonly PipelineOrchestrator _orchestrator;
     private readonly ILogger<BackgroundProcessingWorker> _logger;
@@ -139,7 +139,7 @@ public class BackgroundProcessingWorker : IDisposable
 /// <summary>
 /// Background worker for periodic metrics aggregation.
 /// </summary>
-public class MetricsAggregationWorker : IDisposable
+public sealed class MetricsAggregationWorker : IDisposable
 {
     private readonly MetricsService _metricsService;
     private readonly ILogger<MetricsAggregationWorker> _logger;
@@ -253,7 +253,7 @@ public class MetricsAggregationWorker : IDisposable
 /// <summary>
 /// Background worker for periodic health checks.
 /// </summary>
-public class HealthCheckWorker : IDisposable
+public sealed class HealthCheckWorker : IDisposable
 {
     private readonly PipelineOrchestrator _orchestrator;
     private readonly ILogger<HealthCheckWorker> _logger;
@@ -369,7 +369,7 @@ public class HealthCheckWorker : IDisposable
 /// <summary>
 /// Coordinator for managing multiple background workers.
 /// </summary>
-public class WorkerCoordinator : IDisposable
+public sealed class WorkerCoordinator : IDisposable
 {
     private readonly BackgroundProcessingWorker _processingWorker;
     private readonly MetricsAggregationWorker _metricsWorker;

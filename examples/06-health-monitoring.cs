@@ -13,7 +13,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Health monitoring example demonstrating continuous health tracking and performance trending.
 /// </summary>
-public class HealthMonitoringExample
+public sealed class HealthMonitoringExample
 {
     public static async Task RunAsync()
     {

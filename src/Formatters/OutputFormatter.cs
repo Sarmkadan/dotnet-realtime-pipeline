@@ -26,7 +26,7 @@ public interface IOutputFormatter
 /// <summary>
 /// JSON output formatter for serializing data to JSON format.
 /// </summary>
-public class JsonOutputFormatter : IOutputFormatter
+public sealed class JsonOutputFormatter : IOutputFormatter
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -48,7 +48,7 @@ public class JsonOutputFormatter : IOutputFormatter
 /// <summary>
 /// CSV output formatter for serializing data to CSV format.
 /// </summary>
-public class CsvOutputFormatter : IOutputFormatter
+public sealed class CsvOutputFormatter : IOutputFormatter
 {
     public string Format<T>(T data) where T : class
     {
@@ -113,7 +113,7 @@ public class CsvOutputFormatter : IOutputFormatter
 /// <summary>
 /// Table output formatter for displaying data in ASCII table format.
 /// </summary>
-public class TableOutputFormatter : IOutputFormatter
+public sealed class TableOutputFormatter : IOutputFormatter
 {
     private const int ColumnPadding = 2;
 
@@ -220,7 +220,7 @@ public class TableOutputFormatter : IOutputFormatter
 /// <summary>
 /// HTML output formatter for generating HTML reports.
 /// </summary>
-public class HtmlOutputFormatter : IOutputFormatter
+public sealed class HtmlOutputFormatter : IOutputFormatter
 {
     public string Format<T>(T data) where T : class
     {
