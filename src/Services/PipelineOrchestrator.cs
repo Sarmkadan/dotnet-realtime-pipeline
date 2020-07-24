@@ -15,9 +15,27 @@ using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
-/// Orchestrates the entire data processing pipeline.
-/// Coordinates multiple services and manages the flow of data through stages.
+/// Central orchestrator for the real-time data processing pipeline. Coordinates the flow
+/// of <see cref="DataPoint"/> records through configurable processing stages with
+/// backpressure management, time-based windowing, and metrics collection.
 /// </summary>
+/// <remarks>
+/// <para>
+/// The pipeline processes data through the following stages:
+/// <list type="number">
+///   <item>Ingestion - data points enter the <see cref="_incomingDataQueue"/></item>
+///   <item>Processing - <see cref="DataProcessingService"/> applies transformations and filters</item>
+///   <item>Windowing - <see cref="WindowingService"/> groups data into time-based windows for aggregation</item>
+///   <item>Output - processed results are emitted downstream</item>
+/// </list>
+/// </para>
+/// <para>
+/// Backpressure is managed per-stage via <see cref="BackpressureService"/>. When a stage's buffer
+/// exceeds <see cref="PipelineConfig.MaxBufferSize"/>, upstream producers are throttled to prevent
+/// memory exhaustion. Metrics (throughput, latency, error rate) are collected by
+/// <see cref="MetricsService"/> and can be queried via <see cref="QueryService"/>.
+/// </para>
+/// </remarks>
 public sealed class PipelineOrchestrator
 {
     private readonly DataProcessingService _processingService;
