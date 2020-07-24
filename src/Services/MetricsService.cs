@@ -179,12 +179,20 @@ public sealed class MetricsService
         else
             direction = "DEGRADING";
 
+        double initialErrorRate = firstMetric.CalculateErrorRate();
+
         var trend = new PerformanceTrend
         {
             TrendDirection = direction,
-            ThroughputChangePercent = ((currentThroughput - initialThroughput) / initialThroughput) * 100,
-            LatencyChangePercent = ((lastMetric.AverageProcessingTimeMs - firstMetric.AverageProcessingTimeMs) / firstMetric.AverageProcessingTimeMs) * 100,
-            ErrorRateChangePercent = ((lastMetric.CalculateErrorRate() - firstMetric.CalculateErrorRate()) / firstMetric.CalculateErrorRate()) * 100,
+            ThroughputChangePercent = initialThroughput > 0
+                ? ((currentThroughput - initialThroughput) / initialThroughput) * 100
+                : 0,
+            LatencyChangePercent = firstMetric.AverageProcessingTimeMs > 0
+                ? ((lastMetric.AverageProcessingTimeMs - firstMetric.AverageProcessingTimeMs) / firstMetric.AverageProcessingTimeMs) * 100
+                : 0,
+            ErrorRateChangePercent = initialErrorRate > 0
+                ? ((lastMetric.CalculateErrorRate() - initialErrorRate) / initialErrorRate) * 100
+                : 0,
             SamplesAnalyzed = recentMetrics.Count,
             TimeSpanMs = lastMetric.TimeWindowEndMs - firstMetric.TimeWindowStartMs
         };
