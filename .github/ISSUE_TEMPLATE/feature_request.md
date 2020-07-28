@@ -1,35 +1,19 @@
 ---
 name: Feature Request
-about: Suggest an idea for dotnet-realtime-pipeline
-title: "[FEATURE] Brief description"
+about: Suggest a feature for dotnet-realtime-pipeline
+title: '[FEATURE] '
 labels: enhancement
 assignees: ''
-
 ---
 
-## Description
-Clear and concise description of the feature.
-
-## Motivation
-Why would this feature be useful? What problem does it solve?
+## Problem Statement
+A clear description of the problem or limitation.
 
 ## Proposed Solution
-How should this feature work? Please provide examples.
-
-## Example Usage
-```csharp
-// How would users use this feature?
-var service = new MyNewService();
-var result = await service.DoSomethingAsync();
-```
+Describe the solution you'd like to see.
 
 ## Alternatives Considered
-Are there any alternative approaches or similar features?
+List any alternative solutions or workarounds you've considered.
 
 ## Additional Context
-Any other information, such as links to similar features in other projects.
-
-## Impact
-- Performance: (none/low/medium/high)
-- Breaking changes: (yes/no)
-- New dependencies: (yes/no)
+Any other context, mockups, or examples.
