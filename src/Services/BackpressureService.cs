@@ -221,6 +221,7 @@ public sealed class BackpressureService
             int backpressuredContexts = 0;
             double avgBufferFill = 0;
             long totalBackpressureTime = 0;
+            long totalDropped = 0;
 
             foreach (var context in _contexts.Values)
             {
@@ -229,6 +230,7 @@ public sealed class BackpressureService
 
                 avgBufferFill += context.GetBufferFillPercentage();
                 totalBackpressureTime += context.TotalBackpressureTimeMs;
+                totalDropped += context.DroppedItemCount;
             }
 
             if (totalContexts > 0)
@@ -240,6 +242,7 @@ public sealed class BackpressureService
                 BackpressuredStages = backpressuredContexts,
                 AverageBufferFillPercent = avgBufferFill,
                 TotalBackpressureTimeMs = totalBackpressureTime,
+                TotalDroppedItems = totalDropped,
                 IsSystemBackpressured = avgBufferFill > PipelineConstants.BackpressureHighWaterMark,
                 Timestamp = DateTime.UtcNow
             };
@@ -258,6 +261,35 @@ public sealed class BackpressureService
                 context.DeactivateBackpressure();
                 context.BufferSize = 0;
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the dropped item count for a specific stage.
+    /// A non-zero value means data was silently lost due to buffer overflow.
+    /// </summary>
+    public long GetDroppedItemCount(string stageName)
+    {
+        lock (_lockObject)
+        {
+            if (!_contexts.TryGetValue(stageName, out var context))
+                return 0;
+
+            return context.DroppedItemCount;
+        }
+    }
+
+    /// <summary>
+    /// Gets the current buffer fill level for every registered stage.
+    /// </summary>
+    public Dictionary<string, long> GetBufferStatus()
+    {
+        lock (_lockObject)
+        {
+            var result = new Dictionary<string, long>(_contexts.Count);
+            foreach (var kv in _contexts)
+                result[kv.Key] = kv.Value.BufferSize;
+            return result;
         }
     }
 
@@ -308,6 +340,12 @@ public sealed class BackpressureSystemStatus
     public long TotalBackpressureTimeMs { get; set; }
     public bool IsSystemBackpressured { get; set; }
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Total number of items dropped across all stages due to buffer overflow.
+    /// A non-zero value indicates data loss; monitor this counter in production.
+    /// </summary>
+    public long TotalDroppedItems { get; set; }
 
     public string GetHealthStatus()
     {
