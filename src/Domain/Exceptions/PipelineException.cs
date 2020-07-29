@@ -11,7 +11,7 @@ using System;
 /// <summary>
 /// Base exception for all pipeline-related errors.
 /// </summary>
-public sealed class PipelineException : Exception
+public class PipelineException : Exception
 {
     public string? ErrorCode { get; set; }
     public object? ErrorDetails { get; set; }

@@ -49,7 +49,7 @@ public abstract class EventSubscriberBase
 /// <summary>
 /// Subscriber for data ingestion events with processing logic.
 /// </summary>
-public sealed class DataIngestSubscriber : EventSubscriberBase
+public class DataIngestSubscriber : EventSubscriberBase
 {
     public DataIngestSubscriber(PipelineEventPublisher publisher, ILogger<DataIngestSubscriber> logger)
         : base(publisher, logger)
@@ -94,7 +94,7 @@ public sealed class DataIngestSubscriber : EventSubscriberBase
 /// <summary>
 /// Subscriber for processing completion events with metrics tracking.
 /// </summary>
-public sealed class ProcessingCompletionSubscriber : EventSubscriberBase
+public class ProcessingCompletionSubscriber : EventSubscriberBase
 {
     private long _successCount;
     private long _failureCount;
@@ -159,7 +159,7 @@ public sealed class ProcessingCompletionSubscriber : EventSubscriberBase
 /// <summary>
 /// Subscriber for backpressure events with alerting logic.
 /// </summary>
-public sealed class BackpressureAlertSubscriber : EventSubscriberBase
+public class BackpressureAlertSubscriber : EventSubscriberBase
 {
     private int _backpressureCount;
     private DateTime _firstBackpressureTime = DateTime.MinValue;
@@ -222,7 +222,7 @@ public sealed class BackpressureAlertSubscriber : EventSubscriberBase
 /// <summary>
 /// Subscriber for metrics collection events with aggregation.
 /// </summary>
-public sealed class MetricsAggregationSubscriber : EventSubscriberBase
+public class MetricsAggregationSubscriber : EventSubscriberBase
 {
     private double _totalThroughput;
     private double _totalLatency;
@@ -289,7 +289,7 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
 /// <summary>
 /// Subscriber for error events with logging and alerting.
 /// </summary>
-public sealed class ErrorAlertSubscriber : EventSubscriberBase
+public class ErrorAlertSubscriber : EventSubscriberBase
 {
     private int _errorCount;
 

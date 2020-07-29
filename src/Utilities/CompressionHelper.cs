@@ -24,7 +24,7 @@ public sealed class CompressionHelper
     public static byte[] CompressGzip(string data)
     {
         if (string.IsNullOrEmpty(data))
-            return []byte>();
+            return Array.Empty<byte>();
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
 
@@ -66,7 +66,7 @@ public sealed class CompressionHelper
     public static byte[] CompressDeflate(string data)
     {
         if (string.IsNullOrEmpty(data))
-            return []byte>();
+            return Array.Empty<byte>();
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
 
