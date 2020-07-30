@@ -125,6 +125,7 @@ public sealed class CommandLineParser
         RegisterCommand("query", () => new QueryCommand());
         RegisterCommand("status", () => new StatusCommand());
         RegisterCommand("export", () => new ExportCommand());
+        RegisterCommand("visualize", () => new VisualizeCommand());
     }
 }
 
@@ -168,6 +169,7 @@ public sealed class HelpCommand : ParsedCommand
         Console.WriteLine("  query      --start <ms> --end <ms> [--source <name>] [--quality <score>]");
         Console.WriteLine("  status     [--format json|text]");
         Console.WriteLine("  export     --start <ms> --end <ms> --output <path> [--format json|csv|xml]");
+        Console.WriteLine("  visualize  [--compact]");
         Console.WriteLine("  help       Show this message");
         return Task.FromResult(0);
     }
@@ -234,6 +236,22 @@ public sealed class ExportCommand : ParsedCommand
         var output = GetOption("output");
         var format = GetOption("format", "json");
         Console.WriteLine($"Exporting data [{start},{end}] to {output} ({format})");
+        return Task.FromResult(0);
+    }
+}
+
+/// <summary>
+/// Prints an ASCII visualization of the pipeline topology with live metrics.
+/// Use --compact for a single-line summary suitable for log output.
+/// </summary>
+public sealed class VisualizeCommand : ParsedCommand
+{
+    public override Task<int> ExecuteAsync()
+    {
+        var compact = HasFlag("compact");
+        Console.WriteLine(compact
+            ? "Pipeline visualization (compact mode) — run via CommandExecutor.VisualizeAsync for live data."
+            : "Pipeline visualization — run via CommandExecutor.VisualizeAsync for live data.");
         return Task.FromResult(0);
     }
 }

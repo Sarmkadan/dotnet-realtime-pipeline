@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.CLI;
 
 using DotNetRealtimePipeline.Services;
 using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Visualization;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -21,11 +22,16 @@ public sealed class CommandExecutor
 {
     private readonly PipelineOrchestrator _orchestrator;
     private readonly ILogger<CommandExecutor> _logger;
+    private readonly PipelineVisualizer _visualizer;
 
-    public CommandExecutor(PipelineOrchestrator orchestrator, ILogger<CommandExecutor> logger)
+    public CommandExecutor(
+        PipelineOrchestrator orchestrator,
+        ILogger<CommandExecutor> logger,
+        PipelineVisualizer visualizer)
     {
         _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _visualizer = visualizer ?? throw new ArgumentNullException(nameof(visualizer));
     }
 
     /// <summary>
@@ -182,6 +188,27 @@ public sealed class CommandExecutor
     {
         var loader = FormatFactory.CreateLoader(format);
         return await loader.LoadAsync(filePath);
+    }
+
+    /// <summary>
+    /// Renders an ASCII visualization of the pipeline topology with live runtime metrics.
+    /// Pass <paramref name="compact"/> as <c>true</c> for a single-line summary.
+    /// </summary>
+    public Task<string> VisualizeAsync(PipelineConfig config, bool compact = false)
+    {
+        try
+        {
+            _logger.LogInformation("Rendering pipeline visualization (compact={Compact})", compact);
+            var output = compact
+                ? _visualizer.RenderCompact(config)
+                : _visualizer.Render(config);
+            return Task.FromResult(output);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Pipeline visualization failed");
+            return Task.FromResult(string.Empty);
+        }
     }
 }
 
