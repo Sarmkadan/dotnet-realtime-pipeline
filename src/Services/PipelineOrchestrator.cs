@@ -11,6 +11,7 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -138,6 +139,16 @@ public sealed class PipelineOrchestrator
     }
 
     /// <summary>
+    /// Returns the pipeline-wide throughput in events per second (sliding window).
+    /// </summary>
+    public double GetThroughput() => _metricsService.GetThroughput();
+
+    /// <summary>
+    /// Returns the throughput for a specific pipeline stage in events per second.
+    /// </summary>
+    public double GetThroughput(string stageName) => _metricsService.GetThroughput(stageName);
+
+    /// <summary>
     /// Gets performance trend analysis.
     /// </summary>
     public async Task<PerformanceTrend> GetPerformanceTrendAsync()
@@ -183,10 +194,18 @@ public sealed class PipelineOrchestrator
                     _metricsService.RecordProcessingTime(result.ProcessingTimeMs);
 
                     if (result.Success)
+                    {
                         Interlocked.Increment(ref _totalProcessed);
+                        _metricsService.RecordThroughput(PipelineConstants.StageName_Output, 1);
+                    }
                     else
                         Interlocked.Increment(ref _totalFailed);
                 }
+
+                // Update pipeline-wide throughput counter once per batch
+                long successCount = results.Count(r => r.Success);
+                if (successCount > 0)
+                    _metricsService.RecordThroughput(successCount);
 
                 // Window the processed data
                 var dataPoints = new List<DataPoint>();
