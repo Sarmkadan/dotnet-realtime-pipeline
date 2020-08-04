@@ -34,6 +34,8 @@ public sealed class WindowingService
     /// <summary>
     /// Creates a new window based on configuration parameters.
     /// </summary>
+    /// <param name="windowStartMs">The start time of the window in milliseconds.</param>
+    /// <returns>A new <see cref="WindowEvent"/> object.</returns>
     public WindowEvent CreateWindow(long windowStartMs)
     {
         long windowEndMs = windowStartMs + _config.WindowSizeMs;
@@ -49,6 +51,9 @@ public sealed class WindowingService
     /// <summary>
     /// Attempts to add a data point to the appropriate window.
     /// </summary>
+    /// <param name="dataPoint">The <see cref="DataPoint"/> to add.</param>
+    /// <param name="window">The <see cref="WindowEvent"/> to add the data point to.</param>
+    /// <returns>True if the data point was added successfully, false otherwise.</returns>
     public bool TryAddDataPointToWindow(DataPoint dataPoint, WindowEvent window)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -61,6 +66,8 @@ public sealed class WindowingService
     /// Processes a list of data points, assigning them to appropriate windows
     /// and emitting any windows that become complete.
     /// </summary>
+    /// <param name="dataPoints">The list of <see cref="DataPoint"/> to process.</param>
+    /// <returns>A list of <see cref="WindowEmissionResult"/> for windows that became complete.</returns>
     public List<WindowEmissionResult> ProcessDataPoints(List<DataPoint> dataPoints)
     {
         if (dataPoints is null || dataPoints.Count == 0)
@@ -172,6 +179,8 @@ public sealed class WindowingService
     /// <summary>
     /// Performs aggregation on a window using the configured aggregation type.
     /// </summary>
+    /// <param name="window">The <see cref="WindowEvent"/> to aggregate.</param>
+    /// <returns>A dictionary containing aggregated window data.</returns>
     public Dictionary<string, object> AggregateWindow(WindowEvent window)
     {
         if (window is null) throw new ArgumentNullException(nameof(window));
@@ -192,6 +201,8 @@ public sealed class WindowingService
     /// <summary>
     /// Calculates statistics for all values in a window.
     /// </summary>
+    /// <param name="window">The <see cref="WindowEvent"/> to calculate statistics for.</param>
+    /// <returns>A <see cref="WindowStatistics"/> object.</returns>
     public WindowStatistics CalculateWindowStatistics(WindowEvent window)
     {
         if (window is null) throw new ArgumentNullException(nameof(window));
@@ -220,6 +231,8 @@ public sealed class WindowingService
     /// NTP clock corrections that can cause <see cref="DateTimeOffset.UtcNow"/> to step backward,
     /// which would otherwise emit duplicate events at window boundaries in containerised deployments.
     /// </summary>
+    /// <param name="window">The <see cref="WindowEvent"/> to check.</param>
+    /// <returns>True if the window is complete, false otherwise.</returns>
     public bool IsWindowComplete(WindowEvent window)
     {
         if (window is null) throw new ArgumentNullException(nameof(window));
@@ -232,6 +245,8 @@ public sealed class WindowingService
     /// <summary>
     /// Emits (finalizes) a window and returns its aggregated results.
     /// </summary>
+    /// <param name="window">The <see cref="WindowEvent"/> to emit.</param>
+    /// <returns>A <see cref="WindowEmissionResult"/> object.</returns>
     public WindowEmissionResult EmitWindow(WindowEvent window)
     {
         if (window is null) throw new ArgumentNullException(nameof(window));
@@ -255,6 +270,8 @@ public sealed class WindowingService
     /// <summary>
     /// Merges multiple windows (for session windows).
     /// </summary>
+    /// <param name="windows">The list of <see cref="WindowEvent"/> to merge.</param>
+    /// <returns>A new merged <see cref="WindowEvent"/>.</returns>
     public WindowEvent MergeWindows(List<WindowEvent> windows)
     {
         if (windows is null || windows.Count == 0)
@@ -284,6 +301,7 @@ public sealed class WindowingService
     /// <summary>
     /// Gets a summary of active windows.
     /// </summary>
+    /// <returns>A <see cref="WindowingSummary"/> object.</returns>
     public WindowingSummary GetWindowingSummary()
     {
         var summary = new WindowingSummary
