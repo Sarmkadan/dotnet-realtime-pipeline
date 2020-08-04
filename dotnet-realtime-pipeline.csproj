@@ -8,11 +8,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DotNetRealtimePipeline</RootNamespace>
     <AssemblyName>dotnet-realtime-pipeline</AssemblyName>
-    <PackageId>Zaiets.dotnet.realtime.pipeline</PackageId>
-    <Version>2.0.2</Version>
+    <PackageId>dotnet-realtime-pipeline</PackageId>
+    <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>Real-time data processing pipeline for .NET - backpressure, windowing, aggregation, System.IO.Pipelines</Description>
-    <PackageTags>realtime data pipeline backpressure windowing aggregation</PackageTags>
+    <Description>A high-performance real-time data processing pipeline for .NET applications with backpressure management, windowing, and aggregation capabilities.</Description>
+    <PackageTags>dotnet realtime pipeline backpressure windowing aggregation</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/dotnet-realtime-pipeline</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/dotnet-realtime-pipeline</RepositoryUrl>
