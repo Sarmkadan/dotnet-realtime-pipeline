@@ -1,0 +1,94 @@
+# Prometheus alert rules for dotnet-realtime-pipeline
+
+groups:
+  - name: dotnet-realtime-pipeline
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: pipeline_error_rate > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Pipeline error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Low throughput
+      - alert: LowThroughput
+        expr: pipeline_throughput_items_per_sec < 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low pipeline throughput"
+          description: "Throughput is {{ $value }} items/sec (threshold: 100)"
+
+      # High latency
+      - alert: HighLatency
+        expr: pipeline_avg_latency_ms > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High processing latency"
+          description: "Average latency is {{ $value }}ms (threshold: 100ms)"
+
+      # Buffer near capacity
+      - alert: BufferNearCapacity
+        expr: pipeline_buffer_utilization > 0.9
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pipeline buffer near capacity"
+          description: "Buffer is {{ $value | humanizePercentage }} full"
+
+      # Pipeline unhealthy
+      - alert: PipelineUnhealthy
+        expr: pipeline_health_status == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pipeline health status is UNHEALTHY"
+          description: "Pipeline is not operational. Manual intervention required."
+
+      # Memory usage high
+      - alert: HighMemoryUsage
+        expr: pipeline_memory_usage_mb > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Pipeline memory usage is {{ $value }}MB (threshold: 1000MB)"
+
+      # Processing timeout
+      - alert: ProcessingTimeout
+        expr: increase(pipeline_processing_timeouts_total[5m]) > 10
+        labels:
+          severity: warning
+        annotations:
+          summary: "Processing timeouts detected"
+          description: "{{ $value }} processing timeouts in the last 5 minutes"
+
+      # Backpressure triggered
+      - alert: BackpressureActive
+        expr: pipeline_backpressure_active == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backpressure is active"
+          description: "Pipeline backpressure strategy active for extended period"
+
+      # Service unavailable
+      - alert: ServiceUnavailable
+        expr: up{job="realtime-pipeline"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pipeline service is unavailable"
+          description: "Cannot reach pipeline at localhost:5000"
