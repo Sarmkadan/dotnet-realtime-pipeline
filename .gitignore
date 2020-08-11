@@ -1,8 +1,6 @@
 ## Build results
 [Dd]ebug/
-[Dd]ebugPublic/
 [Rr]elease/
-[Rr]eleases/
 x64/
 x86/
 [Ww][Ii][Nn]32/
@@ -11,50 +9,57 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
+[Oo]ut/
 [Ll]og/
 [Ll]ogs/
-
-## Visual Studio cache/options
-.vs/
-.vscode/
-.idea/
-
-## Visual Studio Code
-*.code-workspace
-
-## Rider
-.idea/
-*.sln.iml
-*.sln.iml
-
-## User-specific files
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-.DS_Store
-
-## Test Results
-TestResults/
-*.trx
-coverage.cobertura.xml
+msbuild.log
+msbuild.err
+msbuild.wrn
 
 ## NuGet
 *.nupkg
 *.snupkg
-.nuget/
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
 
-## Local environment files
-.env
-.env.local
-appsettings.local.json
-appsettings.Development.json
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+[Tt]est[Rr]esult*/
+[Dd]ebugPublic/
+[Rr]eleases/
+BenchmarkDotNet.Artifacts/
+artifacts/
 
-## NuGet packages
-packages/
-*.nupkg
+## Rider
+.idea/
+*.sln.iml
 
-## Temporary files
-*.tmp
-*.temp
+## VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+## User-specific
+*.DotSettings.user
+
+## OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## dotnet tool
+.dotnet/
