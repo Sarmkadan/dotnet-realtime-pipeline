@@ -24,6 +24,13 @@ public sealed class BackpressureContext
     public long BackpressureStartTimeMs { get; set; }
     public long TotalBackpressureTimeMs { get; set; }
 
+    /// <summary>
+    /// Total number of items dropped because the buffer was at capacity.
+    /// A non-zero value indicates silent data loss has occurred; callers should
+    /// monitor this counter and react (e.g. raise an alert, slow down producers).
+    /// </summary>
+    public long DroppedItemCount { get; private set; }
+
     public int ActiveConsumers { get; set; }
     public int MaxConcurrentConsumers { get; set; }
 
@@ -68,6 +75,8 @@ public sealed class BackpressureContext
 
     /// <summary>
     /// Attempts to add items to the buffer and triggers backpressure if needed.
+    /// When the buffer is full, <see cref="DroppedItemCount"/> is incremented so
+    /// callers can detect and measure data loss instead of it happening silently.
     /// </summary>
     public bool TryAddToBuffer(long itemCount)
     {
@@ -77,6 +86,7 @@ public sealed class BackpressureContext
 
         if (newBufferSize > MaxBufferCapacity)
         {
+            DroppedItemCount += itemCount;
             ActivateBackpressure();
             return false;
         }
