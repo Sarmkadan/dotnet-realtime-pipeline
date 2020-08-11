@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// Service for monitoring pipeline health and generating health reports.
 /// Tracks component status, resource usage, and performance trends.
 /// </summary>
-public class HealthCheckService
+public sealed class HealthCheckService
 {
     private readonly PipelineOrchestrator _orchestrator;
     private readonly ILogger<HealthCheckService> _logger;
@@ -156,7 +156,7 @@ public class HealthCheckService
 /// <summary>
 /// Represents the health status of a component.
 /// </summary>
-public class ComponentHealth
+public sealed class ComponentHealth
 {
     public bool IsHealthy { get; set; }
     public string Message { get; set; }
@@ -189,7 +189,7 @@ public enum SystemHealth
 /// <summary>
 /// Complete health report for the system.
 /// </summary>
-public class SystemHealthReport
+public sealed class SystemHealthReport
 {
     public DateTime CheckedAt { get; set; }
     public SystemHealth OverallStatus { get; set; }
@@ -202,7 +202,7 @@ public class SystemHealthReport
 /// <summary>
 /// Quick health status without detailed information.
 /// </summary>
-public class QuickHealthStatus
+public sealed class QuickHealthStatus
 {
     public bool IsRunning { get; set; }
     public string HealthStatus { get; set; }
@@ -211,7 +211,7 @@ public class QuickHealthStatus
     public bool ErrorRateAcceptable { get; set; }
 }
 
-internal class HealthCheckComponent
+internal sealed class HealthCheckComponent
 {
     public string Name { get; set; }
     public Func<Task<ComponentHealth>> HealthCheck { get; set; }
@@ -222,7 +222,7 @@ internal class HealthCheckComponent
 /// <summary>
 /// Resource monitoring service.
 /// </summary>
-public class ResourceMonitor
+public sealed class ResourceMonitor
 {
     private readonly ILogger<ResourceMonitor> _logger;
 
@@ -275,7 +275,7 @@ public class ResourceMonitor
 /// <summary>
 /// Current resource usage metrics.
 /// </summary>
-public class ResourceUsage
+public sealed class ResourceUsage
 {
     public double MemoryMB { get; set; }
     public int ThreadCount { get; set; }

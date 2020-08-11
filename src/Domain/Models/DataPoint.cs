@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Represents a single data point in the pipeline stream.
 /// Core entity for processing with timestamp, value, and metadata.
 /// </summary>
-public class DataPoint
+public sealed class DataPoint
 {
     public long Id { get; set; }
     public long Timestamp { get; set; }

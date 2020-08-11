@@ -13,7 +13,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Multi-source processing example demonstrating ingestion from multiple data sources simultaneously.
 /// </summary>
-public class MultiSourceProcessingExample
+public sealed class MultiSourceProcessingExample
 {
     public static async Task RunAsync()
     {

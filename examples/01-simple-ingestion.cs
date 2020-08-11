@@ -14,7 +14,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Simple ingestion example demonstrating basic data point ingestion and status reporting.
 /// </summary>
-public class SimpleIngestionsExample
+public sealed class SimpleIngestionsExample
 {
     public static async Task RunAsync()
     {

@@ -14,7 +14,7 @@ using System.Collections.Generic;
 /// Middleware for rate limiting and throttling operations.
 /// Supports token bucket algorithm for flexible rate control.
 /// </summary>
-public class RateLimitingMiddleware
+public sealed class RateLimitingMiddleware
 {
     private readonly ConcurrentDictionary<string, RateLimitBucket> _buckets = new();
     private readonly int _tokensPerSecond;
@@ -85,7 +85,7 @@ public class RateLimitingMiddleware
 /// <summary>
 /// Represents the rate limit status for tracking and debugging.
 /// </summary>
-public class RateLimitStatus
+public sealed class RateLimitStatus
 {
     public int AvailableTokens { get; set; }
     public int Capacity { get; set; }
@@ -96,7 +96,7 @@ public class RateLimitStatus
 /// <summary>
 /// Token bucket implementation for rate limiting.
 /// </summary>
-internal class RateLimitBucket
+internal sealed class RateLimitBucket
 {
     private long _availableTokens;
     private readonly int _capacity;
@@ -163,7 +163,7 @@ internal class RateLimitBucket
 /// <summary>
 /// Middleware for per-stage rate limiting within the pipeline.
 /// </summary>
-public class StageRateLimitingMiddleware
+public sealed class StageRateLimitingMiddleware
 {
     private readonly Dictionary<string, RateLimitingMiddleware> _stageLimits = new();
 

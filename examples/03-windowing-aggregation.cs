@@ -13,7 +13,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Windowing and aggregation example demonstrating time-based window creation and statistical calculations.
 /// </summary>
-public class WindowingAggregationExample
+public sealed class WindowingAggregationExample
 {
     public static async Task RunAsync()
     {

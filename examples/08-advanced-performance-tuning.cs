@@ -16,7 +16,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// Advanced performance tuning example demonstrating configuration profiles
 /// for different throughput and latency requirements.
 /// </summary>
-public class AdvancedPerformanceTuningExample
+public sealed class AdvancedPerformanceTuningExample
 {
     private record PerformanceProfile(string Name, Action<PipelineConfig> Configure);
 

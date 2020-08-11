@@ -17,7 +17,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// External API integration example demonstrating how to connect
 /// the pipeline to external data sources and export processed data.
 /// </summary>
-public class ExternalApiIntegrationExample
+public sealed class ExternalApiIntegrationExample
 {
     private record ExternalDataSourceConfig(
         string Name,
@@ -243,7 +243,7 @@ public class ExternalApiIntegrationExample
 /// <summary>
 /// Simulated implementation showing how to create custom external source connector.
 /// </summary>
-public class CustomExternalSourceConnector
+public sealed class CustomExternalSourceConnector
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;

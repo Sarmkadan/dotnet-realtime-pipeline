@@ -218,7 +218,7 @@ public static class PathHelper
 /// <summary>
 /// File system monitoring and change detection.
 /// </summary>
-public class FileSystemMonitor : IDisposable
+public sealed class FileSystemMonitor : IDisposable
 {
     private readonly FileSystemWatcher _watcher;
 

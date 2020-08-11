@@ -27,7 +27,7 @@ public interface IExternalDataSource
 /// <summary>
 /// HTTP-based external data source connector.
 /// </summary>
-public class HttpDataSource : IExternalDataSource
+public sealed class HttpDataSource : IExternalDataSource
 {
     private readonly string _baseUrl;
     private readonly HttpClient _httpClient;
@@ -92,7 +92,7 @@ public class HttpDataSource : IExternalDataSource
 /// <summary>
 /// Manager for multiple external data sources with fallback support.
 /// </summary>
-public class DataSourceManager
+public sealed class DataSourceManager
 {
     private readonly List<DataSourceConnection> _sources = new();
     private readonly ILogger<DataSourceManager> _logger;
@@ -173,7 +173,7 @@ public class DataSourceManager
 /// <summary>
 /// Cache layer for external data sources to reduce network calls.
 /// </summary>
-public class CachedDataSource : IExternalDataSource
+public sealed class CachedDataSource : IExternalDataSource
 {
     private readonly IExternalDataSource _innerSource;
     private readonly Caching.CacheService<string, List<DataPoint>> _cache;

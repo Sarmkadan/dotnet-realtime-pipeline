@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class WindowingServiceTests
+public sealed class WindowingServiceTests
 {
     private readonly WindowingService _service;
     private readonly PipelineConfig _config;

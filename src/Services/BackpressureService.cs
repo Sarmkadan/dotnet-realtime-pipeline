@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// Service for managing backpressure and flow control in the pipeline.
 /// Prevents buffer overflow and enforces graceful degradation under load.
 /// </summary>
-public class BackpressureService
+public sealed class BackpressureService
 {
     private readonly Dictionary<string, BackpressureContext> _contexts = new();
     private readonly object _lockObject = new();
@@ -274,7 +274,7 @@ public class BackpressureService
 /// <summary>
 /// Response from applying backpressure.
 /// </summary>
-public class BackpressureResponse
+public sealed class BackpressureResponse
 {
     public bool Applied { get; set; }
     public string Reason { get; set; } = "";
@@ -285,7 +285,7 @@ public class BackpressureResponse
 /// <summary>
 /// System-wide backpressure status.
 /// </summary>
-public class BackpressureSystemStatus
+public sealed class BackpressureSystemStatus
 {
     public int TotalStages { get; set; }
     public int BackpressuredStages { get; set; }
