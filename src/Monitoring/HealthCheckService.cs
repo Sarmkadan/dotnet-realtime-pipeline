@@ -128,28 +128,36 @@ public sealed class HealthCheckService
     /// </summary>
     public ComponentStatus GetComponentStatus(string componentName)
     {
-        var component = _components.Find(c => c.Name == componentName);
+        if (string.IsNullOrWhiteSpace(componentName))
+            return ComponentStatus.Unknown;
+
+        var component = _components.Find(c =>
+            string.Equals(c.Name, componentName, StringComparison.OrdinalIgnoreCase));
         return component?.Status ?? ComponentStatus.Unknown;
     }
 
     /// <summary>
     /// Determines overall system health based on component statuses.
+    /// Uses majority rule: if more than half of components are unhealthy,
+    /// the system is unhealthy; if any are unhealthy, the system is degraded.
     /// </summary>
     private SystemHealth DetermineOverallStatus(Dictionary<string, ComponentHealth> components)
     {
-        if (components.Count == 0)
+        if (components is null || components.Count == 0)
             return SystemHealth.Unknown;
 
-        var unhealthyCount = components.Values.Count(c => !c.IsHealthy);
-        var totalCount = components.Count;
+        int unhealthyCount = components.Values.Count(c => !c.IsHealthy);
+        int totalCount = components.Count;
 
         if (unhealthyCount == 0)
             return SystemHealth.Healthy;
 
-        if (unhealthyCount < totalCount / 2)
-            return SystemHealth.Degraded;
+        // Use > instead of >= for single-component edge case:
+        // 1 unhealthy out of 2 total should be Degraded, not Unhealthy
+        if (unhealthyCount > totalCount / 2)
+            return SystemHealth.Unhealthy;
 
-        return SystemHealth.Unhealthy;
+        return SystemHealth.Degraded;
     }
 }
 
