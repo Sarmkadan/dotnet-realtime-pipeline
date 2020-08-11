@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -79,7 +80,7 @@ public class PipelineOrchestrator
     /// </summary>
     public async Task<bool> IngestDataPointAsync(DataPoint dataPoint)
     {
-        if (dataPoint == null) throw new ArgumentNullException(nameof(dataPoint));
+        if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
         if (!_isRunning) throw new InvalidOperationException("Pipeline is not running");
 
         // Check backpressure on ingestion stage

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -19,7 +20,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculateMean(List<double> values)
     {
-        if (values == null || values.Count == 0) return 0d;
+        if (values is null || values.Count == 0) return 0d;
         return values.Sum() / values.Count;
     }
 
@@ -28,7 +29,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculateMedian(List<double> values)
     {
-        if (values == null || values.Count == 0) return 0d;
+        if (values is null || values.Count == 0) return 0d;
 
         var sorted = values.OrderBy(x => x).ToList();
         int count = sorted.Count;
@@ -44,7 +45,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculateStandardDeviation(List<double> values)
     {
-        if (values == null || values.Count <= 1) return 0d;
+        if (values is null || values.Count <= 1) return 0d;
 
         double mean = CalculateMean(values);
         double sumOfSquares = values.Sum(x => Math.Pow(x - mean, 2));
@@ -56,7 +57,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculatePercentile(List<double> values, int percentile)
     {
-        if (values == null || values.Count == 0) return 0d;
+        if (values is null || values.Count == 0) return 0d;
         if (percentile < 0 || percentile > 100)
             throw new ArgumentException("Percentile must be between 0 and 100", nameof(percentile));
 
@@ -72,7 +73,7 @@ public static class StatisticsHelper
     /// </summary>
     public static List<double> CalculateMovingAverage(List<double> values, int windowSize)
     {
-        if (values == null || values.Count < windowSize)
+        if (values is null || values.Count < windowSize)
             return new();
 
         var result = new List<double>();
@@ -100,7 +101,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculateCoefficientOfVariation(List<double> values)
     {
-        if (values == null || values.Count == 0) return 0d;
+        if (values is null || values.Count == 0) return 0d;
 
         double mean = CalculateMean(values);
         if (mean == 0) return 0d;
@@ -114,7 +115,7 @@ public static class StatisticsHelper
     /// </summary>
     public static List<double> FindOutliers(List<double> values)
     {
-        if (values == null || values.Count < 4) return new();
+        if (values is null || values.Count < 4) return new();
 
         double q1 = CalculatePercentile(values, 25);
         double q3 = CalculatePercentile(values, 75);
@@ -130,7 +131,7 @@ public static class StatisticsHelper
     /// </summary>
     public static double CalculateCorrelation(List<double> x, List<double> y)
     {
-        if (x == null || y == null || x.Count != y.Count || x.Count < 2)
+        if (x is null || y is null || x.Count != y.Count || x.Count < 2)
             return 0d;
 
         double meanX = CalculateMean(x);

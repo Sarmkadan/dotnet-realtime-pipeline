@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -255,7 +256,7 @@ public class BatchExportProcessor
                 var take = Math.Min(batchSize, totalRecords - offset);
                 var batch = await dataFetcher(offset, take);
 
-                if (batch == null || batch.Count == 0)
+                if (batch is null || batch.Count == 0)
                     break;
 
                 var filename = $"batch_{offset / batchSize:D4}.{GetFileExtension(format)}";

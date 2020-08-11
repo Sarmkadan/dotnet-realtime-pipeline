@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -94,7 +95,7 @@ public class PipelineStateManager
         lock (_lockObject)
         {
             var lastTransition = _stateHistory.LastOrDefault();
-            if (lastTransition == null)
+            if (lastTransition is null)
                 return TimeSpan.Zero;
 
             return DateTime.UtcNow - lastTransition.Timestamp;
