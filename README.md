@@ -388,6 +388,12 @@ docker-compose logs -f app
 
 ## Usage Examples
 
+For quick snippets, see the examples below. For comprehensive, runnable examples, please check the [examples/](examples/) directory:
+
+- [BasicUsage.cs](examples/BasicUsage.cs): Minimal pipeline setup and data ingestion.
+- [AdvancedUsage.cs](examples/AdvancedUsage.cs): Custom pipeline configuration and error handling.
+- [IntegrationExample.cs](examples/IntegrationExample.cs): Dependency injection setup for ASP.NET Core applications.
+
 ### Example 1: Simple Data Ingestion
 
 ```csharp
