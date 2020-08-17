@@ -1025,6 +1025,29 @@ Benchmarks measured on an Intel Core i7-12700 (single-core baseline) with .NET 1
 | Memory footprint (default config, idle) | **~120 MB** |
 | Memory footprint (high-throughput, 100 K buffer) | **~350 MB** |
 
+### Running Performance Benchmarks
+
+The project includes comprehensive performance benchmarks using [BenchmarkDotNet](https://benchmarkdotnet.org/). These benchmarks measure critical pipeline operations including ingestion throughput, processing performance, windowing operations, monitoring overhead, and memory allocations.
+
+
+```bash
+# Navigate to benchmarks directory
+cd dotnet-realtime-pipeline.Benchmarks
+
+# Run all benchmarks
+./bin/Release/net10.0/dotnet-realtime-pipeline.Benchmarks
+
+# Run specific benchmark category
+./bin/Release/net10.0/dotnet-realtime-pipeline.Benchmarks --filter "*Throughput*"
+
+# Export results to markdown
+./bin/Release/net10.0/dotnet-realtime-pipeline.Benchmarks --exporters markdown
+```
+
+See the [benchmarks README](dotnet-realtime-pipeline.Benchmarks/README.md) for detailed instructions and benchmark descriptions.
+
+> See [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) for full profiling methodology and hardware profiles.
+
 ### Tuning for Maximum Throughput
 
 ```csharp
