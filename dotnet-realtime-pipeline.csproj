@@ -28,6 +28,9 @@
 
   <ItemGroup>
     <Compile Remove="tests/**" />
+    <Compile Remove="dotnet-realtime-pipeline.Benchmarks/**" />
+    <Content Remove="dotnet-realtime-pipeline.Benchmarks/**" />
+    <None Remove="dotnet-realtime-pipeline.Benchmarks/**" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,6 +25,7 @@ public sealed class PipelineOrchestrator
     private readonly WindowingService _windowingService;
     private readonly MetricsService _metricsService;
     private readonly BackpressureService _backpressureService;
+    private readonly QueryService _queryService;
     private readonly PipelineConfig _config;
 
     private bool _isRunning;
@@ -37,12 +38,14 @@ public sealed class PipelineOrchestrator
         WindowingService windowingService,
         MetricsService metricsService,
         BackpressureService backpressureService,
+        QueryService queryService,
         PipelineConfig config)
     {
         _processingService = processingService ?? throw new ArgumentNullException(nameof(processingService));
         _windowingService = windowingService ?? throw new ArgumentNullException(nameof(windowingService));
         _metricsService = metricsService ?? throw new ArgumentNullException(nameof(metricsService));
         _backpressureService = backpressureService ?? throw new ArgumentNullException(nameof(backpressureService));
+        _queryService = queryService ?? throw new ArgumentNullException(nameof(queryService));
         _config = config ?? throw new ArgumentNullException(nameof(config));
     }
 
@@ -115,6 +118,34 @@ public sealed class PipelineOrchestrator
 
         return true;
     }
+
+    /// <summary>
+    /// Processes a batch of data points through ingestion, tracking success and failure counts.
+    /// </summary>
+    /// <param name="dataPoints">The data points to ingest as a batch.</param>
+    /// <returns>A <see cref="BatchProcessingResult"/> summarizing the outcome.</returns>
+    public async Task<BatchProcessingResult> ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)
+    {
+        if (dataPoints is null) throw new ArgumentNullException(nameof(dataPoints));
+
+        var result = new BatchProcessingResult();
+
+        foreach (var dataPoint in dataPoints)
+        {
+            if (await IngestDataPointAsync(dataPoint))
+                result.SuccessfulCount++;
+            else
+                result.FailedCount++;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the query service used for retrieving and analyzing processed data.
+    /// </summary>
+    /// <returns>The <see cref="QueryService"/> instance associated with this pipeline.</returns>
+    public QueryService GetQueryService() => _queryService;
 
     /// <summary>
     /// Gets the current pipeline status.
@@ -274,6 +305,15 @@ public sealed class PipelineOrchestrator
             }
         }
     }
+}
+
+/// <summary>
+/// Result of processing a batch of data points through the pipeline.
+/// </summary>
+public sealed class BatchProcessingResult
+{
+    public int SuccessfulCount { get; set; }
+    public int FailedCount { get; set; }
 }
 
 /// <summary>

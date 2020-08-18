@@ -168,8 +168,8 @@ public sealed class StatusHandler : ApiEndpointHandler
 
             var response = new PipelineStatusInfo
             {
-                PipelineName = status.PipelineName,
-                Version = status.Version,
+                PipelineName = status.ConfigurationName,
+                Version = status.ConfigurationVersion,
                 IsRunning = status.IsRunning,
                 TotalProcessed = status.TotalDataPointsProcessed,
                 TotalFailed = status.TotalDataPointsFailed,

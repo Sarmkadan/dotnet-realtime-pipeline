@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<WindowingService>();
         services.AddSingleton<MetricsService>();
         services.AddSingleton<BackpressureService>();
+        services.AddSingleton<QueryService>();
         services.AddSingleton<PipelineOrchestrator>();
 
         // Register visualization

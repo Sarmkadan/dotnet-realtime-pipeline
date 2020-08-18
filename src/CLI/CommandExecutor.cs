@@ -134,8 +134,8 @@ public sealed class CommandExecutor
 
             var result = new Dictionary<string, object>
             {
-                ["pipeline_name"] = status.PipelineName,
-                ["version"] = status.Version,
+                ["pipeline_name"] = status.ConfigurationName,
+                ["version"] = status.ConfigurationVersion,
                 ["is_running"] = status.IsRunning,
                 ["total_processed"] = status.TotalDataPointsProcessed,
                 ["total_failed"] = status.TotalDataPointsFailed,

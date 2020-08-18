@@ -38,7 +38,7 @@ public sealed class CommandLineParser
     {
         if (args is null || args.Length == 0)
         {
-            return new ParsedCommand { Verb = "help", IsValid = true };
+            return new HelpCommand { Verb = "help", IsValid = true };
         }
 
         var verb = args[0].TrimStart('-');
@@ -46,7 +46,7 @@ public sealed class CommandLineParser
 
         if (!_commandRegistry.TryGetValue(verb, out var factory))
         {
-            return new ParsedCommand
+            return new UnknownCommand
             {
                 Verb = verb,
                 IsValid = false,
@@ -157,6 +157,18 @@ public abstract class ParsedCommand
     }
 
     public abstract Task<int> ExecuteAsync();
+}
+
+/// <summary>
+/// Represents a command that failed to resolve to a known verb.
+/// </summary>
+public sealed class UnknownCommand : ParsedCommand
+{
+    public override Task<int> ExecuteAsync()
+    {
+        Console.WriteLine(string.IsNullOrEmpty(ErrorMessage) ? $"Unknown command: {Verb}" : ErrorMessage);
+        return Task.FromResult(1);
+    }
 }
 
 public sealed class HelpCommand : ParsedCommand

@@ -251,7 +251,7 @@ public sealed class DictionaryConversionHelper
             ["source"] = dataPoint.Source,
             ["quality"] = dataPoint.Quality,
             ["tags"] = dataPoint.Tags,
-            ["metadata"] = dataPoint.GetMetadata()
+            ["metadata"] = dataPoint.Metadata
         };
     }
 
