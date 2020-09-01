@@ -13,19 +13,28 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 
 /// <summary>
-/// Extension methods for configuring pipeline services via dependency injection.
+/// Provides extension methods for configuring pipeline services via dependency injection.
 /// </summary>
+/// <remarks>
+/// This class is static and sealed to prevent inheritance.
+/// </remarks>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers all pipeline services and repositories.
+    /// Registers all pipeline services and repositories with the specified configuration.
     /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="pipelineConfig">The pipeline configuration to use.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="pipelineConfig"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddPipelineServices(
         this IServiceCollection services,
         PipelineConfig pipelineConfig)
     {
-        if (services is null) throw new ArgumentNullException(nameof(services));
-        if (pipelineConfig is null) throw new ArgumentNullException(nameof(pipelineConfig));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(pipelineConfig);
 
         // Register repositories
         services.AddSingleton<IDataPointRepository, InMemoryDataPointRepository>();
@@ -57,9 +66,15 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers pipeline services with a default configuration.
     /// </summary>
-    public static IServiceCollection AddPipelineServices(
-        this IServiceCollection services)
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> is <see langword="null"/>.
+    /// </exception>
+    public static IServiceCollection AddPipelineServices(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         var defaultConfig = CreateDefaultConfiguration();
         return services.AddPipelineServices(defaultConfig);
     }
@@ -67,11 +82,18 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers pipeline services with configuration builder.
     /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configureOptions">The configuration action to apply to the default configuration.</param>
+    /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="configureOptions"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddPipelineServices(
         this IServiceCollection services,
         Action<PipelineConfig> configureOptions)
     {
-        if (configureOptions is null) throw new ArgumentNullException(nameof(configureOptions));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configureOptions);
 
         var config = CreateDefaultConfiguration();
         configureOptions(config);
@@ -82,6 +104,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Creates a default pipeline configuration.
     /// </summary>
+    /// <returns>A new <see cref="PipelineConfig"/> instance with default settings.</returns>
     private static PipelineConfig CreateDefaultConfiguration()
     {
         var config = new PipelineConfig(
