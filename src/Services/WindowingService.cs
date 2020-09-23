@@ -104,50 +104,28 @@ public sealed class WindowingService
     /// </summary>
     private void ProcessDataPointForWindows(DataPoint dataPoint)
     {
-        if (_config.WindowType.ToUpper() == "TUMBLING")
-        {
-            long windowStartMs = (dataPoint.Timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
-            long windowEndMs = windowStartMs + _config.WindowSizeMs;
+        // Unknown window types fall back to tumbling semantics.
+        IEnumerable<long> windowStarts = string.Equals(_config.WindowType, "SLIDING", StringComparison.OrdinalIgnoreCase)
+            ? GetApplicableSlidingWindowStarts(dataPoint.Timestamp)
+            : [GetTumblingWindowStart(dataPoint.Timestamp)];
 
+        foreach (var windowStartMs in windowStarts)
+        {
             if (!_activeWindows.TryGetValue(windowStartMs, out var window))
             {
                 window = CreateWindow(windowStartMs);
                 _activeWindows[windowStartMs] = window;
             }
-            window.TryAddDataPoint(dataPoint);
-        }
-        else if (_config.WindowType.ToUpper() == "SLIDING")
-        {
-            var applicableWindowStarts = GetApplicableSlidingWindowStarts(dataPoint.Timestamp);
 
-            foreach (var windowStartMs in applicableWindowStarts)
-            {
-                long windowEndMs = windowStartMs + _config.WindowSizeMs;
-
-                // Create window if it doesn't exist, using WindowStartMs as key for sliding windows
-                if (!_activeWindows.TryGetValue(windowStartMs, out var window))
-                {
-                    window = CreateWindow(windowStartMs);
-                    _activeWindows[windowStartMs] = window;
-                }
-                window.TryAddDataPoint(dataPoint);
-            }
-        }
-        else
-        {
-            // Handle other window types or default behavior
-            // For now, re-use tumbling window logic for unknown types as a fallback
-            long windowStartMs = (dataPoint.Timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
-            long windowEndMs = windowStartMs + _config.WindowSizeMs;
-
-            if (!_activeWindows.TryGetValue(windowStartMs, out var window))
-            {
-                window = CreateWindow(windowStartMs);
-                _activeWindows[windowStartMs] = window;
-            }
             window.TryAddDataPoint(dataPoint);
         }
     }
+
+    /// <summary>
+    /// Returns the tumbling window start that contains the supplied timestamp.
+    /// </summary>
+    private long GetTumblingWindowStart(long timestamp) =>
+        (timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
 
     /// <summary>
     /// Calculates all relevant window start times for a given timestamp in a sliding window context.
@@ -189,7 +167,7 @@ public sealed class WindowingService
 
         string aggregationType = _config.WindowType;
 
-        return aggregationType.ToUpper() switch
+        return aggregationType.ToUpperInvariant() switch
         {
             "TUMBLING" => AggregateTumblingWindow(window),
             "SLIDING" => AggregateSlidingWindow(window),

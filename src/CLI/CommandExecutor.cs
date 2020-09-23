@@ -12,7 +12,12 @@ using DotNetRealtimePipeline.Visualization;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.Xml;
 
 /// <summary>
 /// Executes parsed commands with context-aware handling.
@@ -251,44 +256,249 @@ public interface IDataExporter
 
 public sealed class JsonDataLoader : IDataLoader
 {
+    /// <summary>
+    /// Loads data points from a UTF-8 JSON array file.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or blank.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
-        // Placeholder: would use System.Text.Json in production
-        await Task.Delay(10);
-        return new List<DataPoint>();
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Input file not found", filePath);
+
+        await using var stream = File.OpenRead(filePath);
+        var points = await JsonSerializer.DeserializeAsync<List<DataPoint>>(stream, DataFormats.JsonOptions);
+        return points ?? [];
     }
 }
 
 public sealed class JsonDataExporter : IDataExporter
 {
+    /// <summary>
+    /// Writes the supplied data points to <paramref name="outputPath"/> as an indented JSON array.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
-        // Placeholder: would serialize to JSON in production
-        await Task.Delay(10);
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        DataFormats.EnsureDirectory(outputPath);
+
+        await using var stream = File.Create(outputPath);
+        await JsonSerializer.SerializeAsync(stream, data, DataFormats.JsonOptions);
     }
 }
 
 public sealed class CsvDataLoader : IDataLoader
 {
+    /// <summary>
+    /// Loads data points from a CSV file with the header
+    /// <c>Id,Timestamp,Value,Source,Quality,Tags</c>.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or blank.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
-        await Task.Delay(10);
-        return new List<DataPoint>();
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Input file not found", filePath);
+
+        var points = new List<DataPoint>();
+        var isHeader = true;
+
+        using var reader = new StreamReader(filePath, Encoding.UTF8);
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (isHeader)
+            {
+                isHeader = false;
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var fields = DataFormats.SplitCsvLine(line);
+            if (fields.Count < 4)
+                continue;
+
+            if (!long.TryParse(fields[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ||
+                !long.TryParse(fields[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestamp) ||
+                !double.TryParse(fields[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+            {
+                continue;
+            }
+
+            var point = new DataPoint(id, timestamp, value, fields[3]);
+
+            if (fields.Count > 4 &&
+                int.TryParse(fields[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out var quality))
+            {
+                point.Quality = quality;
+            }
+
+            if (fields.Count > 5 && !string.IsNullOrEmpty(fields[5]))
+                point.Tags = fields[5];
+
+            points.Add(point);
+        }
+
+        return points;
     }
 }
 
 public sealed class CsvDataExporter : IDataExporter
 {
+    /// <summary>
+    /// Writes the supplied data points to <paramref name="outputPath"/> as CSV.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
-        await Task.Delay(10);
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        DataFormats.EnsureDirectory(outputPath);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Id,Timestamp,Value,Source,Quality,Tags");
+
+        foreach (var point in data)
+        {
+            sb.Append(point.Id.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(point.Timestamp.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .Append(point.Value.ToString("R", CultureInfo.InvariantCulture)).Append(',')
+              .Append(DataFormats.EscapeCsv(point.Source)).Append(',')
+              .Append(point.Quality.ToString(CultureInfo.InvariantCulture)).Append(',')
+              .AppendLine(DataFormats.EscapeCsv(point.Tags));
+        }
+
+        await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8);
     }
 }
 
 public sealed class XmlDataExporter : IDataExporter
 {
+    /// <summary>
+    /// Writes the supplied data points to <paramref name="outputPath"/> as an XML document.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
-        await Task.Delay(10);
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        DataFormats.EnsureDirectory(outputPath);
+
+        var settings = new XmlWriterSettings { Indent = true, Async = true, Encoding = new UTF8Encoding(false) };
+
+        await using var stream = File.Create(outputPath);
+        await using var writer = XmlWriter.Create(stream, settings);
+
+        await writer.WriteStartDocumentAsync();
+        await writer.WriteStartElementAsync(null, "dataPoints", null);
+
+        foreach (var point in data)
+        {
+            await writer.WriteStartElementAsync(null, "dataPoint", null);
+            await writer.WriteElementStringAsync(null, "id", null, point.Id.ToString(CultureInfo.InvariantCulture));
+            await writer.WriteElementStringAsync(null, "timestamp", null, point.Timestamp.ToString(CultureInfo.InvariantCulture));
+            await writer.WriteElementStringAsync(null, "value", null, point.Value.ToString("R", CultureInfo.InvariantCulture));
+            await writer.WriteElementStringAsync(null, "source", null, point.Source);
+            await writer.WriteElementStringAsync(null, "quality", null, point.Quality.ToString(CultureInfo.InvariantCulture));
+            await writer.WriteElementStringAsync(null, "tags", null, point.Tags ?? string.Empty);
+            await writer.WriteEndElementAsync();
+        }
+
+        await writer.WriteEndElementAsync();
+        await writer.WriteEndDocumentAsync();
+        await writer.FlushAsync();
+    }
+}
+
+/// <summary>
+/// Shared serialization primitives used by the CLI loaders and exporters.
+/// </summary>
+internal static class DataFormats
+{
+    internal static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
+
+    /// <summary>Creates the parent directory of <paramref name="path"/> when it does not exist.</summary>
+    internal static void EnsureDirectory(string path)
+    {
+        var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+    }
+
+    /// <summary>Quotes a CSV field when it contains a separator, quote or line break.</summary>
+    internal static string EscapeCsv(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        return value.AsSpan().IndexOfAny(",\"\n\r") >= 0
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
+    }
+
+    /// <summary>Splits a single CSV line honouring double-quoted fields and escaped quotes.</summary>
+    internal static List<string> SplitCsvLine(string line)
+    {
+        var fields = new List<string>();
+        var current = new StringBuilder();
+        var inQuotes = false;
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+
+            if (inQuotes)
+            {
+                if (c == '"')
+                {
+                    if (i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else
+                {
+                    current.Append(c);
+                }
+            }
+            else if (c == '"')
+            {
+                inQuotes = true;
+            }
+            else if (c == ',')
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+            else if (c != '\r')
+            {
+                current.Append(c);
+            }
+        }
+
+        fields.Add(current.ToString());
+        return fields;
     }
 }

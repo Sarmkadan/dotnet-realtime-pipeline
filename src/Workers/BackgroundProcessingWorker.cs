@@ -128,11 +128,21 @@ public sealed class BackgroundProcessingWorker : IDisposable
     {
         if (_isRunning)
         {
-            StopAsync().Wait();
+            _cancellationTokenSource.Cancel();
+
+            try
+            {
+                _workerTask?.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown.
+            }
+
+            _isRunning = false;
         }
 
-        _cancellationTokenSource?.Dispose();
-        _workerTask?.Dispose();
+        _cancellationTokenSource.Dispose();
     }
 }
 
@@ -218,8 +228,17 @@ public sealed class MetricsAggregationWorker : IDisposable
             {
                 try
                 {
-                    _logger.LogDebug("Aggregating metrics");
-                    // Metrics aggregation logic would go here
+                    var report = await _metricsService.GenerateHealthReportAsync();
+
+                    _logger.LogInformation(
+                        "Metrics aggregated - status: {Status}, processed: {Processed}, failed: {Failed}, throughput: {Throughput:F2}/s, avg: {Avg:F2}ms, p95: {P95:F2}ms",
+                        report.Status,
+                        report.TotalProcessed,
+                        report.TotalFailed,
+                        report.ThroughputItemsPerSecond,
+                        report.AverageProcessingTimeMs,
+                        report.P95ProcessingTimeMs);
+
                     await Task.Delay(_intervalMs, cancellationToken);
                 }
                 catch (OperationCanceledException)
@@ -242,11 +261,21 @@ public sealed class MetricsAggregationWorker : IDisposable
     {
         if (_isRunning)
         {
-            StopAsync().Wait();
+            _cancellationTokenSource.Cancel();
+
+            try
+            {
+                _workerTask?.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown.
+            }
+
+            _isRunning = false;
         }
 
-        _cancellationTokenSource?.Dispose();
-        _workerTask?.Dispose();
+        _cancellationTokenSource.Dispose();
     }
 }
 
@@ -358,11 +387,21 @@ public sealed class HealthCheckWorker : IDisposable
     {
         if (_isRunning)
         {
-            StopAsync().Wait();
+            _cancellationTokenSource.Cancel();
+
+            try
+            {
+                _workerTask?.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown.
+            }
+
+            _isRunning = false;
         }
 
-        _cancellationTokenSource?.Dispose();
-        _workerTask?.Dispose();
+        _cancellationTokenSource.Dispose();
     }
 }
 
