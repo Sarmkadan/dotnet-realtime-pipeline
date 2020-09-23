@@ -10,6 +10,7 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -72,7 +73,7 @@ public sealed class SerializationHelper
             sb.AppendLine("Id,Timestamp,Value,Source,Quality,Tags");
         }
 
-        sb.AppendLine($"{dataPoint.Id},{dataPoint.Timestamp},{dataPoint.Value:F4},{EscapeCsv(dataPoint.Source)},{dataPoint.Quality},{EscapeCsv(dataPoint.Tags)}");
+        sb.AppendLine($"{dataPoint.Id},{dataPoint.Timestamp},{dataPoint.Value.ToString("F4", CultureInfo.InvariantCulture)},{EscapeCsv(dataPoint.Source)},{dataPoint.Quality},{EscapeCsv(dataPoint.Tags)}");
 
         return sb.ToString();
     }
@@ -87,7 +88,7 @@ public sealed class SerializationHelper
 
         foreach (var point in dataPoints)
         {
-            sb.AppendLine($"{point.Id},{point.Timestamp},{point.Value:F4},{EscapeCsv(point.Source)},{point.Quality},{EscapeCsv(point.Tags)}");
+            sb.AppendLine($"{point.Id},{point.Timestamp},{point.Value.ToString("F4", CultureInfo.InvariantCulture)},{EscapeCsv(point.Source)},{point.Quality},{EscapeCsv(point.Tags)}");
         }
 
         return sb.ToString();
@@ -178,13 +179,13 @@ public sealed class BatchSerializationHelper
                 try
                 {
                     var dataPoint = new DataPoint(
-                        id: int.Parse(fields[0]),
-                        timestamp: long.Parse(fields[1]),
-                        value: double.Parse(fields[2]),
+                        id: long.Parse(fields[0], CultureInfo.InvariantCulture),
+                        timestamp: long.Parse(fields[1], CultureInfo.InvariantCulture),
+                        value: double.Parse(fields[2], NumberStyles.Float, CultureInfo.InvariantCulture),
                         source: fields[3]
                     )
                     {
-                        Quality = int.Parse(fields[4]),
+                        Quality = int.Parse(fields[4], CultureInfo.InvariantCulture),
                         Tags = fields[5]
                     };
 
@@ -212,7 +213,7 @@ public sealed class DateTimeSerializationHelper
     public static string UnixToIso8601(long unixTimeMs)
     {
         var dateTime = UnixTimeStampToDateTime(unixTimeMs);
-        return dateTime.ToString("O");
+        return dateTime.ToString("O", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -220,7 +221,7 @@ public sealed class DateTimeSerializationHelper
     /// </summary>
     public static long Iso8601ToUnix(string iso8601)
     {
-        var dateTime = DateTime.Parse(iso8601, null, System.Globalization.DateTimeStyles.RoundtripKind);
+        var dateTime = DateTime.Parse(iso8601, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
         return (long)(dateTime - DateTime.UnixEpoch).TotalMilliseconds;
     }
 

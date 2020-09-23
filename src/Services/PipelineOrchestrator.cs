@@ -248,11 +248,23 @@ public sealed class PipelineOrchestrator
                 var dataPoints = new List<DataPoint>();
                 foreach (var result in results)
                 {
-                    if (result.Success && result.GetOutput("DataPointId") is long id)
+                    if (!result.Success)
+                        continue;
+
+                    if (result.GetOutput("DataPointId") is not long id ||
+                        result.GetOutput("Timestamp") is not long timestamp ||
+                        result.GetOutput("Source") is not string source)
                     {
-                        // In a real implementation, retrieve the data point
-                        dataPoints.Add(new DataPoint(id, (long)result.GetOutput("Timestamp")!, (double)0, (string)result.GetOutput("Source")!));
+                        continue;
                     }
+
+                    var value = result.GetOutput("Value") is double v ? v : 0d;
+                    var restored = new DataPoint(id, timestamp, value, source);
+
+                    if (result.GetOutput("Quality") is int quality)
+                        restored.Quality = quality;
+
+                    dataPoints.Add(restored);
                 }
 
                 if (dataPoints.Count > 0)

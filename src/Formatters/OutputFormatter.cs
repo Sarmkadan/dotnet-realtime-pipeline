@@ -10,6 +10,7 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -77,7 +78,7 @@ public sealed class CsvOutputFormatter : IOutputFormatter
 
         foreach (var point in dataPoints)
         {
-            sb.AppendLine($"{point.Id},{point.Timestamp},{point.Value:F4},{EscapeCsv(point.Source)},{point.Quality},{EscapeCsv(point.Tags)}");
+            sb.AppendLine($"{point.Id},{point.Timestamp},{point.Value.ToString("F4", CultureInfo.InvariantCulture)},{EscapeCsv(point.Source)},{point.Quality},{EscapeCsv(point.Tags)}");
         }
 
         return sb.ToString();
@@ -149,11 +150,11 @@ public sealed class TableOutputFormatter : IOutputFormatter
         // Calculate column widths
         foreach (var point in dataPoints)
         {
-            columnWidths[0] = Math.Max(columnWidths[0], point.Id.ToString().Length);
-            columnWidths[1] = Math.Max(columnWidths[1], point.Timestamp.ToString().Length);
-            columnWidths[2] = Math.Max(columnWidths[2], point.Value.ToString("F4").Length);
+            columnWidths[0] = Math.Max(columnWidths[0], point.Id.ToString(CultureInfo.InvariantCulture).Length);
+            columnWidths[1] = Math.Max(columnWidths[1], point.Timestamp.ToString(CultureInfo.InvariantCulture).Length);
+            columnWidths[2] = Math.Max(columnWidths[2], point.Value.ToString("F4", CultureInfo.InvariantCulture).Length);
             columnWidths[3] = Math.Max(columnWidths[3], point.Source.Length);
-            columnWidths[4] = Math.Max(columnWidths[4], point.Quality.ToString().Length);
+            columnWidths[4] = Math.Max(columnWidths[4], point.Quality.ToString(CultureInfo.InvariantCulture).Length);
         }
 
         // Add padding
@@ -169,7 +170,7 @@ public sealed class TableOutputFormatter : IOutputFormatter
         // Print data rows
         foreach (var point in dataPoints.Take(10))
         {
-            var values = new[] { point.Id.ToString(), point.Timestamp.ToString(), point.Value.ToString("F4"), point.Source, point.Quality.ToString() };
+            var values = new[] { point.Id.ToString(CultureInfo.InvariantCulture), point.Timestamp.ToString(CultureInfo.InvariantCulture), point.Value.ToString("F4", CultureInfo.InvariantCulture), point.Source, point.Quality.ToString(CultureInfo.InvariantCulture) };
             PrintRow(sb, values, columnWidths);
         }
 
@@ -264,7 +265,7 @@ public sealed class HtmlOutputFormatter : IOutputFormatter
 
         foreach (var point in dataPoints.Take(50))
         {
-            sb.AppendLine($"<tr><td>{point.Id}</td><td>{point.Timestamp}</td><td>{point.Value:F4}</td><td>{point.Source}</td><td>{point.Quality}</td></tr>");
+            sb.AppendLine($"<tr><td>{point.Id}</td><td>{point.Timestamp}</td><td>{point.Value.ToString("F4", CultureInfo.InvariantCulture)}</td><td>{point.Source}</td><td>{point.Quality}</td></tr>");
         }
 
         sb.AppendLine("</table>");

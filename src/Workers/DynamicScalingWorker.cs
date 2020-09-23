@@ -93,10 +93,22 @@ public sealed class DynamicScalingWorker : IDisposable
     public void Dispose()
     {
         if (_isRunning)
-            StopAsync().Wait();
+        {
+            _cancellationTokenSource.Cancel();
 
-        _cancellationTokenSource?.Dispose();
-        _workerTask?.Dispose();
+            try
+            {
+                _workerTask?.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown.
+            }
+
+            _isRunning = false;
+        }
+
+        _cancellationTokenSource.Dispose();
     }
 
     private async Task EvaluateAsync(CancellationToken cancellationToken)

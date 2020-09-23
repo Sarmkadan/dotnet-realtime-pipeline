@@ -24,7 +24,7 @@ public sealed class DataProcessingService
 {
     private readonly IDataPointRepository _repository;
     private readonly PipelineConfig _config;
-    private int _nextResultId = 1;
+    private int _nextResultId;
 
     public DataProcessingService(IDataPointRepository repository, PipelineConfig config)
     {
@@ -43,7 +43,7 @@ public sealed class DataProcessingService
 
         var stopwatch = Stopwatch.StartNew();
         var result = new ProcessingResult(
-            _nextResultId++,
+            System.Threading.Interlocked.Increment(ref _nextResultId),
             false,
             PipelineConstants.StageName_Ingestion
         );
@@ -69,6 +69,8 @@ public sealed class DataProcessingService
             result.AddOutput("DataPointId", savedPoint.Id);
             result.AddOutput("Source", savedPoint.Source);
             result.AddOutput("Timestamp", savedPoint.Timestamp);
+            result.AddOutput("Value", savedPoint.Value);
+            result.AddOutput("Quality", savedPoint.Quality);
 
             // Stage 4: Mark as successful
             result.MarkSuccess();
