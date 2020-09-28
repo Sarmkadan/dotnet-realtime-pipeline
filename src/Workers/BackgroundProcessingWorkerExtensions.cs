@@ -1,5 +1,7 @@
 namespace DotNetRealtimePipeline.Workers;
 
+using Microsoft.Extensions.Logging;
+
 /// <summary>
 /// Extension methods for BackgroundProcessingWorker.
 /// </summary>
