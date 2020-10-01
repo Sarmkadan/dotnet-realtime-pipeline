@@ -9,6 +9,7 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -16,6 +17,13 @@ using System.Threading.Tasks;
 /// </summary>
 public static class SerializationHelperExtensions
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = false,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     /// <summary>
     /// Serializes a list of ProcessingResult to a file asynchronously.
     /// </summary>
@@ -42,7 +50,7 @@ public static class SerializationHelperExtensions
         ArgumentException.ThrowIfNullOrEmpty(filePath);
 
         var content = await System.IO.File.ReadAllTextAsync(filePath, System.Text.Encoding.UTF8);
-        return System.Text.Json.JsonSerializer.Deserialize<List<ProcessingResult>>(content, SerializationHelper.JsonOptions)
+        return JsonSerializer.Deserialize<List<ProcessingResult>>(content, JsonOptions)
             ?? new List<ProcessingResult>();
     }
 
