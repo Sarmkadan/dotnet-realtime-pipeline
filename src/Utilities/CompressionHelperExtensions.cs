@@ -7,6 +7,8 @@ namespace DotNetRealtimePipeline.Utilities;
 
 using System;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -30,7 +32,7 @@ public static class CompressionHelperExtensions
         {
             using (var outputFile = new FileStream(outputPath, FileMode.Create))
             {
-                using (var gzipStream = new GZipStream(outputFile, CompressionMode.Compress))
+                using (var gzipStream = new GZipStream(outputFile, CompressionLevel.Optimal))
                 {
                     inputFile.CopyTo(gzipStream);
                 }
@@ -70,7 +72,7 @@ public static class CompressionHelperExtensions
 
         using (var outputStream = new MemoryStream())
         {
-            using (var gzipStream = new GZipStream(outputStream, CompressionMode.Compress))
+            using (var gzipStream = new GZipStream(outputStream, CompressionLevel.Optimal))
             {
                 inputStream.CopyTo(gzipStream);
             }
