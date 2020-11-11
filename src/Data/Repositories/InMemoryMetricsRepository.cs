@@ -157,4 +157,17 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
             _metrics.Clear();
         }
     }
+
+    /// <summary>
+    /// Gets the internal metrics list for serialization purposes.
+    /// This method is intended for use by InMemoryMetricsRepositoryJsonExtensions only.
+    /// </summary>
+    /// <returns>The internal metrics list.</returns>
+    internal List<MetricAggregation> GetInternalMetrics()
+    {
+        lock (_lockObject)
+        {
+            return new List<MetricAggregation>(_metrics);
+        }
+    }
 }
