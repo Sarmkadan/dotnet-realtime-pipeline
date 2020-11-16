@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
 
@@ -11,10 +11,56 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Statistical calculation helpers for pipeline analytics.
+/// Statistical calculation results for pipeline analytics.
 /// </summary>
-public static class StatisticsHelper
+public sealed record StatisticsHelper
 {
+    /// <summary>
+    /// Gets the mean (average) of a dataset.
+    /// </summary>
+    public double Mean { get; init; }
+
+    /// <summary>
+    /// Gets the median of a dataset.
+    /// </summary>
+    public double Median { get; init; }
+
+    /// <summary>
+    /// Gets the standard deviation of a dataset.
+    /// </summary>
+    public double StandardDeviation { get; init; }
+
+    /// <summary>
+    /// Gets the coefficient of variation.
+    /// </summary>
+    public double CoefficientOfVariation { get; init; }
+
+    /// <summary>
+    /// Gets the list of outliers found using the IQR method.
+    /// </summary>
+    public IReadOnlyList<double> Outliers { get; init; } = Array.Empty<double>();
+
+    /// <summary>
+    /// Creates a new <see cref="StatisticsHelper"/> instance with calculated statistics.
+    /// </summary>
+    public static StatisticsHelper FromData(
+        List<double> values,
+        double? mean = null,
+        double? median = null,
+        double? standardDeviation = null,
+        double? coefficientOfVariation = null,
+        List<double>? outliers = null)
+    {
+        return new StatisticsHelper
+        {
+            Mean = mean ?? CalculateMean(values),
+            Median = median ?? CalculateMedian(values),
+            StandardDeviation = standardDeviation ?? CalculateStandardDeviation(values),
+            CoefficientOfVariation = coefficientOfVariation ?? CalculateCoefficientOfVariation(values),
+            Outliers = outliers ?? FindOutliers(values)
+        };
+    }
+
     /// <summary>
     /// Calculates the mean (average) of a dataset.
     /// </summary>
