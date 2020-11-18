@@ -14,8 +14,10 @@ using System.Text.RegularExpressions;
 /// Helper class for file path operations, validation, and normalization.
 /// Provides cross-platform path handling utilities.
 /// </summary>
-public static class PathHelper
+public sealed class PathHelper
 {
+    private PathHelper() { }
+
     /// <summary>
     /// Validates if a file path is valid and accessible.
     /// </summary>
