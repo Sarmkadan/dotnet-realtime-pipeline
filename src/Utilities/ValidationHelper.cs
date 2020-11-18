@@ -13,12 +13,14 @@ using System.Collections.Generic;
 /// <summary>
 /// Validation helper methods for pipeline entities.
 /// </summary>
-public static class ValidationHelper
+public sealed class ValidationHelper
 {
+    private ValidationHelper() { }
+
     /// <summary>
     /// Validates a collection of data points.
     /// </summary>
-    public static ValidationResult ValidateDataPoints(List<DataPoint> dataPoints)
+    public ValidationResult ValidateDataPoints(List<DataPoint> dataPoints)
     {
         if (dataPoints is null)
             return new ValidationResult { IsValid = false, ErrorMessage = "Data points collection is null" };
