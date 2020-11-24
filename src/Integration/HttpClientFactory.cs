@@ -21,6 +21,44 @@ public sealed class PipelineHttpClientFactory
     private readonly ILogger<PipelineHttpClientFactory> _logger;
     private readonly Dictionary<string, HttpClient> _clients = new();
 
+    /// <summary>
+    /// Gets the default timeout for HTTP clients created by this factory.
+    /// </summary>
+    public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Gets the maximum number of retry attempts for failed requests.
+    /// </summary>
+    public int MaxRetries { get; } = 3;
+
+    /// <summary>
+    /// Gets the delay between retry attempts.
+    /// </summary>
+    public TimeSpan RetryDelay { get; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Gets the maximum number of connections per host.
+    /// </summary>
+    public int MaxConnectionsPerHost { get; } = 10;
+
+    /// <summary>
+    /// Gets a value indicating whether compression is enabled for HTTP clients.
+    /// </summary>
+    public bool UseCompression { get; } = true;
+
+    /// <summary>
+    /// Gets the default user agent string for HTTP clients.
+    /// </summary>
+    public string UserAgent { get; } = "DotNetRealtimePipeline/1.0";
+
+    /// <summary>
+    /// Gets the default headers that will be added to all HTTP clients.
+    /// </summary>
+    public Dictionary<string, string> DefaultHeaders { get; } = new()
+    {
+        ["Accept"] = "application/json"
+    };
+
     public PipelineHttpClientFactory(ILogger<PipelineHttpClientFactory> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
