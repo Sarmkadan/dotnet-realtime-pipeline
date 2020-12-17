@@ -20,6 +20,9 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class BackpressureService
 {
+
+	private const int MaxThrottleDelayMs = 500;
+	private const int MaxBlockDelayMs = 1000;
     private readonly Dictionary<string, BackpressureContext> _contexts = new();
     private readonly object _lockObject = new();
     private long _nextContextId = 1;
@@ -133,8 +136,8 @@ public sealed class BackpressureService
 
         // Apply backpressure delay based on strategy
         int delayMs = strategy == BackpressureStrategy.Throttle
-            ? (int)Math.Min(timeoutMs, 500)
-            : (int)Math.Min(timeoutMs, 1000);
+            ? (int)Math.Min(timeoutMs, MaxThrottleDelayMs)
+            : (int)Math.Min(timeoutMs, MaxBlockDelayMs);
 
         await Task.Delay(delayMs);
 
