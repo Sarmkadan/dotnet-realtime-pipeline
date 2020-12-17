@@ -17,17 +17,48 @@ using System.Linq;
 /// </summary>
 public sealed class WindowEvent
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this window.
+    /// </summary>
     public long WindowId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start time of the window in milliseconds (Unix timestamp).
+    /// </summary>
     public long WindowStartMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the end time of the window in milliseconds (Unix timestamp).
+    /// </summary>
     public long WindowEndMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the type of aggregation performed (e.g., "tumbling", "sliding").
+    /// </summary>
     public string AggregationType { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the list of data points in this window.
+    /// </summary>
     public List<DataPoint> DataPoints { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the creation timestamp of this window.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional description for this window.
+    /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this window is complete and ready for output.
+    /// </summary>
     public bool IsComplete { get; set; }
 
     /// <summary>
-    /// Monotonic timestamp (from <see cref="Stopwatch.GetTimestamp()"/>) recorded when
+    /// Gets or sets the monotonic timestamp (from <see cref="Stopwatch.GetTimestamp()"/>) recorded when
     /// this window was created. Used for clock-skew-safe completion detection.
     /// </summary>
     public long CreatedAtTicks { get; set; }

@@ -15,15 +15,54 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class ProcessingResult
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this processing result.
+    /// </summary>
     public long ResultId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether processing was successful.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the pipeline stage that processed this result.
+    /// </summary>
     public string StageName { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the processing time in milliseconds.
+    /// </summary>
     public long ProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if processing failed.
+    /// </summary>
     public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the exception if processing failed.
+    /// </summary>
     public Exception? Exception { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when processing completed.
+    /// </summary>
     public DateTime ProcessedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the output data as key-value pairs.
+    /// </summary>
     public Dictionary<string, object> OutputData { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the number of retry attempts made for this processing operation.
+    /// </summary>
     public int RetryCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the correlation identifier for tracing this processing operation.
+    /// </summary>
     public string? CorrelationId { get; set; }
 
     public ProcessingResult()

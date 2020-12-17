@@ -15,24 +15,79 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class StreamEvent
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this stream event.
+    /// </summary>
     public long EventId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier of the data point associated with this event.
+    /// </summary>
     public long DataPointId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when the event occurred (Unix timestamp in milliseconds).
+    /// </summary>
     public long Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the type of event (e.g., "data", "error", "control").
+    /// </summary>
     public string EventType { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the priority level (1-10) for processing order.
+    /// </summary>
     public int Priority { get; set; }
 
+    /// <summary>
+    /// Gets or sets the source system that generated this event.
+    /// </summary>
     public string? SourceSystem { get; set; }
+
+    /// <summary>
+    /// Gets or sets the correlation identifier for tracing this event through the pipeline.
+    /// </summary>
     public string? CorrelationId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the causation identifier (the event that caused this one).
+    /// </summary>
     public string? CausationId { get; set; }
 
+    /// <summary>
+    /// Gets or sets the payload data as key-value pairs.
+    /// </summary>
     public Dictionary<string, object> Payload { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the list of stages that have processed this event.
+    /// </summary>
     public List<string> ProcessedByStages { get; set; } = new();
 
+    /// <summary>
+    /// Gets or sets the creation timestamp of this event.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the completion timestamp if processing is complete.
+    /// </summary>
     public DateTime? CompletedAt { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this event is a retry.
+    /// </summary>
     public bool IsRetry { get; set; }
+
+    /// <summary>
+    /// Gets or sets the retry attempt number.
+    /// </summary>
     public int RetryAttempt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the last error message if processing failed.
+    /// </summary>
     public string? LastErrorMessage { get; set; }
 
     public StreamEvent()

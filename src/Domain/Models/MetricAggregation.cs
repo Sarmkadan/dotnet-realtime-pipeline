@@ -15,26 +15,89 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class MetricAggregation
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this metric aggregation.
+    /// </summary>
     public long MetricId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start of the time window in milliseconds (Unix timestamp).
+    /// </summary>
     public long TimeWindowStartMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the end of the time window in milliseconds (Unix timestamp).
+    /// </summary>
     public long TimeWindowEndMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the type of metric aggregation (e.g., "hourly", "daily").
+    /// </summary>
     public string MetricType { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the total number of items successfully processed in this window.
+    /// </summary>
     public long TotalItemsProcessed { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of items that failed processing in this window.
+    /// </summary>
     public long TotalItemsFailed { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of items skipped in this window.
+    /// </summary>
     public long TotalItemsSkipped { get; set; }
 
+    /// <summary>
+    /// Gets or sets the average processing time in milliseconds.
+    /// </summary>
     public double AverageProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum processing time in milliseconds.
+    /// </summary>
     public double MinProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum processing time in milliseconds.
+    /// </summary>
     public double MaxProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 95th percentile processing time in milliseconds.
+    /// </summary>
     public double P95ProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 99th percentile processing time in milliseconds.
+    /// </summary>
     public double P99ProcessingTimeMs { get; set; }
 
+    /// <summary>
+    /// Gets or sets the number of backpressure events triggered in this window.
+    /// </summary>
     public long BackpressureEvents { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total time spent in backpressure state in milliseconds.
+    /// </summary>
     public long TotalBackpressureMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when these metrics were computed.
+    /// </summary>
     public DateTime ComputedAt { get; set; }
 
+    /// <summary>
+    /// Gets or sets the count of items processed by source as key-value pairs.
+    /// </summary>
     public Dictionary<string, long> CountBySource { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the error rate by pipeline stage as key-value pairs.
+    /// </summary>
     public Dictionary<string, double> ErrorRateByStage { get; set; } = new();
 
     public MetricAggregation()

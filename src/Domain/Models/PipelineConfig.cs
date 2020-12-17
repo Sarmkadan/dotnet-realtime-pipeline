@@ -15,37 +15,119 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class PipelineConfig
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this configuration.
+    /// </summary>
     public long ConfigId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the pipeline.
+    /// </summary>
     public string PipelineName { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the version of the pipeline configuration.
+    /// </summary>
     public string Version { get; set; } = "";
 
     // Buffer configuration
+
+    /// <summary>
+    /// Gets or sets the maximum buffer size before backpressure is applied.
+    /// </summary>
     public long MaxBufferSize { get; set; } = 10000;
+
+    /// <summary>
+    /// Gets or sets the buffer flush interval in milliseconds.
+    /// </summary>
     public long BufferFlushIntervalMs { get; set; } = 1000;
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent consumers for parallel processing.
+    /// </summary>
     public int MaxConcurrentConsumers { get; set; } = 4;
 
     // Windowing configuration
+
+    /// <summary>
+    /// Gets or sets the window size in milliseconds.
+    /// </summary>
     public long WindowSizeMs { get; set; } = 5000;
+
+    /// <summary>
+    /// Gets or sets the window slide interval in milliseconds.
+    /// </summary>
     public long WindowSlideMs { get; set; } = 1000;
+
+    /// <summary>
+    /// Gets or sets the type of windowing algorithm (TUMBLING, SLIDING, SESSION).
+    /// </summary>
     public string WindowType { get; set; } = "TUMBLING";
 
     // Performance settings
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts for failed operations.
+    /// </summary>
     public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the delay between retry attempts in milliseconds.
+    /// </summary>
     public long RetryDelayMs { get; set; } = 100;
+
+    /// <summary>
+    /// Gets or sets the processing timeout in milliseconds.
+    /// </summary>
     public long ProcessingTimeoutMs { get; set; } = 30000;
+
+    /// <summary>
+    /// Gets or sets the threshold percentage (0-100) at which backpressure is triggered.
+    /// </summary>
     public double BackpressureTriggerThreshold { get; set; } = 80.0;
 
     // Quality settings
+
+    /// <summary>
+    /// Gets or sets the minimum data quality threshold (0-100) for processing.
+    /// </summary>
     public int MinDataQualityThreshold { get; set; } = 70;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to validate data on ingestion.
+    /// </summary>
     public bool ValidateOnIngestion { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether metrics collection is enabled.
+    /// </summary>
     public bool EnableMetricsCollection { get; set; } = true;
 
     // Stage configuration
+
+    /// <summary>
+    /// Gets or sets the list of pipeline stage definitions.
+    /// </summary>
     public List<PipelineStageDef> Stages { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets custom configuration settings as key-value pairs.
+    /// </summary>
     public Dictionary<string, object> CustomSettings { get; set; } = new();
 
+    /// <summary>
+    /// Gets or sets the creation timestamp.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the last modification timestamp.
+    /// </summary>
     public DateTime LastModifiedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this configuration is active.
+    /// </summary>
     public bool IsActive { get; set; } = true;
 
     public PipelineConfig()
@@ -168,12 +250,36 @@ public sealed class PipelineConfig
 /// </summary>
 public sealed class PipelineStageDef
 {
+    /// <summary>
+    /// Gets or sets the name of the stage.
+    /// </summary>
     public string StageName { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the type of the stage (e.g., "filter", "transform", "aggregate").
+    /// </summary>
     public string StageType { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the execution order of this stage in the pipeline.
+    /// </summary>
     public int ExecutionOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this stage is enabled.
+    /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the parameters for this stage as key-value pairs.
+    /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineStageDef"/> class.
+    /// </summary>
+    /// <param name="stageName">The name of the stage.</param>
+    /// <param name="stageType">The type of the stage.</param>
     public PipelineStageDef(string stageName, string stageType)
     {
         StageName = stageName ?? throw new ArgumentNullException(nameof(stageName));
@@ -183,6 +289,8 @@ public sealed class PipelineStageDef
     /// <summary>
     /// Adds a parameter to this stage definition.
     /// </summary>
+    /// <param name="key">The parameter key.</param>
+    /// <param name="value">The parameter value.</param>
     public void SetParameter(string key, object value)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Key cannot be null", nameof(key));

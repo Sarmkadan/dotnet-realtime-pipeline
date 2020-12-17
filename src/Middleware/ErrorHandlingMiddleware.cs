@@ -179,19 +179,46 @@ public sealed class ErrorHandlingMiddleware
 /// </summary>
 public class ErrorResponse
 {
+    /// <summary>
+    /// Gets or sets the error code identifying the type of error.
+    /// </summary>
     public string ErrorCode { get; set; } = "ERROR";
+
+    /// <summary>
+    /// Gets or sets the error message describing the error.
+    /// </summary>
     public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the error is recoverable.
+    /// </summary>
     public bool IsRecoverable { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional details about the error.
+    /// </summary>
     public string Details { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the timestamp when the error occurred.
+    /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
 /// Generic error response with data payload.
 /// </summary>
+/// <typeparam name="T">The type of data included in the response.</typeparam>
 public sealed class ErrorResponse<T> : ErrorResponse
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the operation was successful.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the data payload.
+    /// </summary>
     public T Data { get; set; }
 }
 

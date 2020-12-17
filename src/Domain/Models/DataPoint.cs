@@ -15,13 +15,44 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class DataPoint
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this data point.
+    /// </summary>
     public long Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when the data was generated (Unix timestamp in milliseconds).
+    /// </summary>
     public long Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the measured value of the data point.
+    /// </summary>
     public double Value { get; set; }
+
+    /// <summary>
+    /// Gets or sets the source identifier for this data point.
+    /// </summary>
     public string Source { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the metadata associated with this data point as key-value pairs.
+    /// </summary>
     public Dictionary<string, object> Metadata { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the creation timestamp of this data point.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets optional tags for categorization and filtering.
+    /// </summary>
     public string? Tags { get; set; }
+
+    /// <summary>
+    /// Gets or sets the data quality score (0-100).
+    /// </summary>
     public int Quality { get; set; } = 100;
 
     public DataPoint()

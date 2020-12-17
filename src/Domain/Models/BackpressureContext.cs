@@ -15,29 +15,76 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class BackpressureContext
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for this backpressure context.
+    /// </summary>
     public long ContextId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the pipeline stage this context applies to.
+    /// </summary>
     public string PipelineStageName { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the current number of items in the buffer.
+    /// </summary>
     public long BufferSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum buffer capacity.
+    /// </summary>
     public long MaxBufferCapacity { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether backpressure is currently active.
+    /// </summary>
     public bool IsBackpressured { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when backpressure was activated in milliseconds.
+    /// </summary>
     public long BackpressureStartTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total time spent in backpressure state in milliseconds.
+    /// </summary>
     public long TotalBackpressureTimeMs { get; set; }
 
     /// <summary>
-    /// Total number of items dropped because the buffer was at capacity.
+    /// Gets or sets the total number of items dropped because the buffer was at capacity.
     /// A non-zero value indicates silent data loss has occurred; callers should
     /// monitor this counter and react (e.g. raise an alert, slow down producers).
     /// </summary>
     public long DroppedItemCount { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the number of currently active consumers processing items.
+    /// </summary>
     public int ActiveConsumers { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of concurrent consumers allowed.
+    /// </summary>
     public int MaxConcurrentConsumers { get; set; }
 
+    /// <summary>
+    /// Gets or sets the creation timestamp of this context.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the last update timestamp of this context.
+    /// </summary>
     public DateTime LastUpdatedAt { get; set; }
 
+    /// <summary>
+    /// Gets or sets the queue of backpressure event timestamps for frequency calculation.
+    /// </summary>
     public Queue<long> BackpressureEventTimestamps { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets custom buffer metrics as key-value pairs.
+    /// </summary>
     public Dictionary<string, long> BufferMetrics { get; set; } = new();
 
     public BackpressureContext()

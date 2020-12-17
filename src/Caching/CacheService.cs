@@ -16,6 +16,8 @@ using System.Threading.Tasks;
 /// In-memory cache service with TTL support and eviction policies.
 /// Thread-safe implementation with configurable cache behavior and statistics tracking.
 /// </summary>
+/// <typeparam name="TKey">The type of the cache key.</typeparam>
+/// <typeparam name="TValue">The type of the cached value.</typeparam>
 public sealed class CacheService<TKey, TValue> where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
@@ -25,6 +27,12 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     private long _hits;
     private long _misses;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CacheService{TKey, TValue}"/> class.
+    /// </summary>
+    /// <param name="maxCapacity">The maximum number of items the cache can hold.</param>
+    /// <param name="defaultTtl">The default time-to-live for cache entries.</param>
+    /// <param name="policy">The eviction policy to use when the cache reaches capacity.</param>
     public CacheService(int maxCapacity = 1000, TimeSpan? defaultTtl = null, EvictionPolicy policy = EvictionPolicy.LRU)
     {
         _maxCapacity = maxCapacity;
@@ -33,8 +41,11 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     }
 
     /// <summary>
-    /// Gets a value from the cache.
+    /// Attempts to get a value from the cache.
     /// </summary>
+    /// <param name="key">The cache key.</param>
+    /// <param name="value">The cached value if found.</param>
+    /// <returns>True if the value was found and is not expired, false otherwise.</returns>
     public bool TryGetValue(TKey key, out TValue value)
     {
         if (_cache.TryGetValue(key, out var entry))
@@ -60,16 +71,21 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     }
 
     /// <summary>
-    /// Sets a value in the cache with default TTL.
+    /// Sets a value in the cache with the default time-to-live.
     /// </summary>
+    /// <param name="key">The cache key.</param>
+    /// <param name="value">The value to cache.</param>
     public void Set(TKey key, TValue value)
     {
         Set(key, value, _defaultTtl);
     }
 
     /// <summary>
-    /// Sets a value in the cache with a specific TTL.
+    /// Sets a value in the cache with a specific time-to-live.
     /// </summary>
+    /// <param name="key">The cache key.</param>
+    /// <param name="value">The value to cache.</param>
+    /// <param name="ttl">The time-to-live for this cache entry.</param>
     public void Set(TKey key, TValue value, TimeSpan ttl)
     {
         if (_cache.Count >= _maxCapacity && !_cache.ContainsKey(key))

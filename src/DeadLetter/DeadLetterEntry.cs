@@ -33,43 +33,69 @@ public enum DeadLetterStatus
 /// </summary>
 public sealed class DeadLetterEntry
 {
-    /// <summary>Unique identifier of this dead-letter record.</summary>
+    /// <summary>
+    /// Gets or sets the unique identifier of this dead-letter record.
+    /// </summary>
     public Guid EntryId { get; set; } = Guid.NewGuid();
 
-    /// <summary>The data point that failed processing.</summary>
+    /// <summary>
+    /// Gets or sets the data point that failed processing.
+    /// </summary>
     public DataPoint DataPoint { get; set; } = new();
 
-    /// <summary>Name of the pipeline stage where the failure occurred.</summary>
+    /// <summary>
+    /// Gets or sets the name of the pipeline stage where the failure occurred.
+    /// </summary>
     public string FailureStageName { get; set; } = "";
 
-    /// <summary>Human-readable reason for the failure.</summary>
+    /// <summary>
+    /// Gets or sets the human-readable reason for the failure.
+    /// </summary>
     public string FailureReason { get; set; } = "";
 
-    /// <summary>Exception type name, if an exception caused the failure.</summary>
+    /// <summary>
+    /// Gets or sets the exception type name, if an exception caused the failure.
+    /// </summary>
     public string? ExceptionType { get; set; }
 
-    /// <summary>Exception message, if available.</summary>
+    /// <summary>
+    /// Gets or sets the exception message, if available.
+    /// </summary>
     public string? ExceptionMessage { get; set; }
 
-    /// <summary>Number of retry attempts made for this entry.</summary>
+    /// <summary>
+    /// Gets or sets the number of retry attempts made for this entry.
+    /// </summary>
     public int RetryCount { get; set; }
 
-    /// <summary>Maximum number of retries allowed before marking as permanent failure.</summary>
+    /// <summary>
+    /// Gets or sets the maximum number of retries allowed before marking as permanent failure.
+    /// </summary>
     public int MaxRetries { get; set; } = 3;
 
-    /// <summary>UTC time the entry was first placed in the dead-letter queue.</summary>
+    /// <summary>
+    /// Gets or sets the UTC time the entry was first placed in the dead-letter queue.
+    /// </summary>
     public DateTime EnqueuedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>UTC time of the last retry attempt, if any.</summary>
+    /// <summary>
+    /// Gets or sets the UTC time of the last retry attempt, if any.
+    /// </summary>
     public DateTime? LastRetryAt { get; set; }
 
-    /// <summary>UTC time the entry was resolved or permanently failed.</summary>
+    /// <summary>
+    /// Gets or sets the UTC time the entry was resolved or permanently failed.
+    /// </summary>
     public DateTime? ResolvedAt { get; set; }
 
-    /// <summary>Current disposition of this entry.</summary>
+    /// <summary>
+    /// Gets or sets the current disposition of this entry.
+    /// </summary>
     public DeadLetterStatus Status { get; set; } = DeadLetterStatus.Pending;
 
-    /// <summary>Optional notes added when acknowledging failure.</summary>
+    /// <summary>
+    /// Gets or sets optional notes added when acknowledging failure.
+    /// </summary>
     public string? ResolutionNote { get; set; }
 
     /// <summary>
@@ -113,21 +139,33 @@ public sealed class DeadLetterEntry
 /// </summary>
 public sealed class DeadLetterQueueStats
 {
-    /// <summary>Total entries currently in the queue.</summary>
+    /// <summary>
+    /// Gets or sets the total entries currently in the queue.
+    /// </summary>
     public int TotalEntries { get; set; }
 
-    /// <summary>Entries awaiting retry.</summary>
+    /// <summary>
+    /// Gets or sets the number of entries awaiting retry.
+    /// </summary>
     public int PendingEntries { get; set; }
 
-    /// <summary>Entries currently in a retry attempt.</summary>
+    /// <summary>
+    /// Gets or sets the number of entries currently in a retry attempt.
+    /// </summary>
     public int InRetryEntries { get; set; }
 
-    /// <summary>Entries permanently failed.</summary>
+    /// <summary>
+    /// Gets or sets the number of entries permanently failed.
+    /// </summary>
     public int PermanentFailureEntries { get; set; }
 
-    /// <summary>Total entries that were successfully resolved since startup.</summary>
+    /// <summary>
+    /// Gets or sets the total number of entries that were successfully resolved since startup.
+    /// </summary>
     public long TotalResolved { get; set; }
 
-    /// <summary>UTC time these stats were generated.</summary>
+    /// <summary>
+    /// Gets or sets the UTC time these stats were generated.
+    /// </summary>
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }
