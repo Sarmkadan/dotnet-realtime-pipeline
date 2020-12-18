@@ -1,0 +1,490 @@
+#nullable enable
+// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =====================================================================
+
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+namespace DotNetRealtimePipeline.Tests.Unit;
+
+public sealed class DynamicScalingServiceTests
+{
+    private readonly Mock<BackpressureService> _mockBackpressureService;
+    private readonly Mock<ILogger<DynamicScalingService>> _mockLogger;
+    private readonly PipelineConfig _config;
+    private readonly DynamicScalingService _service;
+
+    public DynamicScalingServiceTests()
+    {
+        _mockBackpressureService = new Mock<BackpressureService>();
+        _mockLogger = new Mock<ILogger<DynamicScalingService>>();
+
+        _config = new PipelineConfig
+        {
+            Stages = new List<PipelineStageConfig>
+            {
+                new PipelineStageConfig { StageName = "Stage1", Enabled = true, MaxConcurrentConsumers = 2 },
+                new PipelineStageConfig { StageName = "Stage2", Enabled = true, MaxConcurrentConsumers = 4 },
+                new PipelineStageConfig { StageName = "DisabledStage", Enabled = false, MaxConcurrentConsumers = 1 }
+            }
+        };
+
+        _service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 10,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+    }
+
+    [Fact]
+    public void Constructor_WithNullBackpressureService_ShouldThrow()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new DynamicScalingService(
+            null!,
+            _config,
+            _mockLogger.Object
+        ));
+    }
+
+    [Fact]
+    public void Constructor_WithNullConfig_ShouldThrow()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new DynamicScalingService(
+            _mockBackpressureService.Object,
+            null!,
+            _mockLogger.Object
+        ));
+    }
+
+    [Fact]
+    public void Constructor_WithNullLogger_ShouldThrow()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            null!
+        ));
+    }
+
+    [Fact]
+    public async Task EvaluateScalingAsync_ShouldProcessAllEnabledStages()
+    {
+        // Arrange
+        _mockBackpressureService.Setup(b => b.GetContext(It.IsAny<string>()))
+            .Returns(new BackpressureContext("Stage1", 1000));
+
+        // Act
+        await _service.EvaluateScalingAsync();
+
+        // Assert - No exception means success
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Information,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task EvaluateScalingAsync_ShouldSkipDisabledStages()
+    {
+        // Arrange
+        _mockBackpressureService.Setup(b => b.GetContext("DisabledStage"))
+            .Returns((BackpressureContext)null!);
+
+        // Act
+        await _service.EvaluateScalingAsync();
+
+        // Assert - Disabled stages should not be evaluated
+        _mockBackpressureService.Verify(b => b.GetContext("DisabledStage"), Times.Never);
+    }
+
+    [Fact]
+    public async Task EvaluateScalingAsync_ShouldHandleExceptionsGracefully()
+    {
+        // Arrange
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Throws<Exception>();
+
+        // Act - Should not throw
+        await _service.EvaluateScalingAsync();
+
+        // Assert
+        _mockLogger.Verify(l => l.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.IsAny<It.IsAnyType>(),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception, string>>()!),
+            Times.Once);
+    }
+
+    [Fact]
+    public void GetScalingState_WithExistingStage_ShouldReturnState()
+    {
+        // Arrange - First evaluation creates state
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(new BackpressureContext("Stage1", 1000));
+
+        // Act - First evaluation to create state
+        _service.EvaluateScalingAsync().Wait();
+
+        // Act - Get state
+        var state = _service.GetScalingState("Stage1");
+
+        // Assert
+        state.Should().NotBeNull();
+        state.CurrentConsumers.Should().Be(2); // Initial from config
+    }
+
+    [Fact]
+    public void GetScalingState_WithNonExistingStage_ShouldReturnNull()
+    {
+        // Act
+        var state = _service.GetScalingState("NonExistentStage");
+
+        // Assert
+        state.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAllScalingStates_ShouldReturnAllStates()
+    {
+        // Arrange - Evaluate all stages
+        _mockBackpressureService.Setup(b => b.GetContext(It.IsAny<string>()))
+            .Returns(new BackpressureContext("Stage1", 1000));
+
+        _service.EvaluateScalingAsync().Wait();
+
+        // Act
+        var states = _service.GetAllScalingStates();
+
+        // Assert
+        states.Should().NotBeEmpty();
+        states.Should().ContainKey("Stage1");
+        states.Should().ContainKey("Stage2");
+    }
+
+    [Fact]
+    public void GetAllScalingStates_ShouldReturnReadOnlyDictionary()
+    {
+        // Arrange
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(new BackpressureContext("Stage1", 1000));
+
+        _service.EvaluateScalingAsync().Wait();
+
+        // Act
+        var states = _service.GetAllScalingStates();
+
+        // Assert
+        states.Should().BeAssignableTo<IReadOnlyDictionary<string, StageScalingState>>();
+    }
+
+    [Fact]
+    public void EvaluateStage_WithLowBuffer_ShouldNotScaleDown()
+    {
+        // Arrange
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 200, // 20% fill
+            BackpressureFrequency = 0.2 // Low frequency
+        };
+
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(context);
+
+        // Act
+        _service.EvaluateScalingAsync().Wait();
+
+        // Assert - Should not scale down (buffer too high for scale down threshold)
+        var state = _service.GetScalingState("Stage1");
+        state.Should().NotBeNull();
+        state.LastDecision.Direction.Should().Be(DynamicScalingService.ScalingDirection.None);
+    }
+
+    [Fact]
+    public void EvaluateStage_WithHighBuffer_ShouldScaleUp()
+    {
+        // Arrange
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 800, // 80% fill (above 75% threshold)
+            BackpressureFrequency = 10.0 // High frequency
+        };
+
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(context);
+
+        // Act
+        _service.EvaluateScalingAsync().Wait();
+
+        // Assert
+        var state = _service.GetScalingState("Stage1");
+        state.Should().NotBeNull();
+        state.LastDecision.Direction.Should().Be(DynamicScalingService.ScalingDirection.Up);
+        state.LastDecision.ToConsumers.Should().BeGreaterThan(state.CurrentConsumers);
+    }
+
+    [Fact]
+    public void EvaluateStage_WithLowBufferAndLowFrequency_ShouldScaleDown()
+    {
+        // Arrange
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 250, // 25% fill (below 30% threshold)
+            BackpressureFrequency = 0.1 // Very low frequency
+        };
+
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(context);
+
+        // Act
+        _service.EvaluateScalingAsync().Wait();
+
+        // Assert
+        var state = _service.GetScalingState("Stage1");
+        state.Should().NotBeNull();
+        state.LastDecision.Direction.Should().Be(DynamicScalingService.ScalingDirection.Down);
+        state.LastDecision.ToConsumers.Should().BeLessThan(state.CurrentConsumers);
+    }
+
+    [Fact]
+    public void EvaluateStage_WithCooldown_ShouldNotScale()
+    {
+        // Arrange - First evaluation
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 800,
+            BackpressureFrequency = 10.0
+        };
+
+        _mockBackpressureService.Setup(b => b.GetContext("Stage1"))
+            .Returns(context);
+
+        _service.EvaluateScalingAsync().Wait();
+
+        // Get the state to check timestamp
+        var state1 = _service.GetScalingState("Stage1");
+        var firstTimestamp = state1?.LastScalingActionAt;
+
+        // Arrange - Second evaluation immediately (within cooldown)
+        context.CurrentBufferSize = 850; // Still high
+
+        // Act
+        _service.EvaluateScalingAsync().Wait();
+
+        // Assert
+        var state2 = _service.GetScalingState("Stage1");
+        state2?.LastScalingActionAt.Should().BeCloseTo(firstTimestamp!.Value, TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public void ComputeDecision_WithHighBufferAndNotAtMax_ShouldReturnScaleUp()
+    {
+        // Arrange
+        var service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 10,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 800, // 80%
+            BackpressureFrequency = 15.0
+        };
+
+        // Act
+        var decision = service.GetType().GetMethod("ComputeDecision", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(service, new object[] { "Stage1", 80.0, 15.0, 2 }) as DynamicScalingService.ScalingDecision;
+
+        // Assert
+        decision.Should().NotBeNull();
+        decision?.Direction.Should().Be(DynamicScalingService.ScalingDirection.Up);
+        decision?.ToConsumers.Should().Be(3); // 2 + 1
+    }
+
+    [Fact]
+    public void ComputeDecision_WithLowBufferAndLowFrequencyAndNotAtMin_ShouldReturnScaleDown()
+    {
+        // Arrange
+        var service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 10,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 250, // 25%
+            BackpressureFrequency = 0.1
+        };
+
+        // Act
+        var decision = service.GetType().GetMethod("ComputeDecision", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(service, new object[] { "Stage1", 25.0, 0.1, 4 }) as DynamicScalingService.ScalingDecision;
+
+        // Assert
+        decision.Should().NotBeNull();
+        decision?.Direction.Should().Be(DynamicScalingService.ScalingDirection.Down);
+        decision?.ToConsumers.Should().Be(3); // 4 - 1
+    }
+
+    [Fact]
+    public void ComputeDecision_WithBufferBetweenThresholds_ShouldReturnNoScaling()
+    {
+        // Arrange
+        var service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 10,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+
+        // Act
+        var decision = service.GetType().GetMethod("ComputeDecision", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(service, new object[] { "Stage1", 50.0, 5.0, 2 }) as DynamicScalingService.ScalingDecision;
+
+        // Assert
+        decision.Should().NotBeNull();
+        decision?.Direction.Should().Be(DynamicScalingService.ScalingDirection.None);
+    }
+
+    [Fact]
+    public void ComputeDecision_AtMaxConsumers_ShouldNotScaleUp()
+    {
+        // Arrange
+        var service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 5,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 800,
+            BackpressureFrequency = 15.0
+        };
+
+        // Act
+        var decision = service.GetType().GetMethod("ComputeDecision", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(service, new object[] { "Stage1", 80.0, 15.0, 5 }) as DynamicScalingService.ScalingDecision;
+
+        // Assert
+        decision.Should().NotBeNull();
+        decision?.Direction.Should().Be(DynamicScalingService.ScalingDirection.None); // At max
+    }
+
+    [Fact]
+    public void ComputeDecision_AtMinConsumers_ShouldNotScaleDown()
+    {
+        // Arrange
+        var service = new DynamicScalingService(
+            _mockBackpressureService.Object,
+            _config,
+            _mockLogger.Object,
+            minConsumers: 1,
+            maxConsumers: 10,
+            scaleUpThresholdPercent: 75.0,
+            scaleDownThresholdPercent: 30.0,
+            cooldownSeconds: 5
+        );
+
+        var context = new BackpressureContext("Stage1", 1000)
+        {
+            CurrentBufferSize = 200,
+            BackpressureFrequency = 0.1
+        };
+
+        // Act
+        var decision = service.GetType().GetMethod("ComputeDecision", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .Invoke(service, new object[] { "Stage1", 20.0, 0.1, 1 }) as DynamicScalingService.ScalingDecision;
+
+        // Assert
+        decision.Should().NotBeNull();
+        decision?.Direction.Should().Be(DynamicScalingService.ScalingDirection.None); // At min
+    }
+
+    [Fact]
+    public void ScalingDecision_ShouldHaveCorrectProperties()
+    {
+        // Arrange
+        var decision = new DynamicScalingService.ScalingDecision
+        {
+            StageName = "Stage1",
+            Direction = DynamicScalingService.ScalingDirection.Up,
+            Reason = "Buffer high",
+            FromConsumers = 2,
+            ToConsumers = 3,
+            BufferFillPercent = 80.0,
+            BackpressureFrequency = 15.0
+        };
+
+        // Assert
+        decision.StageName.Should().Be("Stage1");
+        decision.Direction.Should().Be(DynamicScalingService.ScalingDirection.Up);
+        decision.Reason.Should().Be("Buffer high");
+        decision.FromConsumers.Should().Be(2);
+        decision.ToConsumers.Should().Be(3);
+    }
+
+    [Fact]
+    public void StageScalingState_ShouldHaveCorrectProperties()
+    {
+        // Arrange
+        var state = new DynamicScalingService.StageScalingState
+        {
+            StageName = "Stage1",
+            CurrentConsumers = 5,
+            ScaleUpCount = 3,
+            ScaleDownCount = 1,
+            LastDecision = new DynamicScalingService.ScalingDecision
+            {
+                Direction = DynamicScalingService.ScalingDirection.Up,
+                ToConsumers = 6
+            },
+            LastScalingActionAt = DateTime.UtcNow
+        };
+
+        // Assert
+        state.StageName.Should().Be("Stage1");
+        state.CurrentConsumers.Should().Be(5);
+        state.ScaleUpCount.Should().Be(3);
+        state.ScaleDownCount.Should().Be(1);
+    }
+}
