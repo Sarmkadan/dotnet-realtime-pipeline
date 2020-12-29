@@ -10,11 +10,22 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Unit tests for the <see cref="DataPoint"/> class.
+/// </summary>
 public sealed class DataPointTests
 {
+    /// <summary>
+    /// Creates a valid test data point with default values.
+    /// </summary>
+    /// <param name="id">The identifier for the data point. Defaults to 1.</param>
+    /// <returns>A new <see cref="DataPoint"/> instance with valid properties.</returns>
     private static DataPoint ValidPoint(long id = 1) =>
-        new DataPoint(id, 1_000_000L, 42.5, "sensor-01") { Quality = 85 };
+    new DataPoint(id, 1_000_000L, 42.5, "sensor-01") { Quality = 85 };
 
+    /// <summary>
+    /// Tests that validation returns true when all data point properties are valid.
+    /// </summary>
     [Fact]
     public void Validate_WithAllValidProperties_ReturnsTrue()
     {
@@ -28,6 +39,9 @@ public sealed class DataPointTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that validation returns false when the ID is zero.
+    /// </summary>
     [Fact]
     public void Validate_WithZeroId_ReturnsFalse()
     {
@@ -41,6 +55,9 @@ public sealed class DataPointTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that validation returns false when the source is empty.
+    /// </summary>
     [Fact]
     public void Validate_WithEmptySource_ReturnsFalse()
     {
@@ -55,6 +72,9 @@ public sealed class DataPointTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that validation returns false when quality is above the upper bound (100).
+    /// </summary>
     [Fact]
     public void Validate_WithQualityAboveUpperBound_ReturnsFalse()
     {
@@ -69,6 +89,9 @@ public sealed class DataPointTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that the quality threshold check returns true when quality equals the threshold.
+    /// </summary>
     [Fact]
     public void MeetsQualityThreshold_WhenQualityEqualsThreshold_ReturnsTrue()
     {
@@ -79,6 +102,9 @@ public sealed class DataPointTests
         point.MeetsQualityThreshold(70).Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that the quality threshold check returns false when quality is below the threshold.
+    /// </summary>
     [Fact]
     public void MeetsQualityThreshold_WhenQualityBelowThreshold_ReturnsFalse()
     {
@@ -89,6 +115,9 @@ public sealed class DataPointTests
         point.MeetsQualityThreshold(70).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that cloning a data point with a new ID preserves all other properties.
+    /// </summary>
     [Fact]
     public void Clone_WithNewId_PreservesValueSourceAndQuality()
     {
@@ -111,6 +140,9 @@ public sealed class DataPointTests
         clone.Timestamp.Should().Be(original.Timestamp);
     }
 
+    /// <summary>
+    /// Tests that adding metadata with a valid key and value stores the entry correctly.
+    /// </summary>
     [Fact]
     public void AddMetadata_WithValidKeyAndValue_StoresEntry()
     {
@@ -125,6 +157,9 @@ public sealed class DataPointTests
         point.Metadata["region"].Should().Be("us-east-1");
     }
 
+    /// <summary>
+    /// Tests that adding metadata with an existing key overwrites the previous value.
+    /// </summary>
     [Fact]
     public void AddMetadata_OverwritesExistingKeyWithNewValue()
     {
