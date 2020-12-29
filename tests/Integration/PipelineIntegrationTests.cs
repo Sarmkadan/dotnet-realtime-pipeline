@@ -12,8 +12,26 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Integration;
 
+/// <summary>
+/// Integration tests for the real-time data pipeline system.
+/// Tests the end-to-end functionality of the pipeline orchestrator and related services.
+/// </summary>
+/// <remarks>
+/// This class contains integration tests that verify the complete pipeline workflow including:
+/// - Pipeline initialization and cleanup
+/// - Data ingestion from multiple sources
+/// - Batch processing
+/// - Health monitoring
+/// - Query capabilities
+/// - Metrics collection
+/// </remarks>
 public sealed class PipelineIntegrationTests
 {
+
+    /// <summary>
+    /// Sets up and configures the service provider for integration testing.
+    /// </summary>
+    /// <returns>A configured <see cref="IServiceProvider"/> instance containing all pipeline services.</returns>
     private ServiceProvider SetupServices()
     {
         var services = new ServiceCollection();
@@ -22,6 +40,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline orchestrator can be initialized and cleaned up properly.
+    /// </summary>
     public async Task StartStop_ShouldInitializeAndCleanup()
     {
         // Arrange
@@ -38,6 +59,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline can accept and process individual data points.
+    /// </summary>
     public async Task IngestDataPoint_ShouldAcceptAndProcess()
     {
         // Arrange
@@ -67,6 +91,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline can process batches of data points efficiently.
+    /// </summary>
     public async Task IngestBatch_ShouldProcessMultiplePoints()
     {
         // Arrange
@@ -94,6 +121,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline can generate health reports with metrics.
+    /// </summary>
     public async Task GetHealthReport_ShouldReturnMetrics()
     {
         // Arrange
@@ -126,6 +156,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the query service can filter and return data points based on time ranges.
+    /// </summary>
     public async Task QueryDataPoints_ShouldReturnFilteredResults()
     {
         // Arrange
@@ -163,6 +196,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline can handle concurrent data ingestion from multiple sources.
+    /// </summary>
     public async Task MultipleSourceIngestion_ShouldHandleConcurrentData()
     {
         // Arrange
@@ -202,6 +238,9 @@ public sealed class PipelineIntegrationTests
     }
 
     [Fact]
+    /// <summary>
+    /// Verifies that the pipeline can collect and return metrics history.
+    /// </summary>
     public async Task GetMetricsHistory_ShouldReturnCollectedMetrics()
     {
         // Arrange
