@@ -8,12 +8,20 @@ using DotNetRealtimePipeline.Domain.Exceptions;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Contains unit tests for the <see cref="DataProcessingService"/> class.
+/// These tests verify correct behavior of data point processing and quality analysis.
+/// </summary>
 public sealed class DataProcessingServiceTests
 {
     private readonly Mock<IDataPointRepository> _mockRepository;
     private readonly PipelineConfig _config;
     private readonly DataProcessingService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataProcessingServiceTests"/> class.
+    /// Sets up a mock repository, a pipeline configuration, and the service under test.
+    /// </summary>
     public DataProcessingServiceTests()
     {
         _mockRepository = new Mock<IDataPointRepository>();
@@ -27,6 +35,10 @@ public sealed class DataProcessingServiceTests
         _service = new DataProcessingService(_mockRepository.Object, _config);
     }
 
+    /// <summary>
+    /// Verifies that a valid data point is processed successfully.
+    /// A valid data point has quality above the configured threshold and valid properties.
+    /// </summary>
     [Fact]
     public async Task ProcessDataPointAsync_ValidPoint_ShouldSucceed()
     {
@@ -43,6 +55,10 @@ public sealed class DataProcessingServiceTests
         _mockRepository.Verify(r => r.CreateAsync(dataPoint), Times.Once);
     }
 
+    /// <summary>
+    /// Verifies that an invalid data point fails processing.
+    /// An invalid data point has zero or invalid properties such as ID, timestamp, or source.
+    /// </summary>
     [Fact]
     public async Task ProcessDataPointAsync_InvalidPoint_ShouldFail()
     {
@@ -57,6 +73,10 @@ public sealed class DataProcessingServiceTests
         result.ErrorMessage.Should().Contain("Validation failed");
     }
 
+    /// <summary>
+    /// Verifies that a data point with quality below the threshold fails processing.
+    /// The configured minimum quality threshold is 50.
+    /// </summary>
     [Fact]
     public async Task ProcessDataPointAsync_LowQuality_ShouldFail()
     {
@@ -71,6 +91,10 @@ public sealed class DataProcessingServiceTests
         result.ErrorMessage.Should().Contain("quality below threshold");
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="DataProcessingService.AnalyzeDataQuality"/> method correctly calculates quality statistics.
+    /// The test uses a mix of high and low quality data points.
+    /// </summary>
     [Fact]
     public void AnalyzeDataQuality_ValidPoints_ShouldReturnCorrectStats()
     {
@@ -91,6 +115,9 @@ public sealed class DataProcessingServiceTests
         result.AverageQuality.Should().Be(60);
     }
 
+    /// <summary>
+    /// Verifies that the <see cref="DataProcessingService.AnalyzeDataQuality"/> method returns default statistics when given null input.
+    /// </summary>
     [Fact]
     public void AnalyzeDataQuality_NullPoints_ShouldReturnDefault()
     {
