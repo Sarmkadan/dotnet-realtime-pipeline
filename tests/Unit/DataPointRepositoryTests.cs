@@ -10,15 +10,25 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Contains unit tests for the <see cref="IDataPointRepository"/> implementation.
+/// </summary>
 public sealed class DataPointRepositoryTests
 {
     private readonly IDataPointRepository _repository;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataPointRepositoryTests"/> class.
+    /// Sets up an in-memory repository for testing.
+    /// </summary>
     public DataPointRepositoryTests()
     {
         _repository = new InMemoryDataPointRepository();
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.AddAsync(DataPoint)"/> correctly stores a valid data point.
+    /// </summary>
     [Fact]
     public async Task AddAsync_WithValidDataPoint_ShouldSucceed()
     {
@@ -34,6 +44,9 @@ public sealed class DataPointRepositoryTests
         Assert.Equal(42.5m, retrieved.Value);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.GetByIdAsync(int)"/> returns null when the ID does not exist.
+    /// </summary>
     [Fact]
     public async Task GetByIdAsync_WithNonExistentId_ShouldReturnNull()
     {
@@ -44,6 +57,9 @@ public sealed class DataPointRepositoryTests
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.GetAllAsync()"/> returns all stored data points.
+    /// </summary>
     [Fact]
     public async Task GetAllAsync_WithMultiplePoints_ShouldReturnAll()
     {
@@ -63,6 +79,10 @@ public sealed class DataPointRepositoryTests
         Assert.Equal(3, all.Count());
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.GetBySourceAsync(string)"/> returns all data points with a matching source.
+    /// </summary>
+    /// <param name="source">The source string to filter data points by.</param>
     [Fact]
     public async Task GetBySourceAsync_WithValidSource_ShouldReturnMatching()
     {
@@ -82,6 +102,9 @@ public sealed class DataPointRepositoryTests
         Assert.Equal(2, result.Count());
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.UpdateAsync(DataPoint)"/> correctly updates an existing data point.
+    /// </summary>
     [Fact]
     public async Task UpdateAsync_WithExistingId_ShouldUpdate()
     {
@@ -99,6 +122,9 @@ public sealed class DataPointRepositoryTests
         Assert.Equal(99.9m, retrieved.Value);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.DeleteAsync(int)"/> removes a data point by ID.
+    /// </summary>
     [Fact]
     public async Task DeleteAsync_WithExistingId_ShouldRemove()
     {
@@ -114,6 +140,9 @@ public sealed class DataPointRepositoryTests
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="IDataPointRepository.ClearAsync()"/> removes all data points from the repository.
+    /// </summary>
     [Fact]
     public async Task ClearAsync_ShouldRemoveAll()
     {
