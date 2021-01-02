@@ -10,15 +10,30 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Contains unit tests for the <see cref="BackpressureMetricsCollector"/> class.
+/// </summary>
 public sealed class BackpressureMetricsCollectorTests
 {
+    /// <summary>
+    /// Creates and returns a new instance of <see cref="BackpressureService"/> for test setup.
+    /// </summary>
+    /// <returns>A new <see cref="BackpressureService"/> instance.</returns>
     private static BackpressureService NewService() => new();
 
+    /// <summary>
+    /// Creates and returns a new instance of <see cref="BackpressureMetricsCollector"/> with the specified service.
+    /// </summary>
+    /// <param name="svc">The <see cref="BackpressureService"/> to associate with the collector.</param>
+    /// <returns>A new <see cref="BackpressureMetricsCollector"/> instance with max event history set to 200.</returns>
     private static BackpressureMetricsCollector NewCollector(BackpressureService svc)
         => new(svc, maxEventHistory: 200);
 
     // ── GetStageMetrics ──────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.GetStageMetrics(string)"/> returns null for an unknown stage.
+    /// </summary>
     [Fact]
     public void GetStageMetrics_UnknownStage_ReturnsNull()
     {
@@ -30,6 +45,9 @@ public sealed class BackpressureMetricsCollectorTests
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// Verifies that recording a manual activation event increments the activation count and sets the peak buffer fill percent.
+    /// </summary>
     [Fact]
     public void RecordManualEvent_Activation_IncrementsActivationCount()
     {
@@ -44,6 +62,9 @@ public sealed class BackpressureMetricsCollectorTests
         Assert.Equal(85.0, metrics.PeakBufferFillPercent);
     }
 
+    /// <summary>
+    /// Verifies that recording two manual activation events increments the activation count and updates metrics correctly.
+    /// </summary>
     [Fact]
     public void RecordManualEvent_TwoActivations_CountIsTwo()
     {
@@ -62,6 +83,9 @@ public sealed class BackpressureMetricsCollectorTests
 
     // ── GetSnapshot ──────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.GetSnapshot()"/> returns an empty snapshot when no events have been recorded.
+    /// </summary>
     [Fact]
     public void GetSnapshot_WithNoEvents_ReturnsEmptySnapshot()
     {
@@ -75,6 +99,9 @@ public sealed class BackpressureMetricsCollectorTests
         Assert.Equal(0, snapshot.TotalDroppedItems);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.GetSnapshot()"/> aggregates metrics across multiple stages.
+    /// </summary>
     [Fact]
     public void GetSnapshot_AggregatesAcrossStages()
     {
@@ -93,6 +120,9 @@ public sealed class BackpressureMetricsCollectorTests
 
     // ── GetRecentEvents ──────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.GetRecentEvents(int)"/> returns up to the requested number of recent events.
+    /// </summary>
     [Fact]
     public void GetRecentEvents_ReturnsUpToRequestedCount()
     {
@@ -107,6 +137,9 @@ public sealed class BackpressureMetricsCollectorTests
         Assert.Equal(5, events.Count);
     }
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.GetStageEvents(string)"/> returns only events for the specified stage.
+    /// </summary>
     [Fact]
     public void GetStageEvents_ReturnsOnlyEventsForThatStage()
     {
@@ -125,6 +158,9 @@ public sealed class BackpressureMetricsCollectorTests
 
     // ── Reset ────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.Reset()"/> clears all metrics and events.
+    /// </summary>
     [Fact]
     public void Reset_ClearsAllMetricsAndEvents()
     {
@@ -141,6 +177,9 @@ public sealed class BackpressureMetricsCollectorTests
 
     // ── Poll integration ─────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies that <see cref="BackpressureMetricsCollector.Poll()"/> records an activation event when backpressure is triggered.
+    /// </summary>
     [Fact]
     public void Poll_AfterBackpressureActivated_RecordsActivationEvent()
     {
