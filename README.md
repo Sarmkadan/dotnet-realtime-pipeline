@@ -998,6 +998,93 @@ var stats = await dlq.GetStatsAsync();
 Console.WriteLine($"DLQ  pending={stats.PendingEntries}  permanent-failures={stats.PermanentFailureEntries}");
 ```
 
+## PipelineEventPublisher
+
+The `PipelineEventPublisher` class provides a pub/sub mechanism for decoupling event producers from consumers within the pipeline. It supports publishing various pipeline events such as data ingestion, processing completion, backpressure detection, metrics collection, and pipeline errors.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Events;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.Logging;
+
+// Initialize the publisher
+var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<PipelineEventPublisher>();
+var publisher = new PipelineEventPublisher(logger);
+
+// Subscribe to data ingestion events
+publisher.Subscribe<DataIngestedEventArgs>(nameof(DataIngestedEvent), async (e) =>
+{
+    Console.WriteLine($"Ingested DataPoint ID: {e.DataPoint.Id} (CorrelationId: {e.CorrelationId})");
+    await Task.CompletedTask;
+});
+
+// Publish an ingestion event
+var dataPoint = new DataPoint(1, DateTime.UtcNow.Ticks, 42.5m, "Sensor-1");
+await publisher.PublishDataIngestedAsync(dataPoint);
+
+// Subscribe to processing completed events
+publisher.Subscribe<ProcessingCompletedEventArgs>(nameof(ProcessingCompletedEvent), async (e) =>
+{
+    Console.WriteLine($"Processing completed for stage: {e.StageName}");
+    Console.WriteLine($"Processed {e.Result.TotalProcessed} items, Success rate: {e.Result.SuccessRate:P2}");
+    await Task.CompletedTask;
+});
+
+// Publish a processing completed event
+await publisher.PublishProcessingCompletedAsync("DataProcessingStage", new ProcessingResult(100, 95, 5));
+
+// Subscribe to backpressure detected events
+publisher.Subscribe<BackpressureDetectedEventArgs>(nameof(BackpressureDetectedEvent), async (e) =>
+{
+    Console.WriteLine($"Backpressure detected in stage: {e.StageName}");
+    Console.WriteLine($"Buffer fill: {e.Context.FillPercentage:P2}, Strategy: {e.Context.Strategy}");
+    await Task.CompletedTask;
+});
+
+// Publish a backpressure detected event
+var backpressureContext = new BackpressureContext("IngestionStage", 0.95m, BackpressureStrategy.Block);
+await publisher.PublishBackpressureDetectedAsync(backpressureContext);
+
+// Subscribe to metrics collected events
+publisher.Subscribe<MetricsCollectedEventArgs>(nameof(MetricsCollectedEvent), async (e) =>
+{
+    Console.WriteLine($"Metrics collected at {e.Timestamp:HH:mm:ss}");
+    Console.WriteLine($"Throughput: {e.Metrics.ThroughputItemsPerSecond:F2} items/sec");
+    await Task.CompletedTask;
+});
+
+// Publish metrics collected event
+var metrics = new MetricAggregation(1000, 950, 50, 0.98m, DateTime.UtcNow);
+await publisher.PublishMetricsCollectedAsync(metrics);
+
+// Subscribe to pipeline error events
+publisher.Subscribe<PipelineErrorEventArgs>(nameof(PipelineErrorEvent), async (e) =>
+{
+    Console.WriteLine($"Pipeline error in operation: {e.OperationName}");
+    Console.WriteLine($"Error: {e.Exception.Message}");
+    await Task.CompletedTask;
+});
+
+// Publish a pipeline error event
+try
+{
+    // Some pipeline operation that might fail
+}
+catch (Exception ex)
+{
+    await publisher.PublishPipelineErrorAsync("DataProcessing", ex);
+}
+
+// Get subscriber count
+int subscriberCount = publisher.GetSubscriberCount();
+Console.WriteLine($"Active subscribers: {subscriberCount}");
+
+// Unsubscribe from an event
+publisher.Unsubscribe<DataIngestedEventArgs>();
+```
+
 ## Troubleshooting
 
 ### High Memory Usage
