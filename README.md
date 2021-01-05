@@ -1085,6 +1085,65 @@ Console.WriteLine($"Active subscribers: {subscriberCount}");
 publisher.Unsubscribe<DataIngestedEventArgs>();
 ```
 
+## EventSubscriberBase
+
+The `EventSubscriberBase` class serves as the foundation for all event subscribers in the pipeline's event-driven architecture. It provides a standardized subscription pattern with lifecycle management through `Subscribe()` and `Unsubscribe()` methods. This base class handles common concerns like logging, error handling, and subscription state tracking, allowing derived subscribers to focus on their specific event processing logic.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Events;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+var publisher = provider.GetRequiredService<PipelineEventPublisher>();
+
+// Create subscribers for different event types
+var dataIngestSubscriber = new DataIngestSubscriber(publisher, loggerFactory.CreateLogger<DataIngestSubscriber>());
+var processingSubscriber = new ProcessingCompletionSubscriber(publisher, loggerFactory.CreateLogger<ProcessingCompletionSubscriber>());
+var backpressureSubscriber = new BackpressureAlertSubscriber(publisher, loggerFactory.CreateLogger<BackpressureAlertSubscriber>());
+var metricsSubscriber = new MetricsAggregationSubscriber(publisher, loggerFactory.CreateLogger<MetricsAggregationSubscriber>());
+var errorSubscriber = new ErrorAlertSubscriber(publisher, loggerFactory.CreateLogger<ErrorAlertSubscriber>());
+
+// Subscribe to all relevant events
+dataIngestSubscriber.Subscribe();
+processingSubscriber.Subscribe();
+backpressureSubscriber.Subscribe();
+metricsSubscriber.Subscribe();
+errorSubscriber.Subscribe();
+
+// Simulate pipeline operations that generate events
+var dataPoint = new DataPoint(1, DateTime.UtcNow.Ticks, 42.5m, "Sensor-1");
+await publisher.PublishDataIngestedAsync(dataPoint);
+
+await publisher.PublishProcessingCompletedAsync("DataProcessingStage", new ProcessingResult(100, 95, 5));
+
+var backpressureContext = new BackpressureContext("IngestionStage", 0.95m, BackpressureStrategy.Block);
+await publisher.PublishBackpressureDetectedAsync(backpressureContext);
+
+var metrics = new MetricAggregation(1000, 950, 50, 0.98m, DateTime.UtcNow);
+await publisher.PublishMetricsCollectedAsync(metrics);
+
+// Access metrics from subscribers
+Console.WriteLine($"Success Rate: {processingSubscriber.GetSuccessRatePercent():F2}%");
+Console.WriteLine($"Average Processing Time: {metricsSubscriber.GetAverageProcessingTime():F2}ms");
+Console.WriteLine($"Backpressure Events: {backpressureSubscriber.GetBackpressureEventCount()}");
+Console.WriteLine($"Total Errors: {errorSubscriber.GetErrorCount()}");
+Console.WriteLine($"Metrics Collected: {metricsSubscriber.GetMetricsCount()}");
+
+// Unsubscribe when done
+processingSubscriber.Unsubscribe();
+backpressureSubscriber.Unsubscribe();
+```
+
 ## Troubleshooting
 
 ### High Memory Usage
