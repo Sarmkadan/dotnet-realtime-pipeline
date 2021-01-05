@@ -1085,6 +1085,114 @@ Console.WriteLine($"Active subscribers: {subscriberCount}");
 publisher.Unsubscribe<DataIngestedEventArgs>();
 ```
 
+## WebhookHandler
+
+The `WebhookHandler` class provides a webhook integration system that allows external services to receive real-time notifications when pipeline events occur. It manages webhook subscriptions, event delivery with HMAC signature verification, and retry logic for failed deliveries.
+
+### Key Features
+- **Subscription Management**: Register and manage webhook endpoints with filtering by event types
+- **Secure Delivery**: HMAC-SHA256 signature verification using a shared secret
+- **Retry Logic**: Automatic retry with exponential backoff for failed deliveries
+- **Event Filtering**: Support for filtering events by type (DataIngested, ProcessingCompleted, BackpressureDetected, etc.)
+- **Delivery Tracking**: Monitor last delivery time, failure count, and active status
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Events;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+var orchestrator = provider.GetRequiredService<PipelineOrchestrator>();
+
+// Create webhook handler with configuration
+await orchestrator.StartAsync();
+var webhookHandler = new WebhookHandler(
+    id: "external-monitoring-service",
+    url: "https://monitoring.example.com/api/webhooks/pipeline-events",
+    eventTypes: WebhookEventType.DataIngested | WebhookEventType.ProcessingCompleted,
+    secret: "your-webhook-secret-key",
+    logger: loggerFactory.CreateLogger<WebhookHandler>()
+);
+
+// Register the webhook handler
+webhookHandler.RegisterHandler();
+
+// Subscribe to pipeline events and forward to webhook
+var publisher = provider.GetRequiredService<PipelineEventPublisher>();
+
+publisher.Subscribe<DataIngestedEventArgs>(nameof(DataIngestedEvent), async (e) =>
+{
+    await webhookHandler.SendWebhookEventAsync(
+        eventType: "data_ingested",
+        data: new
+        {
+            dataPointId = e.DataPoint.Id,
+            timestamp = e.DataPoint.Timestamp,
+            value = e.DataPoint.Value,
+            source = e.DataPoint.Source,
+            correlationId = e.CorrelationId
+        }
+    );
+});
+
+publisher.Subscribe<ProcessingCompletedEventArgs>(nameof(ProcessingCompletedEvent), async (e) =>
+{
+    await webhookHandler.SendWebhookEventAsync(
+        eventType: "processing_completed",
+        data: new
+        {
+            stageName = e.StageName,
+            totalProcessed = e.Result.TotalProcessed,
+            successCount = e.Result.SuccessCount,
+            failureCount = e.Result.FailureCount,
+            successRate = e.Result.SuccessRate,
+            timestamp = DateTime.UtcNow
+        }
+    );
+});
+
+// Process an incoming webhook request (for receiving webhooks from external services)
+var inboundHandler = new InboundWebhookHandler(
+    secret: "your-webhook-secret-key",
+    logger: loggerFactory.CreateLogger<InboundWebhookHandler>()
+);
+
+// Verify and process an incoming webhook
+var isValid = inboundHandler.ProcessWebhookAsync(
+    requestBody: webhookPayload,
+    signatureHeader: "sha256=your-signature-here",
+    expectedEventType: "data_ingested"
+);
+
+if (isValid)
+{
+    // Process the webhook payload
+    Console.WriteLine("Webhook verified and processed successfully");
+}
+
+// Get current subscriptions
+var subscriptions = webhookHandler.GetSubscriptions();
+foreach (var sub in subscriptions)
+{
+    Console.WriteLine($"Subscription: {sub.Id}, URL: {sub.Url}, Active: {sub.IsActive}");
+}
+
+// Unsubscribe when done
+webhookHandler.Unsubscribe();
+
+await orchestrator.StopAsync();
+```
+
 ## EventSubscriberBase
 
 The `EventSubscriberBase` class serves as the foundation for all event subscribers in the pipeline's event-driven architecture. It provides a standardized subscription pattern with lifecycle management through `Subscribe()` and `Unsubscribe()` methods. This base class handles common concerns like logging, error handling, and subscription state tracking, allowing derived subscribers to focus on their specific event processing logic.
