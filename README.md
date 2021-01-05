@@ -699,6 +699,105 @@ public class EventServiceConfiguration
 }
 ```
 
+## ApiEndpointHandler
+
+The `ApiEndpointHandler` is the base class for all REST API endpoint handlers in the pipeline. It provides a standardized response structure (`ApiResponse<T>`) and common error handling patterns for API endpoints. The class includes two concrete implementations:
+
+- **`DataIngestionHandler`**: Handles data point ingestion via REST API, supporting both single data point and batch ingestion operations with comprehensive status tracking
+- **`StatusHandler`**: Provides pipeline health and status information including throughput, success rates, and system metrics
+
+Both handlers return structured responses with success status, data payload, message, status code, and timestamp.
+
+### Example: Using DataIngestionHandler
+
+```csharp
+using DotNetRealtimePipeline.API;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+var orchestrator = provider.GetRequiredService<PipelineOrchestrator>();
+
+// Create the ingestion handler
+await orchestrator.StartAsync();
+var ingestionHandler = new DataIngestionHandler(orchestrator, loggerFactory.CreateLogger<DataIngestionHandler>());
+
+// Ingest a single data point
+var dataPoint = new DataPoint(
+    id: 1,
+    timestamp: DateTime.UtcNow.Ticks,
+    value: 42.5m,
+    source: "Sensor-1"
+);
+
+var singleResult = await ingestionHandler.IngestAsync(dataPoint);
+Console.WriteLine($"Single Ingestion - Success: {singleResult.Success}, Status: {singleResult.StatusCode}");
+
+// Ingest a batch of data points
+var batch = new List<DataPoint>();
+for (int i = 0; i < 10; i++)
+{
+    batch.Add(new DataPoint(
+        id: i,
+        timestamp: DateTime.UtcNow.Ticks,
+        value: (decimal)Random.Shared.NextDouble() * 100,
+        source: $"Sensor-{i}"
+    ));
+}
+
+var batchResult = await ingestionHandler.IngestBatchAsync(batch);
+Console.WriteLine($"Batch Ingestion - Success: {batchResult.Success}, Total: {batchResult.Data.TotalCount}, Successful: {batchResult.Data.SuccessfulCount}");
+
+await orchestrator.StopAsync();
+```
+
+### Example: Using StatusHandler
+
+```csharp
+using DotNetRealtimePipeline.API;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+var orchestrator = provider.GetRequiredService<PipelineOrchestrator>();
+
+// Create the status handler
+await orchestrator.StartAsync();
+var statusHandler = new StatusHandler(orchestrator, loggerFactory.CreateLogger<StatusHandler>());
+
+// Get pipeline status
+var statusResult = await statusHandler.GetStatusAsync();
+
+if (statusResult.Success)
+{
+    var status = statusResult.Data;
+    Console.WriteLine($"Pipeline: {status.PipelineName} v{status.Version}");
+    Console.WriteLine($"Status: {(status.IsRunning ? "Running" : "Stopped")}");
+    Console.WriteLine($"Processed: {status.TotalProcessed} | Failed: {status.TotalFailed}");
+    Console.WriteLine($"Health: {status.HealthStatus} | Throughput: {status.Throughput:F2} items/sec");
+    Console.WriteLine($"Success Rate: {status.SuccessRate:P2} | Avg Latency: {status.AverageLatency:F2} ms");
+}
+else
+{
+    Console.WriteLine($"Error: {statusResult.Message} (Code: {statusResult.StatusCode})");
+}
+
+await orchestrator.StopAsync();
+```
+
 ## API Reference
 
 ### PipelineOrchestrator
