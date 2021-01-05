@@ -13,8 +13,17 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Test suite for verifying pipeline visualization functionality including node construction, 
+/// health status computation, and rendering of pipeline topology.
+/// </summary>
 public sealed class PipelineVisualizerTests
 {
+    /// <summary>
+    /// Builds a standard test pipeline configuration with three sequential stages: 
+    /// "Ingestion" (SOURCE), "Transform" (TRANSFORM), and "Output" (SINK).
+    /// </summary>
+    /// <returns>Configured PipelineConfig instance</returns>
     private static PipelineConfig BuildConfig()
     {
         var config = new PipelineConfig(1, "TestPipeline", "1.0.0");
@@ -24,6 +33,10 @@ public sealed class PipelineVisualizerTests
         return config;
     }
 
+    /// <summary>
+    /// Creates a PipelineVisualizer instance with default dependencies for testing.
+    /// </summary>
+    /// <returns>Initialized PipelineVisualizer</returns>
     private static PipelineVisualizer BuildVisualizer()
     {
         var backpressure = new BackpressureService();
@@ -31,6 +44,9 @@ public sealed class PipelineVisualizerTests
         return new PipelineVisualizer(backpressure, metrics);
     }
 
+    /// <summary>
+    /// Verifies that BuildNodes() creates one visualization node per pipeline stage.
+    /// </summary>
     [Fact]
     public void BuildNodes_WithValidConfig_ReturnsOneNodePerStage()
     {
@@ -48,6 +64,10 @@ public sealed class PipelineVisualizerTests
         Assert.Equal("Output", nodes[2].StageName);
     }
 
+    /// <summary>
+    /// Verifies that downstream stage relationships are correctly established between sequential stages.
+    /// First stage links to second, second to third, and last stage has no downstream.
+    /// </summary>
     [Fact]
     public void BuildNodes_EdgesAreLinkedSequentially()
     {
@@ -64,6 +84,9 @@ public sealed class PipelineVisualizerTests
         Assert.Empty(nodes[2].DownstreamStages);
     }
 
+    /// <summary>
+    /// Verifies that the full pipeline visualization output contains the pipeline name.
+    /// </summary>
     [Fact]
     public void Render_ContainsPipelineName()
     {
@@ -75,6 +98,9 @@ public sealed class PipelineVisualizerTests
         Assert.Contains("TestPipeline", output);
     }
 
+    /// <summary>
+    /// Verifies that the full pipeline visualization output contains all stage names.
+    /// </summary>
     [Fact]
     public void Render_ContainsAllStageNames()
     {
@@ -88,6 +114,10 @@ public sealed class PipelineVisualizerTests
         Assert.Contains("Output", output);
     }
 
+    /// <summary>
+    /// Verifies that the compact visualization format contains the expected number of separators.
+    /// For 3 stages, expects exactly 2 " -> " separators.
+    /// </summary>
     [Fact]
     public void RenderCompact_ContainsSeparators()
     {
@@ -100,6 +130,9 @@ public sealed class PipelineVisualizerTests
         Assert.Equal(2, CountOccurrences(compact, "->"));
     }
 
+    /// <summary>
+    /// Verifies that a backpressured node with any buffer fill percentage returns "CRITICAL" health status.
+    /// </summary>
     [Fact]
     public void PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical()
     {
@@ -107,6 +140,9 @@ public sealed class PipelineVisualizerTests
         Assert.Equal("CRITICAL", node.ComputeHealthLabel());
     }
 
+    /// <summary>
+    /// Verifies that a non-backpressured node with high buffer fill (>= 80%) returns "WARNING" health status.
+    /// </summary>
     [Fact]
     public void PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning()
     {
@@ -114,6 +150,9 @@ public sealed class PipelineVisualizerTests
         Assert.Equal("WARNING", node.ComputeHealthLabel());
     }
 
+    /// <summary>
+    /// Verifies that a non-backpressured node with normal buffer fill (< 80%) returns "HEALTHY" status.
+    /// </summary>
     [Fact]
     public void PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy()
     {
@@ -121,6 +160,12 @@ public sealed class PipelineVisualizerTests
         Assert.Equal("HEALTHY", node.ComputeHealthLabel());
     }
 
+    /// <summary>
+    /// Counts the number of pattern occurrences in a text string.
+    /// </summary>
+    /// <param name="text">Text to search in</param>
+    /// <param name="pattern">Pattern to find</param>
+    /// <returns>Number of occurrences</returns>
     private static int CountOccurrences(string text, string pattern)
     {
         int count = 0;
