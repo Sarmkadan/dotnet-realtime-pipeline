@@ -1277,6 +1277,88 @@ Console.WriteLine($"Cached fetch returned {cachedData.Count} points");
 cachedSource.ClearCache();
 ```
 
+## IMetricsExporter
+
+The `IMetricsExporter` interface defines a contract for exporting pipeline metrics to external monitoring systems. It supports both single metric export and batch operations, enabling integration with various monitoring backends like Prometheus, HTTP endpoints, or composite exporters that route metrics to multiple destinations.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+// Create a Prometheus exporter
+var prometheusExporter = new PrometheusMetricsExporter(
+    loggerFactory.CreateLogger<PrometheusMetricsExporter>()
+);
+
+// Create an HTTP exporter
+var httpClient = new HttpClient();
+var httpExporter = new HttpMetricsExporter(
+    endpoint: "https://metrics.example.com/api/collect",
+    httpClient: httpClient,
+    logger: loggerFactory.CreateLogger<HttpMetricsExporter>()
+);
+
+// Create a composite exporter to route to multiple destinations
+var compositeExporter = new CompositeMetricsExporter(
+    loggerFactory.CreateLogger<CompositeMetricsExporter>()
+);
+compositeExporter.AddExporter(prometheusExporter);
+compositeExporter.AddExporter(httpExporter);
+
+// Export a single metric
+var metrics = new MetricAggregation(
+    totalItemsProcessed: 1000,
+    totalItemsFailed: 10,
+    totalItemsSkipped: 5,
+    averageProcessingTimeMs: 15.5m,
+    computedAt: DateTime.UtcNow
+);
+
+await compositeExporter.ExportAsync(metrics);
+
+// Export a batch of metrics
+var batchMetrics = new List<MetricAggregation>();
+for (int i = 0; i < 10; i++)
+{
+    batchMetrics.Add(new MetricAggregation(
+        totalItemsProcessed: 1000 + i,
+        totalItemsFailed: 5 + i,
+        totalItemsSkipped: 2 + i,
+        averageProcessingTimeMs: 12.5m + i,
+        computedAt: DateTime.UtcNow
+    ));
+}
+
+await compositeExporter.ExportBatchAsync(batchMetrics);
+
+// Use factory methods for convenience
+var factoryPrometheus = MetricsExporterFactory.CreatePrometheus(
+    loggerFactory.CreateLogger<PrometheusMetricsExporter>()
+);
+
+var factoryHttp = MetricsExporterFactory.CreateHttp(
+    endpoint: "https://monitoring.example.com/api/metrics",
+    client: httpClient,
+    logger: loggerFactory.CreateLogger<HttpMetricsExporter>()
+);
+
+var factoryComposite = MetricsExporterFactory.CreateComposite(
+    loggerFactory.CreateLogger<CompositeMetricsExporter>()
+);
+```
+
 ## WebhookHandler
 
 The `WebhookHandler` class provides a webhook integration system that allows external services to receive real-time notifications when pipeline events occur. It manages webhook subscriptions, event delivery with HMAC signature verification, and retry logic for failed deliveries.
