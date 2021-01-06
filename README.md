@@ -1085,6 +1085,77 @@ Console.WriteLine($"Active subscribers: {subscriberCount}");
 publisher.Unsubscribe<DataIngestedEventArgs>();
 ```
 
+## IExternalDataSource
+
+The `IExternalDataSource` interface defines a contract for external data sources that can be integrated into the pipeline. It provides a standardized way to fetch time-bounded data from external systems with health checking capabilities. Implementations include HTTP-based sources, cached wrappers, and multi-source managers with automatic fallback.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+// Create an HTTP data source
+var httpClient = new HttpClient();
+var httpDataSource = new HttpDataSource(
+    baseUrl: "https://api.example.com/sensors",
+    httpClient: httpClient,
+    logger: loggerFactory.CreateLogger<HttpDataSource>()
+);
+
+// Check availability
+bool isAvailable = await httpDataSource.IsAvailableAsync();
+Console.WriteLine($"HTTP Source Available: {isAvailable}");
+
+// Fetch data for a time range
+var startTime = DateTime.UtcNow.AddHours(-1);
+var endTime = DateTime.UtcNow;
+var dataPoints = await httpDataSource.FetchDataAsync(startTime, endTime);
+Console.WriteLine($"Fetched {dataPoints.Count} data points");
+
+// Create a data source manager with multiple sources and priority
+var manager = new DataSourceManager(loggerFactory.CreateLogger<DataSourceManager>());
+manager.Register("PrimaryAPI", httpDataSource, priority: 1);
+
+// Register a secondary source for fallback
+var backupHttpClient = new HttpClient();
+var backupSource = new HttpDataSource(
+    baseUrl: "https://backup-api.example.com/sensors",
+    httpClient: backupHttpClient,
+    logger: loggerFactory.CreateLogger<HttpDataSource>()
+);
+manager.Register("BackupAPI", backupSource, priority: 0);
+
+// Fetch data with automatic fallback
+var managedData = await manager.FetchDataAsync(startTime, endTime);
+Console.WriteLine($"Managed fetch returned {managedData.Count} points");
+
+// Get health status
+var health = manager.GetSourceHealth();
+foreach (var sourceHealth in health)
+{
+    Console.WriteLine($"Source {sourceHealth.Key}: {(sourceHealth.Value ? "Healthy" : "Unhealthy")}");
+}
+
+// Create a cached wrapper to reduce network calls
+var cachedSource = new CachedDataSource(httpDataSource, loggerFactory.CreateLogger<CachedDataSource>());
+var cachedData = await cachedSource.FetchDataAsync(startTime, endTime);
+Console.WriteLine($"Cached fetch returned {cachedData.Count} points");
+
+// Clear cache when needed
+cachedSource.ClearCache();
+```
+
 ## WebhookHandler
 
 The `WebhookHandler` class provides a webhook integration system that allows external services to receive real-time notifications when pipeline events occur. It manages webhook subscriptions, event delivery with HMAC signature verification, and retry logic for failed deliveries.
