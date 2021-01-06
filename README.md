@@ -1089,6 +1089,61 @@ publisher.Unsubscribe<DataIngestedEventArgs>();
 
 The `IExternalDataSource` interface defines a contract for external data sources that can be integrated into the pipeline. It provides a standardized way to fetch time-bounded data from external systems with health checking capabilities. Implementations include HTTP-based sources, cached wrappers, and multi-source managers with automatic fallback.
 
+## RawPipelineAccessor
+
+`RawPipelineAccessor` provides direct, zero-copy access to a `System.IO.Pipelines.Pipe` instance, exposing both the reader and writer ends for efficient data streaming. It's particularly useful for integrating network streams (like sockets) directly into the pipeline without intermediate buffering, enabling optimal backpressure control through configurable pipe options.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using System.IO.Pipelines;
+using System.Net.Sockets;
+
+// Create a pipeline accessor with default options
+var accessor = new RawPipelineAccessor();
+
+// Access the PipeReader and PipeWriter
+PipeReader reader = accessor.AsPipeReader();
+PipeWriter writer = accessor.AsPipeWriter();
+
+// Use with a socket for zero-copy streaming
+using var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+await socket.ConnectAsync("example.com", 80);
+
+// Write data to the pipeline
+await socket.SendAsync(writer, cancellationToken);
+
+// Read data from the pipeline
+var result = await reader.ReadAsync(cancellationToken);
+
+// Reset the pipe to clear buffered data
+accessor.Reset();
+
+// Dispose when done
+accessor.Dispose();
+```
+
+### Advanced Configuration
+
+```csharp
+using System.IO.Pipelines;
+
+// Create with custom pipe options for backpressure control
+var options = new PipeOptions(
+    pauseWriterThreshold: 65536,  // 64KB
+    resumeWriterThreshold: 32768, // 32KB
+    minimumSegmentSize: 4096,     // 4KB
+    useSynchronizationContext: false
+);
+
+var accessor = new RawPipelineAccessor(options);
+
+// Configure buffer sizes and thresholds
+var pipe = accessor.AsPipeWriter();
+// ... configure pipe settings
+```
+
 ### Usage Example
 
 ```csharp
