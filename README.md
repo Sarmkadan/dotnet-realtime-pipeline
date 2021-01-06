@@ -1089,6 +1089,72 @@ publisher.Unsubscribe<DataIngestedEventArgs>();
 
 The `IExternalDataSource` interface defines a contract for external data sources that can be integrated into the pipeline. It provides a standardized way to fetch time-bounded data from external systems with health checking capabilities. Implementations include HTTP-based sources, cached wrappers, and multi-source managers with automatic fallback.
 
+## PipelineHttpClientFactory
+
+`PipelineHttpClientFactory` is a factory for creating and configuring HTTP clients with built-in retry policies, timeout management, and connection pooling. It provides both simple client creation methods and a fluent builder pattern for advanced configuration. The factory manages client instances internally, allowing for reuse and cleanup of HTTP clients across the application.
+
+### Usage Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+var httpClientFactory = provider.GetRequiredService<PipelineHttpClientFactory>();
+
+// Create a default client
+var defaultClient = httpClientFactory.CreateDefaultClient();
+
+// Create a service-specific client with custom timeout
+var apiClient = httpClientFactory.CreateServiceClient(
+    serviceName: "ExternalAPI",
+    timeout: TimeSpan.FromSeconds(60),
+    useCompression: true
+);
+
+// Get or create a client for a specific endpoint
+var metricsClient = httpClientFactory.GetOrCreateClient("MetricsService", client =>
+{
+    client.BaseAddress = new Uri("https://metrics.example.com/api/");
+    client.DefaultRequestHeaders.Add("Authorization", "Bearer token123");
+});
+
+// Use the client to make requests
+var response = await apiClient.GetAsync("/data/points");
+var content = await response.Content.ReadAsStringAsync();
+
+// Remove a client when no longer needed
+httpClientFactory.RemoveClient("ExternalAPI");
+
+// Clear all cached clients (e.g., during application shutdown)
+httpClientFactory.ClearClients();
+
+// Access factory configuration properties
+Console.WriteLine($"Default Timeout: {httpClientFactory.Timeout}");
+Console.WriteLine($"Max Retries: {httpClientFactory.MaxRetries}");
+Console.WriteLine($"Retry Delay: {httpClientFactory.RetryDelay}");
+Console.WriteLine($"Max Connections Per Host: {httpClientFactory.MaxConnectionsPerHost}");
+Console.WriteLine($"Use Compression: {httpClientFactory.UseCompression}");
+Console.WriteLine($"User Agent: {httpClientFactory.UserAgent}");
+Console.WriteLine($"Default Headers: {string.Join(", ", httpClientFactory.DefaultHeaders.Select(h => h.Key))}");
+
+// Use the fluent builder for advanced configuration
+var customClient = new HttpClientBuilder(loggerFactory.CreateLogger<HttpClientBuilder>())
+    .WithTimeout(TimeSpan.FromSeconds(90))
+    .WithRetry(maxRetries: 5, delay: TimeSpan.FromSeconds(2))
+    .WithCompression(true)
+    .WithHeader("X-Custom-Header", "value")
+    .WithMaxConnectionsPerHost(20)
+    .Build();
+```
+
 ## RawPipelineAccessor
 
 `RawPipelineAccessor` provides direct, zero-copy access to a `System.IO.Pipelines.Pipe` instance, exposing both the reader and writer ends for efficient data streaming. It's particularly useful for integrating network streams (like sockets) directly into the pipeline without intermediate buffering, enabling optimal backpressure control through configurable pipe options.

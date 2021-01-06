@@ -60,6 +60,9 @@ public static class ServiceCollectionExtensions
         // Register dead-letter queue
         services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IDeadLetterQueue, DotNetRealtimePipeline.DeadLetter.DeadLetterQueue>();
 
+// Register HTTP client factory
+services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFactory>();
+
         return services;
     }
 
