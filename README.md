@@ -964,40 +964,101 @@ foreach (var e in events)
     Console.WriteLine($"{e.Timestamp:HH:mm:ss} | {e.StageName} | {(e.IsActivation ? "ACTIVATED" : "released")} | buf={e.BufferFillPercent:F0}%");
 ```
 
-## Dead Letter Handling
+## DeadLetterQueue
 
-The `IDeadLetterQueue` / `DeadLetterQueue` pair captures data points that could not
-be processed and exposes them for inspection, retry, or permanent failure
-acknowledgement.
+The `DeadLetterQueue` class manages a persistent queue of failed data points that could not be processed by the pipeline. It provides comprehensive dead-letter handling with configurable retry budgets, automatic backoff, and detailed statistics tracking. Failed entries are automatically captured from processing failures and can be inspected, retried, or permanently acknowledged with resolution notes for auditing purposes.
+
+### Key Features
+
+- **Automatic Capture**: Failed data points are automatically routed to the dead-letter queue with metadata including failure stage, reason, and timestamp
+- **Retry Management**: Configurable retry budgets with automatic backoff and exhaustion tracking
+- **Inspection & Replay**: Peek at pending entries or dequeue them for retry with `PeekAsync` and `DequeueForRetryAsync`
+- **Permanent Failure Handling**: Acknowledge failures with resolution notes for audit trails
+- **Comprehensive Statistics**: Real-time queue statistics including pending, in-retry, permanent failures, and total resolved counts
+
+### Public API
 
 ```csharp
-var dlq = serviceProvider.GetRequiredService<IDeadLetterQueue>();
+public Task EnqueueAsync(DataPoint dataPoint, string stageName, string failureReason)
+public Task<IReadOnlyList<DeadLetterEntry>> PeekAsync(int maxCount = 10)
+public Task<IReadOnlyList<DeadLetterEntry>> DequeueForRetryAsync(int maxCount = 10)
+public Task AcknowledgeSuccessAsync(Guid entryId)
+public Task AcknowledgeFailureAsync(Guid entryId, string resolutionNote)
+public Task<DeadLetterQueueStats> GetStatsAsync()
+```
 
-// Enqueue a failed data point
-await dlq.EnqueueAsync(dataPoint, stageName: "Transform", failureReason: "schema mismatch");
+### Usage Example
 
-// Pick up entries for retry
-var batch = await dlq.DequeueForRetryAsync(maxCount: 10);
-foreach (var entry in batch)
+```csharp
+using DotNetRealtimePipeline.DeadLetter;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+var deadLetterQueue = provider.GetRequiredService<DeadLetterQueue>();
+
+// Simulate a failed data point during processing
+await deadLetterQueue.EnqueueAsync(
+    dataPoint: new DataPoint(
+        id: 123,
+        timestamp: DateTime.UtcNow.Ticks,
+        value: 42.5m,
+        source: "Sensor-1"
+    ),
+    stageName: "DataProcessingStage",
+    failureReason: "Validation failed: value out of range"
+);
+
+// Check queue statistics
+var stats = await deadLetterQueue.GetStatsAsync();
+Console.WriteLine($"Queue Stats - Pending: {stats.PendingEntries}, " +
+                 $"InRetry: {stats.InRetryEntries}, " +
+                 $"PermanentFailures: {stats.PermanentFailureEntries}, " +
+                 $"TotalResolved: {stats.TotalResolvedEntries}");
+
+// Process failed entries for retry
+var retryBatch = await deadLetterQueue.DequeueForRetryAsync(maxCount: 5);
+foreach (var entry in retryBatch)
 {
     try
     {
-        await Reprocess(entry.DataPoint);
-        await dlq.AcknowledgeSuccessAsync(entry.EntryId);
+        // Attempt to reprocess the data point
+        await ProcessDataPoint(entry.DataPoint);
+        
+        // Mark as successfully processed
+        await deadLetterQueue.AcknowledgeSuccessAsync(entry.EntryId);
+        Console.WriteLine($"Successfully reprocessed entry {entry.EntryId}");
     }
     catch (Exception ex)
     {
+        // Handle retry failure
         entry.RetryFailed(ex.Message);
+        
         if (!entry.CanRetry)
-            await dlq.AcknowledgeFailureAsync(entry.EntryId, "exhausted retries");
+        {
+            // Permanent failure - acknowledge with resolution note
+            await deadLetterQueue.AcknowledgeFailureAsync(
+                entryId: entry.EntryId,
+                resolutionNote: "Downstream service unavailable for extended period"
+            );
+            Console.WriteLine($"Entry {entry.EntryId} marked as permanent failure");
+        }
     }
 }
 
-// Check queue health
-var stats = await dlq.GetStatsAsync();
-Console.WriteLine($"DLQ  pending={stats.PendingEntries}  permanent-failures={stats.PermanentFailureEntries}");
+// Peek at pending entries without removing them
+var pendingEntries = await deadLetterQueue.PeekAsync(maxCount: 10);
+foreach (var entry in pendingEntries)
+{
+    Console.WriteLine($"Pending: Entry {entry.EntryId}, " +
+                     $"Stage: {entry.FailureStageName}, " +
+                     $"Reason: {entry.FailureReason}, " +
+                     $"Retries: {entry.RetryCount}/{entry.MaxRetries}");
+}
 ```
-
 ## DeadLetterEntry
 
 The `DeadLetterEntry` class represents a data point that failed processing at a specific pipeline stage and was routed to the dead-letter queue. It tracks retry attempts, failure reasons, timestamps, and status throughout the retry lifecycle. Each entry contains the original data point, metadata about the failure, and state management methods for retry operations.
