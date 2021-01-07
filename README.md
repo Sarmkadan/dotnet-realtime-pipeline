@@ -998,6 +998,60 @@ var stats = await dlq.GetStatsAsync();
 Console.WriteLine($"DLQ  pending={stats.PendingEntries}  permanent-failures={stats.PermanentFailureEntries}");
 ```
 
+## DeadLetterEntry
+
+The `DeadLetterEntry` class represents a data point that failed processing at a specific pipeline stage and was routed to the dead-letter queue. It tracks retry attempts, failure reasons, timestamps, and status throughout the retry lifecycle. Each entry contains the original data point, metadata about the failure, and state management methods for retry operations.
+
+```csharp
+using DotNetRealtimePipeline.DeadLetter;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Create a dead-letter entry for a failed data point
+var failedEntry = new DeadLetterEntry
+{
+    DataPoint = new DataPoint(
+        id: 123,
+        timestamp: DateTime.UtcNow.Ticks,
+        value: 42.5m,
+        source: "Sensor-1"
+    ),
+    FailureStageName = "DataProcessingStage",
+    FailureReason = "Validation failed: value out of range",
+    ExceptionType = "ArgumentOutOfRangeException",
+    ExceptionMessage = "Value 42.5 is outside valid range [0, 40]",
+    MaxRetries = 5,
+    RetryCount = 0,
+    Status = DeadLetterStatus.Pending
+};
+
+// Begin retry attempt
+failedEntry.BeginRetry();
+Console.WriteLine($"Retry attempt {failedEntry.RetryCount}/{failedEntry.MaxRetries}");
+Console.WriteLine(failedEntry.GetSummary());
+
+// After retry succeeds or fails
+if (retrySucceeded)
+{
+    failedEntry.Status = DeadLetterStatus.Resolved;
+    failedEntry.ResolvedAt = DateTime.UtcNow;
+}
+else
+{
+    failedEntry.RetryFailed("Downstream service unavailable");
+    if (!failedEntry.CanRetry)
+    {
+        failedEntry.Status = DeadLetterStatus.PermanentFailure;
+        failedEntry.ResolutionNote = "Service temporarily unavailable for 1 hour";
+    }
+}
+```
+
 ## PipelineEventPublisher
 
 The `PipelineEventPublisher` class provides a pub/sub mechanism for decoupling event producers from consumers within the pipeline. It supports publishing various pipeline events such as data ingestion, processing completion, backpressure detection, metrics collection, and pipeline errors.
