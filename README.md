@@ -82,4 +82,59 @@ Console.WriteLine(processingNode.ToInlineString());
 // Output: [DataProcessing | CRITICAL | buf=86% | 890.2 eps]
 ```
 
+## ProcessingResult
+
+`ProcessingResult` represents the outcome of processing a data point or window through the pipeline. It tracks success/failure status, processing metrics (time, retries), error details, and output data. This type is used throughout the pipeline to propagate results between stages and provide observability into processing operations.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a successful processing result
+var successResult = new ProcessingResult(1, true, "DataProcessing")
+{
+    ProcessingTimeMs = 150,
+    CorrelationId = "corr-12345",
+    OutputData = new Dictionary<string, object> { { "processedItems", 42 }, { "throughput", 890.2 } }
+};
+
+Console.WriteLine(successResult.GetSummary());
+// Output: Result[Id=1, Stage=DataProcessing, Success=True, ProcessingTime=150ms, Retries=0]
+
+// Mark as successful explicitly
+successResult.MarkSuccess();
+
+// Create a failed processing result
+var failedResult = new ProcessingResult(2, false, "DataValidation")
+{
+    ProcessingTimeMs = 250,
+    RetryCount = 2,
+    CorrelationId = "corr-67890"
+};
+failedResult.MarkFailure("Validation failed: negative value detected", 
+    new ArgumentException("Value must be positive"));
+
+Console.WriteLine(failedResult.ErrorMessage);
+Console.WriteLine(failedResult.Exception?.Message);
+
+// Add output data dynamically
+failedResult.AddOutput("validationErrors", new List<string> { "Negative value at index 5", "Invalid format" });
+failedResult.AddOutput("rejectedItems", 15);
+
+// Retrieve output data
+var errors = failedResult.GetOutput("validationErrors") as List<string>;
+var rejectedCount = failedResult.GetOutput("rejectedItems") as int?;
+
+// Increment retry count
+failedResult.IncrementRetryCount();
+
+// Validate result
+bool isValid = failedResult.IsValid();
+
+// Clone with new ID
+var clonedResult = failedResult.Clone(3);
+Console.WriteLine(clonedResult.ResultId); // 3
+```
+
 ## Backpressure Metrics
