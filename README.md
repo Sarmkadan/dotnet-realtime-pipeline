@@ -336,4 +336,62 @@ var devConfig = new PipelineConfig
 Console.WriteLine($"Dev pipeline created: {devConfig.PipelineName}");
 ```
 
+## DataPoint
+
+`DataPoint` represents a single data point in the pipeline stream. It serves as the core entity for processing, carrying essential information such as a unique identifier, timestamp, measured value, source system, and quality metrics. Data points include metadata for extensibility and tags for categorization, making them suitable for tracking real-time measurements across various sources.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a data point for temperature measurement from an IoT sensor
+var dataPoint = new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001")
+{
+    Quality = 95,
+    Tags = "temperature,environmental,sensor-001",
+    Metadata = new Dictionary<string, object>
+    {
+        { "sensorType", "temperature" },
+        { "unit", "celsius" },
+        { "location", "room-101" },
+        { "calibrationDate", DateTime.UtcNow.AddDays(-7) }
+    }
+};
+
+Console.WriteLine($"DataPoint ID: {dataPoint.Id}");
+Console.WriteLine($"Timestamp: {dataPoint.Timestamp}");
+Console.WriteLine($"Value: {dataPoint.Value}");
+Console.WriteLine($"Source: {dataPoint.Source}");
+Console.WriteLine($"Quality: {dataPoint.Quality}");
+Console.WriteLine($"Age: {dataPoint.GetAgeMs()}ms");
+Console.WriteLine($"Tags: {dataPoint.Tags}");
+
+// Add additional metadata dynamically
+var metadata = new Dictionary<string, object>
+{
+    { "deviceId", "sensor-001" },
+    { "firmwareVersion", "2.1.4" },
+    { "lastCalibration", DateTime.UtcNow.AddDays(-3) }
+};
+
+foreach (var kvp in metadata)
+{
+    dataPoint.AddMetadata(kvp.Key, kvp.Value);
+}
+
+// Check quality threshold
+bool meetsThreshold = dataPoint.MeetsQualityThreshold(90);
+Console.WriteLine($"Meets quality threshold 90%: {meetsThreshold}");
+
+// Validate data point
+bool isValid = dataPoint.Validate();
+Console.WriteLine($"Is valid: {isValid}");
+
+// Clone with new ID for processing
+var clonedPoint = dataPoint.Clone(2);
+Console.WriteLine($"Cloned data point ID: {clonedPoint.Id}");
+Console.WriteLine($"Cloned value: {clonedPoint.Value}");
+```
+
 ## Backpressure Metrics
