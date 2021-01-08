@@ -196,4 +196,62 @@ var clonedResult = failedResult.Clone(3);
 Console.WriteLine(clonedResult.ResultId); // 3
 ```
 
+## BackpressureContext
+
+`BackpressureContext` tracks backpressure state within a pipeline stage, providing real-time metrics about buffer capacity, consumer activity, and backpressure events. It captures when backpressure begins, how long it persists, the number of dropped items, and current buffer utilization. This context is used by pipeline stages to make throttling decisions and by monitoring systems to visualize system health.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a backpressure context for a processing stage
+var backpressureContext = new BackpressureContext(
+    contextId: 1,
+    pipelineStageName: "DataProcessing",
+    bufferSize: 1000,
+    maxBufferCapacity: 2000
+);
+
+Console.WriteLine($"Context ID: {backpressureContext.ContextId}");
+Console.WriteLine($"Stage: {backpressureContext.PipelineStageName}");
+Console.WriteLine($"Buffer Size: {backpressureContext.BufferSize}");
+Console.WriteLine($"Max Capacity: {backpressureContext.MaxBufferCapacity}");
+Console.WriteLine($"Created At: {backpressureContext.CreatedAt}");
+
+// Add an item to the buffer
+bool added = backpressureContext.TryAddToBuffer(42);
+Console.WriteLine($"Item added: {added}");
+Console.WriteLine($"Current fill: {backpressureContext.GetBufferFillPercentage()}%");
+
+// Apply backpressure when buffer reaches 90%
+if (backpressureContext.ShouldApplyBackpressure())
+{
+    backpressureContext.StartBackpressure();
+    Console.WriteLine($"Backpressure started at: {backpressureContext.BackpressureStartTimeMs}");
+    Console.WriteLine($"Is backpressured: {backpressureContext.IsBackpressured}");
+}
+
+// Remove an item from buffer
+backpressureContext.RemoveFromBuffer(42);
+
+// Record backpressure event
+backpressureContext.RecordBackpressureEvent();
+Console.WriteLine($"Total backpressure time: {backpressureContext.TotalBackpressureTimeMs}ms");
+Console.WriteLine($"Dropped items: {backpressureContext.DroppedItemCount}");
+
+// Track buffer metrics
+backpressureContext.BufferMetrics["high_water_mark"] = 1800;
+Console.WriteLine($"High water mark: {backpressureContext.BufferMetrics["high_water_mark"]}");
+
+// Track active consumers
+backpressureContext.ActiveConsumers = 3;
+backpressureContext.MaxConcurrentConsumers = 5;
+Console.WriteLine($"Consumers: {backpressureContext.ActiveConsumers}/{backpressureContext.MaxConcurrentConsumers}");
+
+// Log event timestamps
+backpressureContext.BackpressureEventTimestamps.Enqueue(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+Console.WriteLine($"Event timestamps recorded: {backpressureContext.BackpressureEventTimestamps.Count}");
+```
+
 ## Backpressure Metrics
