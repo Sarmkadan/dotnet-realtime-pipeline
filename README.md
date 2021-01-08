@@ -254,4 +254,86 @@ backpressureContext.BackpressureEventTimestamps.Enqueue(DateTimeOffset.UtcNow.To
 Console.WriteLine($"Event timestamps recorded: {backpressureContext.BackpressureEventTimestamps.Count}");
 ```
 
+## PipelineConfig
+
+`PipelineConfig` defines the configuration for a real-time data pipeline, controlling buffer sizes, concurrency limits, retry policies, windowing behavior, data quality thresholds, and backpressure thresholds. It serves as the central configuration object that pipeline stages use to coordinate their behavior and provides extensibility through custom settings for domain-specific pipeline requirements.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a pipeline configuration for a high-throughput data processing pipeline
+var config = new PipelineConfig
+{
+    PipelineName = "IoTDataProcessingPipeline",
+    Version = "2.1.0",
+    MaxBufferSize = 10_000,
+    BufferFlushIntervalMs = 500,
+    MaxConcurrentConsumers = 8,
+    WindowSizeMs = 5000,
+    WindowSlideMs = 1000,
+    WindowType = "tumbling",
+    MaxRetries = 3,
+    RetryDelayMs = 100,
+    ProcessingTimeoutMs = 10_000,
+    BackpressureTriggerThreshold = 0.90,
+    MinDataQualityThreshold = 85,
+    ValidateOnIngestion = true,
+    EnableMetricsCollection = true,
+    Stages = new List<PipelineStageDef>
+    {
+        new PipelineStageDef { StageName = "DataIngestion", StageType = "SOURCE" },
+        new PipelineStageDef { StageName = "DataProcessing", StageType = "TRANSFORM" },
+        new PipelineStageDef { StageName = "DataValidation", StageType = "VALIDATION" },
+        new PipelineStageDef { StageName = "WindowingService", StageType = "WINDOW" }
+    },
+    CustomSettings = new Dictionary<string, object>
+    {
+        { "enableCompression", true },
+        { "compressionThreshold", 1024 },
+        { "enableMonitoring", true },
+        { "monitoringSamplingRate", 0.1 }
+    }
+};
+
+Console.WriteLine($"Pipeline: {config.PipelineName} v{config.Version}");
+Console.WriteLine($"Buffer: {config.MaxBufferSize} items, flush every {config.BufferFlushIntervalMs}ms");
+Console.WriteLine($"Concurrency: up to {config.MaxConcurrentConsumers} consumers");
+Console.WriteLine($"Window: {config.WindowType} {config.WindowSizeMs}ms/{config.WindowSlideMs}ms");
+Console.WriteLine($"Retries: max {config.MaxRetries} with {config.RetryDelayMs}ms delay");
+Console.WriteLine($"Backpressure threshold: {config.BackpressureTriggerThreshold * 100}%");
+Console.WriteLine($"Data quality threshold: {config.MinDataQualityThreshold}%");
+Console.WriteLine($"Metrics enabled: {config.EnableMetricsCollection}");
+```
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+
+// Create a minimal configuration for a development pipeline
+var devConfig = new PipelineConfig
+{
+    PipelineName = "DevPipeline",
+    Version = "1.0.0-dev",
+    MaxBufferSize = 1000,
+    MaxConcurrentConsumers = 2,
+    WindowSizeMs = 1000,
+    WindowType = "sliding",
+    MaxRetries = 2,
+    ProcessingTimeoutMs = 5000,
+    BackpressureTriggerThreshold = 0.85,
+    MinDataQualityThreshold = 70,
+    ValidateOnIngestion = false,
+    EnableMetricsCollection = false,
+    Stages = new List<PipelineStageDef>
+    {
+        new PipelineStageDef { StageName = "Ingest", StageType = "SOURCE" },
+        new PipelineStageDef { StageName = "Process", StageType = "TRANSFORM" }
+    }
+};
+
+Console.WriteLine($"Dev pipeline created: {devConfig.PipelineName}");
+```
+
 ## Backpressure Metrics
