@@ -394,4 +394,44 @@ Console.WriteLine($"Cloned data point ID: {clonedPoint.Id}");
 Console.WriteLine($"Cloned value: {clonedPoint.Value}");
 ```
 
+## WindowEvent
+
+`WindowEvent` represents a time-bounded aggregation of data points collected during a specific interval. It tracks window boundaries, aggregation type, and provides statistical calculations over the contained data points. This type is used throughout the pipeline's windowing service to manage tumbling/sliding windows and produce aggregated outputs.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a tumbling window for 5-second intervals
+var window = new WindowEvent(1, 1715616000000, 1715616005000, "tumbling")
+{
+    Description = "Temperature readings from IoT sensors"
+};
+
+// Add data points within the window
+window.TryAddDataPoint(new DataPoint(1, 1715616001000, 23.5, "IoTSensor-001") { Quality = 95 });
+window.TryAddDataPoint(new DataPoint(2, 1715616002000, 24.1, "IoTSensor-002") { Quality = 92 });
+window.TryAddDataPoint(new DataPoint(3, 1715616003000, 22.8, "IoTSensor-003") { Quality = 97 });
+
+// Calculate window statistics
+Console.WriteLine($"Window duration: {window.GetDurationMs()}ms");
+Console.WriteLine($"Data points: {window.GetDataPointCount()}");
+Console.WriteLine($"Average: {window.CalculateAverage():F2}");
+Console.WriteLine($"Sum: {window.CalculateSum():F2}");
+Console.WriteLine($"Min: {window.CalculateMin():F2}");
+Console.WriteLine($"Max: {window.CalculateMax():F2}");
+Console.WriteLine($"Standard deviation: {window.CalculateStandardDeviation():F2}");
+
+// Mark window as complete for output
+window.MarkComplete();
+
+// Retrieve metadata for reporting
+var metadata = window.GetMetadata();
+foreach (var kvp in metadata)
+{
+    Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+}
+```
+
 ## Backpressure Metrics
