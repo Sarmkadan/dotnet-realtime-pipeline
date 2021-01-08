@@ -82,6 +82,65 @@ Console.WriteLine(processingNode.ToInlineString());
 // Output: [DataProcessing | CRITICAL | buf=86% | 890.2 eps]
 ```
 
+## StreamEvent
+
+`StreamEvent` represents an event flowing through the stream at a specific point in time. It wraps data points with metadata about their processing context, including timestamps, priority levels, source systems, correlation identifiers, and processing state. This type is used throughout the pipeline to track events as they move through various stages and provides methods for monitoring processing progress.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a stream event for a data point
+var dataEvent = new StreamEvent(1, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), "data")
+{
+    SourceSystem = "IoTDevice",
+    Priority = 7,
+    CorrelationId = "corr-iot-001",
+    Payload = new Dictionary<string, object>
+    {
+        { "sensorType", "temperature" },
+        { "value", 23.5 },
+        { "unit", "celsius" }
+    }
+};
+
+Console.WriteLine(dataEvent.GetSummary());
+// Output: StreamEvent[Id=1, Type=data, Priority=7, Stages=0, Completed=False]
+
+// Mark event as processed by ingestion stage
+dataEvent.MarkProcessedByStage("DataIngestion");
+
+// Mark event as processed by processing stage
+dataEvent.MarkProcessedByStage("DataProcessing");
+
+Console.WriteLine(dataEvent.GetProcessingPath());
+// Output: DataIngestion -> DataProcessing
+
+// Check if processed by specific stage
+bool processedByIngestion = dataEvent.HasBeenProcessedByStage("DataIngestion");
+Console.WriteLine(processedByIngestion); // True
+
+// Complete processing
+var processingTime = dataEvent.GetTotalProcessingTimeMs();
+dataEvent.CompleteProcessing();
+
+// Create a retry event after failure
+var retryEvent = new StreamEvent(2, 1002, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), "error")
+{
+    SourceSystem = "IoTDevice",
+    Priority = 8,
+    IsRetry = true,
+    RetryAttempt = 1,
+    LastErrorMessage = "Sensor timeout"
+};
+
+// Create a child event derived from parent
+var childEvent = dataEvent.CreateChildEvent(3, "derived");
+Console.WriteLine(childEvent.CausationId); // 1 (parent EventId)
+Console.WriteLine(childEvent.CorrelationId); // Same as parent correlation ID
+```
+
 ## ProcessingResult
 
 `ProcessingResult` represents the outcome of processing a data point or window through the pipeline. It tracks success/failure status, processing metrics (time, retries), error details, and output data. This type is used throughout the pipeline to propagate results between stages and provide observability into processing operations.
