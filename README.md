@@ -486,4 +486,64 @@ foreach (var kvp in metadata)
 }
 ```
 
+## ScalingDecision
+
+`ScalingDecision` represents an auto-scaling directive issued by the pipeline's consumer scaling service. It captures the scaling intent (up or down), the rationale, current and target consumer counts, buffer state, backpressure frequency, and timing metadata. Pipeline stages use these decisions to adjust parallelism in response to load changes, ensuring throughput while preventing resource exhaustion.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+
+// Create a scaling decision to increase consumers due to high backpressure
+var scaleUpDecision = new ScalingDecision(
+    stageName: "DataProcessing",
+    direction: ScalingDirection.ScaleUp,
+    reason: "High backpressure detected with buffer at 92% capacity",
+    fromConsumers: 4,
+    toConsumers: 8,
+    bufferFillPercent: 92.3,
+    backpressureFrequency: 15.2
+);
+
+Console.WriteLine($"Decision for {scaleUpDecision.StageName}: {scaleUpDecision.Direction}");
+Console.WriteLine($"Reason: {scaleUpDecision.Reason}");
+Console.WriteLine($"From {scaleUpDecision.FromConsumers} to {scaleUpDecision.ToConsumers} consumers");
+Console.WriteLine($"Buffer: {scaleUpDecision.BufferFillPercent}%, Backpressure: {scaleUpDecision.BackpressureFrequency}/s");
+Console.WriteLine($"Decided at: {scaleUpDecision.DecidedAt}");
+
+// Create a scaling decision to decrease consumers due to low load
+var scaleDownDecision = new ScalingDecision(
+    stageName: "DataValidation",
+    direction: ScalingDirection.ScaleDown,
+    reason: "Load decreased, buffer utilization below threshold",
+    fromConsumers: 6,
+    toConsumers: 3,
+    bufferFillPercent: 25.1,
+    backpressureFrequency: 0.8
+);
+
+Console.WriteLine($"\nDecision for {scaleDownDecision.StageName}: {scaleDownDecision.Direction}");
+Console.WriteLine($"Reason: {scaleDownDecision.Reason}");
+Console.WriteLine($"From {scaleDownDecision.FromConsumers} to {scaleDownDecision.ToConsumers} consumers");
+
+// Track scaling history
+var previousDecision = scaleUpDecision;
+var nextDecision = new ScalingDecision(
+    stageName: "DataProcessing",
+    direction: ScalingDirection.ScaleUp,
+    reason: "Sustained high throughput requiring additional capacity",
+    fromConsumers: 8,
+    toConsumers: 12,
+    bufferFillPercent: 88.7,
+    backpressureFrequency: 18.5,
+    lastDecision: previousDecision,
+    lastScalingActionAt: DateTime.UtcNow.AddMinutes(-5)
+);
+
+Console.WriteLine($"\nPrevious decision: {previousDecision.ToConsumers} consumers");
+Console.WriteLine($"Current decision: {nextDecision.ToConsumers} consumers");
+Console.WriteLine($"Scale-up count: {nextDecision.ScaleUpCount}");
+Console.WriteLine($"Scale-down count: {nextDecision.ScaleDownCount}");
+```
+
 ## Backpressure Metrics
