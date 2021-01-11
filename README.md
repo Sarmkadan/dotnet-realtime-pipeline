@@ -254,6 +254,58 @@ backpressureContext.BackpressureEventTimestamps.Enqueue(DateTimeOffset.UtcNow.To
 Console.WriteLine($"Event timestamps recorded: {backpressureContext.BackpressureEventTimestamps.Count}");
 ```
 
+## MetricAggregation
+
+`MetricAggregation` represents aggregated metrics for monitoring pipeline performance. It tracks throughput, latency, error rates, backpressure indicators, and processing statistics across time windows. This type is used throughout the pipeline to provide observability into pipeline health and performance characteristics.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a metric aggregation for an hourly window
+var metrics = new MetricAggregation(
+    metricId: 1,
+    startMs: DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    metricType: "hourly"
+);
+
+// Record processing statistics
+metrics.TotalItemsProcessed = 42875;
+metrics.TotalItemsFailed = 124;
+metrics.TotalItemsSkipped = 89;
+metrics.AverageProcessingTimeMs = 45.2;
+metrics.MinProcessingTimeMs = 5.1;
+metrics.MaxProcessingTimeMs = 245.8;
+metrics.P95ProcessingTimeMs = 120.5;
+metrics.P99ProcessingTimeMs = 185.3;
+
+// Record backpressure metrics
+metrics.BackpressureEvents = 15;
+metrics.TotalBackpressureMs = 12500;
+
+// Record metrics by source
+metrics.RecordSourceMetric("IoTSensor-001", 21500);
+metrics.RecordSourceMetric("IoTSensor-002", 18300);
+metrics.RecordSourceMetric("IoTSensor-003", 3075);
+
+// Record error rates by stage
+metrics.RecordStageErrorRate("DataIngestion", 0.8);
+metrics.RecordStageErrorRate("DataProcessing", 2.1);
+metrics.RecordStageErrorRate("DataValidation", 0.3);
+
+// Calculate derived metrics
+Console.WriteLine($"Throughput: {metrics.CalculateThroughput():F2} items/s");
+Console.WriteLine($"Success Rate: {metrics.CalculateSuccessRate():F2}%");
+Console.WriteLine($"Error Rate: {metrics.CalculateErrorRate():F2}%");
+Console.WriteLine($"Backpressure Ratio: {metrics.CalculateBackpressureRatio():F2}%");
+
+// Get summary for reporting
+Console.WriteLine(metrics.GetSummary());
+// Output: MetricAggregation[Type=hourly, Throughput=119.10 items/s, SuccessRate=99.44%, AvgLatency=45.20ms, P95=120.50ms, Backpressure=0.35%]
+```
+
 ## PipelineConfig
 
 `PipelineConfig` defines the configuration for a real-time data pipeline, controlling buffer sizes, concurrency limits, retry policies, windowing behavior, data quality thresholds, and backpressure thresholds. It serves as the central configuration object that pipeline stages use to coordinate their behavior and provides extensibility through custom settings for domain-specific pipeline requirements.
