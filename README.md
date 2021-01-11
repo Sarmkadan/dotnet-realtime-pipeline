@@ -486,6 +486,67 @@ foreach (var kvp in metadata)
 }
 ```
 
+## IPipelinePlugin
+
+`IPipelinePlugin` defines the contract for pipeline plugins that can be loaded dynamically to extend pipeline functionality. Plugins can provide data processing, transformation, and output capabilities, and are managed through a `PluginManager`. Plugins support initialization and shutdown hooks, configuration management, and dependency declaration for proper loading order.
+
+```csharp
+using DotNetRealtimePipeline.Plugins;
+using DotNetRealtimePipeline.Plugins.ExtensionSystem;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
+
+// Create and register a custom pipeline plugin
+public class CustomDataPlugin : IPipelinePlugin
+{
+    public string Name => "CustomDataPlugin";
+    public string Version => "1.0.0";
+    public bool Enabled { get; set; } = true;
+    public Dictionary<string, object> Settings { get; set; } = new();
+    public List<string> Dependencies { get; } = new();
+
+    public async Task InitializeAsync(IServiceProvider serviceProvider)
+    {
+        Console.WriteLine($"Initializing {Name} v{Version}");
+        // Initialize plugin dependencies
+    }
+
+    public async Task ShutdownAsync()
+    {
+        Console.WriteLine($"Shutting down {Name} v{Version}");
+        // Cleanup resources
+    }
+
+    public List<IDataProcessingPlugin> GetProcessingPlugins() => new();
+    public List<IDataTransformPlugin> GetTransformPlugins() => new();
+    public List<IOutputPlugin> GetOutputPlugins() => new();
+}
+
+// Setup dependency injection and register the plugin
+var services = new ServiceCollection();
+services.AddPipelineServices();
+services.AddSingleton<IPipelinePlugin, CustomDataPlugin>();
+
+var provider = services.BuildServiceProvider();
+var pluginManager = provider.GetRequiredService<PluginManager>();
+
+// Register plugin configuration
+pluginManager.RegisterConfiguration<CustomDataPlugin>(config =>
+{
+    config.Enabled = true;
+    config.Settings["threshold"] = 0.95;
+    config.Settings["batchSize"] = 100;
+});
+
+// Access registered plugins
+var allPlugins = pluginManager.GetAllPlugins();
+var processingPlugins = pluginManager.GetProcessingPlugins();
+var transformPlugins = pluginManager.GetTransformPlugins();
+var outputPlugins = pluginManager.GetOutputPlugins();
+
+Console.WriteLine($"Registered {allPlugins.Count} plugins");
+```
+
 ## ScalingDecision
 
 `ScalingDecision` represents an auto-scaling directive issued by the pipeline's consumer scaling service. It captures the scaling intent (up or down), the rationale, current and target consumer counts, buffer state, backpressure frequency, and timing metadata. Pipeline stages use these decisions to adjust parallelism in response to load changes, ensuring throughput while preventing resource exhaustion.
