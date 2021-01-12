@@ -695,4 +695,61 @@ Console.WriteLine($"Scale-up count: {nextDecision.ScaleUpCount}");
 Console.WriteLine($"Scale-down count: {nextDecision.ScaleDownCount}");
 ```
 
+## ErrorHandlingMiddleware
+
+`ErrorHandlingMiddleware` provides centralized error handling and exception transformation for pipeline operations. It converts exceptions to standardized error responses with proper logging and recovery information, enabling consistent error handling across the pipeline.
+
+The middleware supports both synchronous and asynchronous operations, automatically mapping known exception types to appropriate error codes and messages. It distinguishes between recoverable and non-recoverable errors, providing appropriate logging levels for observability.
+
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddSingleton<ErrorHandlingMiddleware>();
+var provider = services.BuildServiceProvider();
+
+// Get the error handling middleware
+var errorHandler = provider.GetRequiredService<ErrorHandlingMiddleware>();
+
+// Execute an operation with error handling (async)
+var result = await errorHandler.ExecuteWithErrorHandlingAsync<int>(
+    "DataProcessingOperation",
+    async () => 
+    {
+        // Simulate successful operation
+        await Task.Delay(100);
+        return 42;
+    }
+);
+
+if (result.Success)
+{
+    Console.WriteLine($"Success! Data: {result.Data}");
+}
+else
+{
+    Console.WriteLine($"Error {result.ErrorCode}: {result.Message}");
+    Console.WriteLine($"Recoverable: {result.IsRecoverable}");
+    Console.WriteLine($"Details: {result.Details}");
+}
+
+// Execute a synchronous operation with error handling
+var syncResult = errorHandler.ExecuteWithErrorHandling(
+    "ValidationOperation",
+    () => 
+    {
+        // Simulate validation that throws
+        if (DateTime.Now.Second % 2 == 0)
+            throw new InvalidOperationException("Validation failed");
+        return true;
+    }
+);
+
+Console.WriteLine($"Success: {syncResult.Success}, ErrorCode: {syncResult.ErrorCode}");
+```
+
 ## Backpressure Metrics
