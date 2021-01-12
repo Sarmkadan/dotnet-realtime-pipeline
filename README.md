@@ -254,6 +254,94 @@ backpressureContext.BackpressureEventTimestamps.Enqueue(DateTimeOffset.UtcNow.To
 Console.WriteLine($"Event timestamps recorded: {backpressureContext.BackpressureEventTimestamps.Count}");
 ```
 
+## PipelineStateManager
+
+`PipelineStateManager` manages pipeline state and lifecycle transitions. It tracks the current state, maintains a complete history of state transitions, and provides methods to query state duration and register change listeners. This class is essential for monitoring pipeline health and coordinating state-dependent operations.
+
+The manager supports valid state transitions (Stopped → Running → Paused → Stopped, etc.) and automatically records each transition with timestamps and optional reasons. It also includes nested `ConfigurationStateManager` for runtime configuration overrides and `OperationMetricsTracker` for collecting performance metrics.
+
+```csharp
+using DotNetRealtimePipeline.State;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddSingleton<PipelineStateManager>();
+services.AddSingleton<ConfigurationStateManager>();
+services.AddSingleton<OperationMetricsTracker>();
+var provider = services.BuildServiceProvider();
+
+// Get the state manager
+var stateManager = provider.GetRequiredService<PipelineStateManager>();
+
+// Register a state change listener
+stateManager.RegisterStateChangeListener((oldState, newState) =>
+{
+    Console.WriteLine($"State changed: {oldState} -> {newState}");
+    Console.WriteLine($"Current state duration: {stateManager.GetCurrentStateDuration().TotalSeconds:F1}s");
+});
+
+// Start the pipeline
+Console.WriteLine($"Initial state: {stateManager.CurrentState}");
+bool started = stateManager.TransitionTo(PipelineState.Running, "Starting pipeline for data processing");
+Console.WriteLine($"Transition to Running successful: {started}");
+Console.WriteLine($"Current state: {stateManager.CurrentState}");
+
+// Check if operational
+if (stateManager.IsOperational)
+{
+    Console.WriteLine("Pipeline is operational and ready to process data");
+}
+
+// Simulate some work
+System.Threading.Thread.Sleep(1000);
+
+// Pause the pipeline for maintenance
+stateManager.TransitionTo(PipelineState.Paused, "Maintenance window scheduled");
+Console.WriteLine($"Current state: {stateManager.CurrentState}");
+Console.WriteLine($"State duration: {stateManager.GetCurrentStateDuration().TotalSeconds:F1}s");
+
+// Resume operation
+stateManager.TransitionTo(PipelineState.Running, "Maintenance completed");
+
+// Get state history
+var history = stateManager.GetStateHistory();
+Console.WriteLine($"\nState transition history ({history.Count} transitions):");
+foreach (var transition in history)
+{
+    Console.WriteLine($"  {transition.Timestamp:HH:mm:ss} - {transition.FromState} -> {transition.ToState}");
+    if (!string.IsNullOrEmpty(transition.Reason))
+        Console.WriteLine($"    Reason: {transition.Reason}");
+}
+
+// Use ConfigurationStateManager for runtime overrides
+var configManager = provider.GetRequiredService<ConfigurationStateManager>();
+configManager.SetOverride("maxBufferSize", 5000);
+configManager.SetOverride("enableCompression", true);
+
+var maxBuffer = configManager.GetOverride<int>("maxBufferSize", 1000);
+Console.WriteLine($"\nMax buffer size override: {maxBuffer}");
+
+// Use OperationMetricsTracker to record operations
+var metricsTracker = provider.GetRequiredService<OperationMetricsTracker>();
+metricsTracker.RecordOperation("DataIngestion", 125, true);
+metricsTracker.RecordOperation("DataProcessing", 45, true);
+metricsTracker.RecordOperation("DataValidation", 89, false);
+
+// Get operation metrics
+var ingestionMetrics = metricsTracker.GetOperationMetrics("DataIngestion");
+Console.WriteLine($"\nDataIngestion metrics:");
+Console.WriteLine($"  Total executions: {ingestionMetrics.TotalExecutions}");
+Console.WriteLine($"  Success rate: {ingestionMetrics.SuccessRate:F1}%");
+Console.WriteLine($"  Average duration: {ingestionMetrics.AverageDurationMs:F1}ms");
+
+// Stop the pipeline
+stateManager.TransitionTo(PipelineState.Stopped, "Pipeline shutdown requested");
+```
+
 ## MetricAggregation
 
 `MetricAggregation` represents aggregated metrics for monitoring pipeline performance. It tracks throughput, latency, error rates, backpressure indicators, and processing statistics across time windows. This type is used throughout the pipeline to provide observability into pipeline health and performance characteristics.
