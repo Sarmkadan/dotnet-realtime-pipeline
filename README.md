@@ -254,6 +254,96 @@ backpressureContext.BackpressureEventTimestamps.Enqueue(DateTimeOffset.UtcNow.To
 Console.WriteLine($"Event timestamps recorded: {backpressureContext.BackpressureEventTimestamps.Count}");
 ```
 
+## LoggingMiddleware
+
+`LoggingMiddleware` provides comprehensive logging for pipeline operations, tracking data ingestion, processing completion, backpressure events, metrics collection, errors, and performance warnings. It supports correlation IDs for distributed tracing and provides both structured logging methods and performance measurement utilities.
+
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddSingleton<LoggingMiddleware>();
+services.AddSingleton<PerformanceLoggingMiddleware>();
+services.AddSingleton<CorrelationMiddleware>();
+var provider = services.BuildServiceProvider();
+
+// Get the logging middleware
+var logger = provider.GetRequiredService<LoggingMiddleware>();
+
+// Log data ingestion
+var dataPoint = new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001")
+{
+    Quality = 95
+};
+logger.LogDataIngestion(dataPoint, "DataIngestion");
+
+// Log processing completion
+var result = new ProcessingResult(1, true, "DataProcessing")
+{
+    ProcessingTimeMs = 150,
+    CorrelationId = "corr-12345"
+};
+logger.LogProcessingCompletion(result, 150);
+
+// Log backpressure event
+var backpressureContext = new BackpressureContext(1, "DataProcessing", 920, 1000);
+backpressureContext.StartBackpressure();
+logger.LogBackpressureEvent("DataProcessing", backpressureContext);
+
+// Log metrics collection
+logger.LogMetricsCollection("throughput_eps", 1250, " items/s");
+
+// Log error
+try
+{
+    throw new InvalidOperationException("Data validation failed");
+}
+catch (Exception ex)
+{
+    logger.LogError("DataValidation", ex, "Temperature validation failed");
+}
+
+// Log performance warning
+logger.LogPerformanceWarning("DataProcessing", 1500, 1000);
+
+// Use PerformanceLoggingMiddleware for timing operations
+var perfLogger = provider.GetRequiredService<PerformanceLoggingMiddleware>();
+
+// Measure async operation
+var asyncResult = await perfLogger.MeasureAsync<int>("ComplexDataProcessing", async () =>
+{
+    await Task.Delay(200);
+    return 42;
+});
+
+// Measure sync operation
+var syncResult = perfLogger.Measure("SimpleValidation", () => true);
+
+// Use CorrelationMiddleware for distributed tracing
+var correlation = provider.GetRequiredService<CorrelationMiddleware>();
+
+// Get/set correlation ID
+string correlationId = CorrelationMiddleware.GetCorrelationId();
+Console.WriteLine($"Current correlation ID: {correlationId}");
+
+CorrelationMiddleware.SetCorrelationId("custom-correlation-123");
+
+// Execute operation with correlation context
+await correlation.WithCorrelationAsync<string>(async (ctx) =>
+{
+    Console.WriteLine($"Operation correlation ID: {ctx}");
+    return "processed";
+});
+
+CorrelationMiddleware.ClearCorrelationId();
+```
+
 ## PipelineStateManager
 
 `PipelineStateManager` manages pipeline state and lifecycle transitions. It tracks the current state, maintains a complete history of state transitions, and provides methods to query state duration and register change listeners. This class is essential for monitoring pipeline health and coordinating state-dependent operations.
