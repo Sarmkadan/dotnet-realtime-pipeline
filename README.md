@@ -456,6 +456,89 @@ var dataPoints = await queryService.SearchDataPointsAsync(
     endTime: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
 );
 Console.WriteLine($"Found {dataPoints.Count} data points in the last hour");
+```
+
+## BackpressureService
+
+`BackpressureService` manages backpressure and flow control within the pipeline to prevent buffer overflow and enforce graceful degradation under load. It creates and tracks backpressure contexts for each pipeline stage, monitors buffer utilization, and applies appropriate backpressure strategies when configured thresholds are exceeded. The service provides real-time metrics about system-wide backpressure status, dropped items, and consumer activity.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the backpressure service
+var backpressureService = provider.GetRequiredService<BackpressureService>();
+
+// Create a backpressure context for a processing stage with 10,000 item capacity
+var processingContext = backpressureService.CreateContext("DataProcessing", maxBufferCapacity: 10_000);
+
+// Register a consumer to process items
+bool consumerRegistered = backpressureService.TryRegisterConsumer("DataProcessing");
+Console.WriteLine($"Consumer registered: {consumerRegistered}");
+
+// Add items to the buffer (returns false if buffer is full)
+bool added = backpressureService.TryAddToBuffer("DataProcessing", itemCount: 500);
+Console.WriteLine($"Items added to buffer: {added}");
+Console.WriteLine($"Current buffer fill: {processingContext.GetBufferFillPercentage()}%");
+
+// Check if backpressure is active
+bool isBackpressured = backpressureService.IsBackpressured("DataProcessing");
+Console.WriteLine($"Is backpressured: {isBackpressured}");
+
+// Apply backpressure strategy when buffer reaches critical level
+var response = await backpressureService.ApplyBackpressureAsync(
+    stageName: "DataProcessing",
+    strategy: BackpressureStrategy.Throttle,
+    timeoutMs: 200
+);
+
+Console.WriteLine($"Backpressure applied: {response.Applied}");
+Console.WriteLine($"Reason: {response.Reason}");
+Console.WriteLine($"Buffer fill: {response.BufferFillPercent}%");
+Console.WriteLine($"Strategy used: {response.StrategyUsed}");
+
+// Get system-wide backpressure status
+var systemStatus = backpressureService.GetSystemStatus();
+Console.WriteLine($"\nSystem status:");
+Console.WriteLine($"  Total stages: {systemStatus.TotalStages}");
+Console.WriteLine($"  Backpressured stages: {systemStatus.BackpressuredStages}");
+Console.WriteLine($"  Average buffer fill: {systemStatus.AverageBufferFillPercent}%");
+Console.WriteLine($"  Health: {systemStatus.GetHealthStatus()}");
+
+// Get dropped item count (indicates data loss)
+long droppedItems = backpressureService.GetDroppedItemCount("DataProcessing");
+Console.WriteLine($"\nDropped items: {droppedItems}");
+
+// Reset backpressure when load decreases
+backpressureService.ResetBackpressure("DataProcessing");
+Console.WriteLine("Backpressure reset");
+```
+
+## SlidingWindowAggregator
+
+`SlidingWindowAggregator` implements sliding-window aggregation over a stream of `DataPoint` values. It emits aggregated results at regular intervals, producing overlapping windows that provide continuous analysis capabilities such as rolling averages, anomaly detection, and trend analysis. This is particularly useful for real-time monitoring scenarios where you need to analyze data trends over time without waiting for complete batches.
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the query service
+var queryService = provider.GetRequiredService<QueryService>();
+
+// Search for data points by time range
+var dataPoints = await queryService.SearchDataPointsAsync(
+    startTime: DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    endTime: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Found {dataPoints.Count} data points in the last hour");
 
 // Get aggregated statistics for a time range
 var stats = await queryService.GetAggregateStatisticsAsync(
