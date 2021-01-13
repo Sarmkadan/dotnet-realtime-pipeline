@@ -490,6 +490,63 @@ var totalCount = await queryService.GetDataPointCountAsync();
 Console.WriteLine($"Total data points in repository: {totalCount:N0}");
 ```
 
+## SlidingWindowAggregator
+
+`SlidingWindowAggregator` implements sliding-window aggregation over a stream of `DataPoint` values. It emits aggregated results at regular intervals, producing overlapping windows that provide continuous analysis capabilities such as rolling averages, anomaly detection, and trend analysis. This is particularly useful for real-time monitoring scenarios where you need to analyze data trends over time without waiting for complete batches.
+
+The aggregator maintains a buffer of data points and emits new window results whenever the step interval is reached, covering the most recent window of data. Older data points are automatically pruned from the buffer to maintain memory efficiency.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+
+// Create a sliding window aggregator with 10-second windows emitted every 2 seconds
+var aggregator = new SlidingWindowAggregator(windowSizeMs: 10_000, stepIntervalMs: 2_000);
+
+// Add data points to the aggregator (typically from your data source)
+aggregator.Add(new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001") { Quality = 95 });
+aggregator.Add(new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002") { Quality = 92 });
+aggregator.Add(new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003") { Quality = 97 });
+
+// Flush windows that are due for emission (using current time)
+var windows = aggregator.FlushDueWindows();
+
+foreach (var window in windows)
+{
+    Console.WriteLine($"Window {window.WindowId}:");
+    Console.WriteLine($"  Time range: {window.WindowStartMs}ms to {window.WindowEnd}ms");
+    Console.WriteLine($"  Data points: {window.DataPointCount}");
+    Console.WriteLine($"  Average: {window.Average:F2}");
+    Console.WriteLine($"  Sum: {window.Sum:F2}");
+    Console.WriteLine($"  Min: {window.Min:F2}");
+    Console.WriteLine($"  Max: {window.Max:F2}");
+    Console.WriteLine($"  Trend: {window.Trend:+0.00;-0.00}");
+    Console.WriteLine($"  Emitted at: {window.EmittedAt:HH:mm:ss.fff}");
+    
+    // Access aggregated data dictionary for additional metrics
+    Console.WriteLine($"  Window type: {window.AggregatedData[\"WindowType\"]}");
+    Console.WriteLine($"  Window size: {window.AggregatedData[\"WindowSizeMs\"]}ms");
+    Console.WriteLine($"  Step interval: {window.AggregatedData[\"StepIntervalMs\"]}ms");
+}
+
+// Add more data points over time
+for (int i = 0; i < 10; i++)
+{
+    aggregator.Add(new DataPoint(i + 10, 
+        DateTimeOffset.UtcNow.AddSeconds(i).ToUnixTimeMilliseconds(), 
+        20.0 + Math.Sin(i * 0.5) * 5.0, 
+        "IoTSensor-001"));
+    
+    // Periodically flush windows
+    var currentWindows = aggregator.FlushDueWindows();
+    if (currentWindows.Count > 0)
+    {
+        Console.WriteLine($"Emitted {currentWindows.Count} new window(s) at step {currentWindows[^1].WindowId}");
+    }
+}
+```
+
 ## MetricAggregation
 
 `MetricAggregation` represents aggregated metrics for monitoring pipeline performance. It tracks throughput, latency, error rates, backpressure indicators, and processing statistics across time windows. This type is used throughout the pipeline to provide observability into pipeline health and performance characteristics.
