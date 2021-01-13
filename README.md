@@ -954,4 +954,54 @@ var syncResult = errorHandler.ExecuteWithErrorHandling(
 Console.WriteLine($"Success: {syncResult.Success}, ErrorCode: {syncResult.ErrorCode}");
 ```
 
-## Backpressure Metrics
+## CommandExecutor
+
+`CommandExecutor` provides a robust mechanism for executing command-line operations within the pipeline, supporting both synchronous and asynchronous execution patterns. It handles command invocation, output capture, error detection, and provides utilities for data ingestion, querying, status monitoring, and visualization. The executor supports both direct command execution and factory-based creation of data loaders and exporters, making it suitable for pipeline operations that require external tool integration or data processing workflows.
+
+```csharp
+using DotNetRealtimePipeline.CLI;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+// Create a command executor for pipeline operations
+var executor = new CommandExecutor();
+
+// Execute a command and get the exit code
+int exitCode = await executor.ExecuteAsync("dotnet", new[] { "build", "--configuration", "Release" });
+Console.WriteLine($"Build exit code: {exitCode}");
+
+// Ingest data from a command output
+bool ingestionSuccess = await executor.IngestDataAsync("data-processor", new[] { "--input", "data.json", "--format", "jsonl" });
+Console.WriteLine($"Data ingestion successful: {ingestionSuccess}");
+
+// Query data using a command
+var queryResults = await executor.QueryDataAsync("SELECT * FROM data WHERE timestamp > 1000");
+Console.WriteLine($"Found {queryResults.Count} data points");
+
+// Get pipeline status
+var status = await executor.GetStatusAsync();
+Console.WriteLine($"Pipeline status: {status["status"]}");
+
+// Export data to a file
+bool exportSuccess = await executor.ExportDataAsync("output/data-export.jsonl", "jsonl");
+Console.WriteLine($"Export successful: {exportSuccess}");
+
+// Generate visualization from pipeline data
+string visualizationPath = await executor.VisualizeAsync("throughput-over-time", new Dictionary<string, object>
+{
+    { "outputPath", "./visualizations/" },
+    { "chartType", "line" },
+    { "title", "Pipeline Throughput" }
+});
+Console.WriteLine($"Visualization saved to: {visualizationPath}");
+
+// Use factory methods to create specialized loaders and exporters
+var loader = CommandExecutor.CreateLoader("json");
+var dataPoints = await loader.LoadAsync("data/input.jsonl");
+Console.WriteLine($"Loaded {dataPoints.Count} data points");
+
+var exporter = CommandExecutor.CreateExporter("csv");
+await exporter.ExportAsync("output/export.csv", dataPoints);
+Console.WriteLine("Data exported successfully");
+```
