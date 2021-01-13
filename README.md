@@ -808,6 +808,118 @@ var errorHandler = provider.GetRequiredService<ErrorHandlingMiddleware>();
 // Execute an operation with error handling (async)
 var result = await errorHandler.ExecuteWithErrorHandlingAsync<int>(
     "DataProcessingOperation",
+    async () =>
+    {
+        // Simulate successful operation
+        await Task.Delay(100);
+        return 42;
+    }
+);
+
+if (result.Success)
+{
+    Console.WriteLine($"Success! Data: {result.Data}");
+}
+else
+{
+    Console.WriteLine($"Error {result.ErrorCode}: {result.Message}");
+    Console.WriteLine($"Recoverable: {result.IsRecoverable}");
+    Console.WriteLine($"Details: {result.Details}");
+}
+
+// Execute a synchronous operation with error handling
+var syncResult = errorHandler.ExecuteWithErrorHandling(
+    "ValidationOperation",
+    () =>
+    {
+        // Simulate validation that throws
+        if (DateTime.Now.Second % 2 == 0)
+            throw new InvalidOperationException("Validation failed");
+        return true;
+    }
+);
+
+Console.WriteLine($"Success: {syncResult.Success}, ErrorCode: {syncResult.ErrorCode}");
+```
+
+## RateLimitingMiddleware
+
+`RateLimitingMiddleware` provides token bucket-based rate limiting for controlling the throughput of operations within the pipeline. It supports flexible rate control with configurable tokens per second and burst capacity, making it suitable for managing API calls, data ingestion rates, and processing throughput.
+
+The middleware maintains separate rate limit buckets for different identifiers (e.g., API keys, client IDs, or pipeline stages), allowing for granular control over resource consumption. Each bucket automatically refills tokens over time based on the configured rate, preventing resource exhaustion while allowing bursts up to the maximum capacity.
+
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddSingleton<RateLimitingMiddleware>();
+services.AddSingleton<StageRateLimitingMiddleware>();
+var provider = services.BuildServiceProvider();
+
+// Get the rate limiting middleware
+var rateLimiter = provider.GetRequiredService<RateLimitingMiddleware>();
+
+// Configure rate limits: 1000 tokens per second with 5000 burst capacity
+var limiter = new RateLimitingMiddleware(tokensPerSecond: 1000, maxBurstSize: 5000);
+
+// Check if an operation is allowed (consume 1 token)
+bool allowed = limiter.TryAcquire("api-client-123");
+Console.WriteLine($"API call allowed: {allowed}");
+
+// Check rate limit status for a client
+var status = limiter.GetStatus("api-client-123");
+Console.WriteLine($"Available tokens: {status.AvailableTokens}/{status.Capacity}");
+Console.WriteLine($"Reset time: {status.ResetTime}");
+
+// Consume multiple tokens for batch operations
+bool batchAllowed = limiter.TryAcquire("data-ingestion", tokensRequired: 10);
+Console.WriteLine($"Batch ingestion allowed: {batchAllowed}");
+
+// Reset rate limits for a client
+limiter.Reset("api-client-123");
+
+// Get all rate limit statuses
+var allStatuses = limiter.GetAllStatuses();
+foreach (var kvp in allStatuses)
+{
+    Console.WriteLine($"{kvp.Key}: {kvp.Value.AvailableTokens}/{kvp.Value.Capacity} tokens");
+}
+
+// Use StageRateLimitingMiddleware for pipeline stage-specific limits
+var stageLimiter = provider.GetRequiredService<StageRateLimitingMiddleware>();
+stageLimiter.RegisterStageLimit("DataIngestion", itemsPerSecond: 500, burstSize: 2000);
+
+// Check if a stage can process items
+bool canProcess = stageLimiter.CanProcessInStage("DataIngestion", itemCount: 1);
+Console.WriteLine($"Stage can process: {canProcess}");
+
+// Get status for all stages
+var stageStatuses = stageLimiter.GetStageLimitStatuses();
+foreach (var kvp in stageStatuses)
+{
+    Console.WriteLine($"Stage {kvp.Key}: {kvp.Value.AvailableTokens} available");
+}
+```
+
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddSingleton<ErrorHandlingMiddleware>();
+var provider = services.BuildServiceProvider();
+
+// Get the error handling middleware
+var errorHandler = provider.GetRequiredService<ErrorHandlingMiddleware>();
+
+// Execute an operation with error handling (async)
+var result = await errorHandler.ExecuteWithErrorHandlingAsync<int>(
+    "DataProcessingOperation",
     async () => 
     {
         // Simulate successful operation
