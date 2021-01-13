@@ -954,6 +954,81 @@ var syncResult = errorHandler.ExecuteWithErrorHandling(
 Console.WriteLine($"Success: {syncResult.Success}, ErrorCode: {syncResult.ErrorCode}");
 ```
 
+## CommandLineParser
+
+`CommandLineParser` is a command-line argument parsing utility that provides a structured way to define and parse command-line interfaces for .NET applications. It supports registering commands with verbs, defining required and optional options, and validating command-line input before execution. The parser handles command registration, parsing, and provides utilities for checking option presence, retrieving values, and validating required arguments.
+
+```csharp
+using DotNetRealtimePipeline.CLI;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+// Create a command line parser
+var parser = new CommandLineParser();
+
+// Register a command with a verb
+parser.RegisterCommand("ingest", "Ingest data from external sources into the pipeline");
+
+// Define required options for the ingest command
+parser.RequiredOptions["ingest"] = new List<string> { "source", "format" };
+
+// Define optional options
+parser.Options["ingest"] = new Dictionary<string, string>
+{
+    { "source", "The data source to ingest from" },
+    { "format", "The format of the data (json, csv, parquet)" },
+    { "batch-size", "The batch size for ingestion (default: 1000)" },
+    { "verbose", "Enable verbose logging" }
+};
+
+// Register another command
+parser.RegisterCommand("query", "Query data from the pipeline");
+parser.RequiredOptions["query"] = new List<string> { "sql" };
+parser.Options["query"] = new Dictionary<string, string>
+{
+    { "sql", "SQL query to execute" },
+    { "output", "Output format (json, csv)" },
+    { "limit", "Maximum number of results to return" }
+};
+
+// Parse command line arguments
+var args = new[] { "ingest", "--source", "api-endpoint", "--format", "json", "--batch-size", "5000", "--verbose" };
+var parsedCommand = parser.Parse(args);
+
+// Check if parsing was successful
+if (!parsedCommand.IsValid)
+{
+    Console.WriteLine($"Error: {parsedCommand.ErrorMessage}");
+    return;
+}
+
+// Get the verb (command name)
+string verb = parsedCommand.Verb;
+Console.WriteLine($"Executing command: {verb}");
+
+// Get option values
+string source = parsedCommand.GetOption("source");
+string format = parsedCommand.GetOption("format");
+int batchSize = int.Parse(parsedCommand.GetOption("batch-size") ?? "1000");
+bool verbose = parsedCommand.HasFlag("verbose");
+
+Console.WriteLine($"Source: {source}");
+Console.WriteLine($"Format: {format}");
+Console.WriteLine($"Batch size: {batchSize}");
+Console.WriteLine($"Verbose: {verbose}");
+
+// Check if required options are present
+if (parsedCommand.RequiredOptions.Contains("source") && !parsedCommand.HasFlag("source"))
+{
+    Console.WriteLine("Error: --source is required");
+    return;
+}
+
+// Simulate command execution
+Console.WriteLine($"Ingesting data from {source} in {format} format...");
+```
+
 ## CommandExecutor
 
 `CommandExecutor` provides a robust mechanism for executing command-line operations within the pipeline, supporting both synchronous and asynchronous execution patterns. It handles command invocation, output capture, error detection, and provides utilities for data ingestion, querying, status monitoring, and visualization. The executor supports both direct command execution and factory-based creation of data loaders and exporters, making it suitable for pipeline operations that require external tool integration or data processing workflows.
