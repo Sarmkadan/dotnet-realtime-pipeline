@@ -682,6 +682,107 @@ Console.WriteLine(metrics.GetSummary());
 // Output: MetricAggregation[Type=hourly, Throughput=119.10 items/s, SuccessRate=99.44%, AvgLatency=45.20ms, P95=120.50ms, Backpressure=0.35%]
 ```
 
+## MetricsService
+
+`MetricsService` collects, aggregates, and analyzes pipeline metrics. It tracks throughput, latency, error rates, and backpressure across pipeline stages, providing real-time monitoring and historical analysis capabilities. The service maintains sliding window metrics for recent performance and generates health reports, trend analysis, and distribution statistics.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the metrics service
+var metricsService = provider.GetRequiredService<MetricsService>();
+
+// Record throughput for processing 1000 events
+metricsService.RecordThroughput(1000);
+
+// Record processing time for an operation
+metricsService.RecordProcessingTime(45);
+
+// Create a metric aggregation for the last minute
+var aggregation = await metricsService.CreateMetricAggregationAsync(
+    windowStartMs: DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeMilliseconds(),
+    windowEndMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    itemsProcessed: 58472,
+    itemsFailed: 124,
+    itemsSkipped: 89
+);
+
+Console.WriteLine($"Metric ID: {aggregation.MetricId}");
+Console.WriteLine($"Throughput: {aggregation.CalculateThroughput():F2} items/s");
+Console.WriteLine($"Success Rate: {aggregation.CalculateSuccessRate():F2}%");
+
+// Generate a health report
+var healthReport = await metricsService.GenerateHealthReportAsync();
+Console.WriteLine($"Status: {healthReport.Status}");
+Console.WriteLine($"Message: {healthReport.Message}");
+Console.WriteLine($"Throughput: {healthReport.ThroughputItemsPerSecond:F2} items/s");
+Console.WriteLine($"Success Rate: {healthReport.SuccessRatePercent:F2}%");
+
+// Analyze performance trend over last 10 aggregations
+var trend = await metricsService.AnalyzePerformanceTrendAsync(historyCount: 10);
+Console.WriteLine($"Trend: {trend.TrendDirection}");
+Console.WriteLine($"Throughput Change: {trend.ThroughputChangePercent:+0.00;-0.00}%");
+
+// Get metric distribution across sources
+var distribution = await metricsService.GetMetricDistributionAsync();
+Console.WriteLine($"Total Sources: {distribution.TotalSources}");
+Console.WriteLine($"Source Breakdown: {string.Join(", ", distribution.SourceBreakdown.Select(kvp => $"{kvp.Key}={kvp.Value}")}");
+```
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a metric aggregation for an hourly window
+var metrics = new MetricAggregation(
+    metricId: 1,
+    startMs: DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    metricType: "hourly"
+);
+
+// Record processing statistics
+metrics.TotalItemsProcessed = 42875;
+metrics.TotalItemsFailed = 124;
+metrics.TotalItemsSkipped = 89;
+metrics.AverageProcessingTimeMs = 45.2;
+metrics.MinProcessingTimeMs = 5.1;
+metrics.MaxProcessingTimeMs = 245.8;
+metrics.P95ProcessingTimeMs = 120.5;
+metrics.P99ProcessingTimeMs = 185.3;
+
+// Record backpressure metrics
+metrics.BackpressureEvents = 15;
+metrics.TotalBackpressureMs = 12500;
+
+// Record metrics by source
+metrics.RecordSourceMetric("IoTSensor-001", 21500);
+metrics.RecordSourceMetric("IoTSensor-002", 18300);
+metrics.RecordSourceMetric("IoTSensor-003", 3075);
+
+// Record error rates by stage
+metrics.RecordStageErrorRate("DataIngestion", 0.8);
+metrics.RecordStageErrorRate("DataProcessing", 2.1);
+metrics.RecordStageErrorRate("DataValidation", 0.3);
+
+// Calculate derived metrics
+Console.WriteLine($"Throughput: {metrics.CalculateThroughput():F2} items/s");
+Console.WriteLine($"Success Rate: {metrics.CalculateSuccessRate():F2}%");
+Console.WriteLine($"Error Rate: {metrics.CalculateErrorRate():F2}%");
+Console.WriteLine($"Backpressure Ratio: {metrics.CalculateBackpressureRatio():F2}%");
+
+// Get summary for reporting
+Console.WriteLine(metrics.GetSummary());
+// Output: MetricAggregation[Type=hourly, Throughput=119.10 items/s, SuccessRate=99.44%, AvgLatency=45.20ms, P95=120.50ms, Backpressure=0.35%]
+```
+
 ## PipelineConfig
 
 `PipelineConfig` defines the configuration for a real-time data pipeline, controlling buffer sizes, concurrency limits, retry policies, windowing behavior, data quality thresholds, and backpressure thresholds. It serves as the central configuration object that pipeline stages use to coordinate their behavior and provides extensibility through custom settings for domain-specific pipeline requirements.
