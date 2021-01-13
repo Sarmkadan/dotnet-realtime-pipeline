@@ -432,6 +432,64 @@ Console.WriteLine($"  Average duration: {ingestionMetrics.AverageDurationMs:F1}m
 stateManager.TransitionTo(PipelineState.Stopped, "Pipeline shutdown requested");
 ```
 
+## QueryService
+
+`QueryService` provides querying and analysis capabilities for data points in the real-time pipeline. It offers methods for searching data points by various criteria, computing aggregated statistics, analyzing trends, and decomposing time series data. The service integrates with the pipeline's repositories to provide efficient data retrieval and comprehensive analytical operations.
+
+The service returns strongly-typed results including `DataAggregateStatistics`, `TrendAnalysis`, and `TimeSeriesDecomposition` objects that contain detailed metrics and insights about the queried data.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the query service
+var queryService = provider.GetRequiredService<QueryService>();
+
+// Search for data points by time range
+var dataPoints = await queryService.SearchDataPointsAsync(
+    startTime: DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    endTime: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Found {dataPoints.Count} data points in the last hour");
+
+// Get aggregated statistics for a time range
+var stats = await queryService.GetAggregateStatisticsAsync(
+    startMs: DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Statistics: Count={stats.Count}, Avg={stats.Average:F2}, Min={stats.Min:F2}, Max={stats.Max:F2}");
+Console.WriteLine($"Quality: Avg={stats.AverageQuality:F1}%, Sources={stats.UniqueSourceCount}");
+
+// Analyze trends over time
+var trendAnalysis = await queryService.AnalyzeTrendsAsync(
+    startMs: DateTimeOffset.UtcNow.AddDays(-7).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    intervalMs: TimeSpan.FromHours(1).TotalMilliseconds
+);
+Console.WriteLine($"Trend: {trendAnalysis.Direction} ({trendAnalysis.ChangePercent:+0.00;-0.00}%)");
+
+// Decompose time series to analyze trend and seasonality
+var decomposition = await queryService.DecomposeTimeSeriesAsync(
+    startMs: DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    movingAverageWindow: 7
+);
+Console.WriteLine($"Decomposition: Trend strength={decomposition.TrendStrength:F1}%, Seasonality={decomposition.SeasonalityStrength:F1}");
+
+// Get recent metrics history
+var recentMetrics = await queryService.GetRecentMetricsAsync(count: 20);
+Console.WriteLine($"Found {recentMetrics.Count} recent metric aggregations");
+
+// Get total data point count
+var totalCount = await queryService.GetDataPointCountAsync();
+Console.WriteLine($"Total data points in repository: {totalCount:N0}");
+```
+
 ## MetricAggregation
 
 `MetricAggregation` represents aggregated metrics for monitoring pipeline performance. It tracks throughput, latency, error rates, backpressure indicators, and processing statistics across time windows. This type is used throughout the pipeline to provide observability into pipeline health and performance characteristics.
