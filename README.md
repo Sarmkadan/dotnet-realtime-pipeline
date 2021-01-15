@@ -1065,6 +1065,85 @@ Console.WriteLine($"Cloned data point ID: {clonedPoint.Id}");
 Console.WriteLine($"Cloned value: {clonedPoint.Value}");
 ```
 
+## WindowingService
+
+`WindowingService` is the core service for managing time-based windows of data points in the real-time pipeline. It handles window creation, data aggregation, window emission, and provides comprehensive statistics about windowed data processing. The service supports both tumbling and sliding windows, enabling continuous analysis of data trends over configurable time intervals.
+
+The service provides methods for adding data points to windows, processing batches of data points, calculating window statistics, and emitting completed windows for downstream processing. It tracks window state, completion status, and provides detailed metrics about window throughput and performance.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the windowing service
+var windowingService = provider.GetRequiredService<WindowingService>();
+
+// Create a new window for processing
+var windowEvent = windowingService.CreateWindow(
+    windowType: "tumbling",
+    windowSizeMs: 5000,
+    slideIntervalMs: 5000
+);
+
+Console.WriteLine($"Created window: {windowEvent.WindowId}");
+
+// Add data points to the window
+bool added1 = windowingService.TryAddDataPointToWindow(
+    windowId: windowEvent.WindowId,
+    dataPoint: new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001") { Quality = 95 }
+);
+
+bool added2 = windowingService.TryAddDataPointToWindow(
+    windowId: windowEvent.WindowId,
+    dataPoint: new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002") { Quality = 92 }
+);
+
+Console.WriteLine($"Data points added: {windowingService.DataPointCount} (added1={added1}, added2={added2})");
+
+// Process data points through the windowing service
+var results = windowingService.ProcessDataPoints(
+    new List<DataPoint> {
+        new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003") { Quality = 97 },
+        new DataPoint(4, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 21.5, "IoTSensor-004") { Quality = 94 }
+    }
+);
+
+Console.WriteLine($"Processed {results.Count} window emissions");
+
+// Aggregate window data
+var aggregatedData = windowingService.AggregateWindow(windowEvent.WindowId);
+Console.WriteLine($"Window aggregated: Count={aggregatedData["DataPointCount"]}, Sum={aggregatedData["Sum"]}, Avg={aggregatedData["Average"]}");
+
+// Calculate window statistics
+var stats = windowingService.CalculateWindowStatistics(windowEvent.WindowId);
+Console.WriteLine($"Window statistics: Min={stats.Min:F2}, Max={stats.Max:F2}, StdDev={stats.StdDev:F2}");
+
+// Check if window is complete
+bool isComplete = windowingService.IsWindowComplete(windowEvent.WindowId);
+Console.WriteLine($"Window complete: {isComplete}");
+
+// Emit the completed window
+var emissionResult = windowingService.EmitWindow(windowEvent.WindowId);
+Console.WriteLine($"Window emitted: WindowId={emissionResult.WindowId}, Type={emissionResult.WindowType}");
+
+// Get windowing summary
+var summary = windowingService.GetWindowingSummary();
+Console.WriteLine($"\nWindowing summary:");
+Console.WriteLine($"  Total windows: {summary.TotalWindows}");
+Console.WriteLine($"  Active windows: {summary.ActiveWindows}");
+Console.WriteLine($"  Completed windows: {summary.CompletedWindows}");
+Console.WriteLine($"  Total data points: {summary.TotalDataPoints}");
+Console.WriteLine($"  Average throughput: {summary.AverageThroughput:F2} eps");
+```
+
 ## WindowEvent
 
 `WindowEvent` represents a time-bounded aggregation of data points collected during a specific interval. It tracks window boundaries, aggregation type, and provides statistical calculations over the contained data points. This type is used throughout the pipeline's windowing service to manage tumbling/sliding windows and produce aggregated outputs.
