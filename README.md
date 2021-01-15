@@ -432,6 +432,67 @@ Console.WriteLine($"  Average duration: {ingestionMetrics.AverageDurationMs:F1}m
 stateManager.TransitionTo(PipelineState.Stopped, "Pipeline shutdown requested");
 ```
 
+## DataProcessingService
+
+`DataProcessingService` is the core service for processing data points through the pipeline. It handles validation, transformation, quality analysis, and persistence of data points. The service provides methods for processing individual data points or batches, analyzing data quality, filtering by quality thresholds, and retrieving processing statistics.
+
+The service integrates with the pipeline's repositories and configuration to ensure consistent data processing according to configured thresholds and policies.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the data processing service
+var processingService = provider.GetRequiredService<DataProcessingService>();
+
+// Process a single data point
+var dataPoint = new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001")
+{
+    Quality = 95,
+    Metadata = new Dictionary<string, object>
+    {
+        { "sensorType", "temperature" },
+        { "unit", "celsius" }
+    }
+};
+
+var result = await processingService.ProcessDataPointAsync(dataPoint);
+Console.WriteLine($"Processing result: Success={result.Success}, Time={result.ProcessingTimeMs}ms");
+
+// Process a batch of data points
+var batch = new List<DataPoint>
+{
+    new DataPoint(2, DateTimeOffset.UtcNow.AddSeconds(-10).ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002") { Quality = 92 },
+    new DataPoint(3, DateTimeOffset.UtcNow.AddSeconds(-9).ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003") { Quality = 97 },
+    new DataPoint(4, DateTimeOffset.UtcNow.AddSeconds(-8).ToUnixTimeMilliseconds(), 23.9, "IoTSensor-004") { Quality = 88 }
+};
+
+var batchResults = await processingService.ProcessBatchAsync(batch);
+Console.WriteLine($"Processed {batchResults.Count} data points in batch");
+
+// Analyze data quality
+var qualityAnalysis = processingService.AnalyzeDataQuality(batch);
+Console.WriteLine($"Quality analysis: Total={qualityAnalysis.TotalPoints}, " +
+                 $"HighQuality={qualityAnalysis.HighQualityCount}, " +
+                 $"PassRate={qualityAnalysis.PassRate:F1}%");
+
+// Filter data points by quality threshold
+var highQualityPoints = await processingService.FilterByQualityAsync(90);
+Console.WriteLine($"High quality points (>=90): {highQualityPoints.Count}");
+
+// Get processing statistics
+var stats = await processingService.GetStatisticsAsync();
+Console.WriteLine($"Total data points processed: {stats.TotalDataPoints}");
+Console.WriteLine($"Configured max retries: {stats.ConfiguredMaxRetries}");
+Console.WriteLine($"Quality threshold: {stats.QualityThreshold}%");
+```
+
 ## QueryService
 
 `QueryService` provides querying and analysis capabilities for data points in the real-time pipeline. It offers methods for searching data points by various criteria, computing aggregated statistics, analyzing trends, and decomposing time series data. The service integrates with the pipeline's repositories to provide efficient data retrieval and comprehensive analytical operations.
