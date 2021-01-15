@@ -493,6 +493,87 @@ Console.WriteLine($"Configured max retries: {stats.ConfiguredMaxRetries}");
 Console.WriteLine($"Quality threshold: {stats.QualityThreshold}%");
 ```
 
+## PipelineOrchestrator
+
+`PipelineOrchestrator` is the central orchestrator for the real-time data pipeline, managing the end-to-end data flow from ingestion through processing to query and monitoring. It coordinates pipeline stages, handles data ingestion, batch processing, and provides comprehensive observability through health monitoring, throughput tracking, and performance analysis. The orchestrator maintains pipeline state, manages backpressure scenarios, and exposes metrics for operational decision-making.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the pipeline orchestrator
+var orchestrator = provider.GetRequiredService<PipelineOrchestrator>();
+
+// Start the pipeline
+Console.WriteLine($"Initial state: {orchestrator.GetStatus()}");
+bool started = await orchestrator.StartAsync();
+Console.WriteLine($"Pipeline started: {started}");
+Console.WriteLine($"Current state: {orchestrator.GetStatus()}");
+
+// Ingest data points individually
+bool ingestionSuccess1 = await orchestrator.IngestDataPointAsync(
+    new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001")
+    { Quality = 95 }
+);
+Console.WriteLine($"Data point 1 ingested: {ingestionSuccess1}");
+
+bool ingestionSuccess2 = await orchestrator.IngestDataPointAsync(
+    new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002")
+    { Quality = 92 }
+);
+Console.WriteLine($"Data point 2 ingested: {ingestionSuccess2}");
+
+// Process a batch of data points
+var batch = new List<DataPoint>
+{
+    new DataPoint(3, DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003") { Quality = 97 },
+    new DataPoint(4, DateTimeOffset.UtcNow.AddSeconds(-2).ToUnixTimeMilliseconds(), 23.9, "IoTSensor-004") { Quality = 88 },
+    new DataPoint(5, DateTimeOffset.UtcNow.AddSeconds(-3).ToUnixTimeMilliseconds(), 21.5, "IoTSensor-005") { Quality = 94 }
+};
+
+var batchResult = await orchestrator.ProcessBatchDataPointsAsync(batch);
+Console.WriteLine($"Batch processed: Success={batchResult.Success}, ItemsProcessed={batchResult.ItemsProcessed}");
+
+// Get query service for data retrieval
+var queryService = orchestrator.GetQueryService();
+var recentData = await queryService.SearchDataPointsAsync(
+    startTime: DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeMilliseconds(),
+    endTime: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Found {recentData.Count} data points in last 5 minutes");
+
+// Monitor pipeline health and performance
+var healthReport = await orchestrator.GetHealthReportAsync();
+Console.WriteLine($"Health status: {healthReport.Status}");
+Console.WriteLine($"Throughput: {orchestrator.GetThroughput()} eps");
+Console.WriteLine($"Total processed: {orchestrator.TotalDataPointsProcessed}");
+Console.WriteLine($"Total failed: {orchestrator.TotalDataPointsFailed}");
+
+// Get performance trend analysis
+var performanceTrend = await orchestrator.GetPerformanceTrendAsync();
+Console.WriteLine($"Performance trend: {performanceTrend.TrendDirection}");
+Console.WriteLine($"Throughput change: {performanceTrend.ThroughputChangePercent:+0.00;-0.00}%");
+
+// Monitor pipeline state and metrics
+Console.WriteLine($"Pipeline running: {orchestrator.IsRunning}");
+Console.WriteLine($"Pending items: {orchestrator.PendingItemsInQueue}");
+Console.WriteLine($"Configuration: {orchestrator.ConfigurationName} v{orchestrator.ConfigurationVersion}");
+Console.WriteLine($"Last updated: {orchestrator.Timestamp}");
+
+// Stop the pipeline when done
+bool stopped = await orchestrator.StopAsync();
+Console.WriteLine($"Pipeline stopped: {stopped}");
+```
+
 ## QueryService
 
 `QueryService` provides querying and analysis capabilities for data points in the real-time pipeline. It offers methods for searching data points by various criteria, computing aggregated statistics, analyzing trends, and decomposing time series data. The service integrates with the pipeline's repositories to provide efficient data retrieval and comprehensive analytical operations.
