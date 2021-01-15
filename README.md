@@ -493,6 +493,58 @@ Console.WriteLine($"Configured max retries: {stats.ConfiguredMaxRetries}");
 Console.WriteLine($"Quality threshold: {stats.QualityThreshold}%");
 ```
 
+## PipelineInitializer
+
+`PipelineInitializer` is responsible for initializing and configuring the real-time data pipeline. It validates configuration, sets up required services and repositories, and prepares the pipeline for operation. The initializer handles dependency injection setup, configuration validation, and provides detailed initialization results including success status, component initialization counts, and error messages.
+
+```csharp
+using DotNetRealtimePipeline.Initialization;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddLogging(configure => configure.AddConsole());
+services.AddPipelineServices();
+
+// Create and initialize the pipeline initializer
+var initializer = new PipelineInitializer(services);
+
+Console.WriteLine($"Initial state - Success: {initializer.Success}");
+Console.WriteLine($"Components initialized: {initializer.ComponentsInitialized}");
+
+// Initialize the pipeline asynchronously
+var initializationResult = await initializer.InitializeAsync();
+
+Console.WriteLine($"\nInitialization result:");
+Console.WriteLine($" Success: {initializer.Success}");
+Console.WriteLine($" Components initialized: {initializer.ComponentsInitialized}");
+Console.WriteLine($" Error message: {initializer.ErrorMessage}");
+Console.WriteLine($" Start time: {initializer.StartTime}");
+Console.WriteLine($" End time: {initializer.EndTime}");
+
+if (initializer.Success)
+{
+    Console.WriteLine("\nPipeline initialized successfully!");
+    Console.WriteLine($"Configuration: {initializer}");
+    
+    // Start the pipeline
+    bool started = await initializer.StartAsync();
+    Console.WriteLine($"\nPipeline started: {started}");
+    
+    // Monitor initialization metrics
+    Console.WriteLine($"\nInitialization metrics:");
+    Console.WriteLine($" Duration: {(initializer.EndTime - initializer.StartTime).TotalMilliseconds}ms");
+    Console.WriteLine($" Total components: {initializer.ComponentsInitialized}");
+}
+else
+{
+    Console.WriteLine($"\nInitialization failed: {initializer.ErrorMessage}");
+}
+```
+
 ## PipelineOrchestrator
 
 `PipelineOrchestrator` is the central orchestrator for the real-time data pipeline, managing the end-to-end data flow from ingestion through processing to query and monitoring. It coordinates pipeline stages, handles data ingestion, batch processing, and provides comprehensive observability through health monitoring, throughput tracking, and performance analysis. The orchestrator maintains pipeline state, manages backpressure scenarios, and exposes metrics for operational decision-making.
