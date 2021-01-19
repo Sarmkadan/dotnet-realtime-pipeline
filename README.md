@@ -901,6 +901,50 @@ Console.WriteLine(metrics.GetSummary());
 // Output: MetricAggregation[Type=hourly, Throughput=119.10 items/s, SuccessRate=99.44%, AvgLatency=45.20ms, P95=120.50ms, Backpressure=0.35%]
 ```
 
+## BackpressureEvent
+
+`BackpressureEvent` represents a time-stamped backpressure event captured by the pipeline's backpressure monitoring system. It records when backpressure is activated or released, the buffer fill percentage at that moment, and the number of dropped items. This type is used throughout the pipeline to track backpressure events for observability, alerting, and performance analysis.
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+using System;
+
+// Create a backpressure event when backpressure is activated
+var activationEvent = new BackpressureEvent
+{
+    Timestamp = DateTime.UtcNow,
+    StageName = "DataProcessing",
+    BufferFillPercent = 92.5,
+    IsActivation = true,
+    DroppedItems = 15
+};
+
+Console.WriteLine($"Backpressure activated at {activationEvent.Timestamp:HH:mm:ss.fff}");
+Console.WriteLine($"Stage: {activationEvent.StageName}");
+Console.WriteLine($"Buffer fill: {activationEvent.BufferFillPercent}%");
+Console.WriteLine($"Dropped items: {activationEvent.DroppedItems}");
+
+// Create a backpressure event when backpressure is released
+var releaseEvent = new BackpressureEvent
+{
+    Timestamp = DateTime.UtcNow.AddSeconds(30),
+    StageName = "DataProcessing",
+    BufferFillPercent = 45.2,
+    IsActivation = false,
+    DroppedItems = 15  // Same count as when activated
+};
+
+Console.WriteLine($"\nBackpressure released at {releaseEvent.Timestamp:HH:mm:ss.fff}");
+Console.WriteLine($"Stage: {releaseEvent.StageName}");
+Console.WriteLine($"Buffer fill: {releaseEvent.BufferFillPercent}%");
+Console.WriteLine($"Dropped items: {releaseEvent.DroppedItems}");
+
+// Track backpressure events in a collection
+var backpressureEvents = new List<BackpressureEvent> { activationEvent, releaseEvent };
+Console.WriteLine($"\nTotal backpressure events: {backpressureEvents.Count}");
+Console.WriteLine($"Total dropped items: {backpressureEvents.Sum(e => e.DroppedItems)}");
+```
+
 ## BackpressureMetricsCollector
 
 `BackpressureMetricsCollector` collects and tracks backpressure-related metrics for a specific pipeline stage. It monitors buffer utilization, activation patterns, and backpressure events to provide comprehensive observability into system health and performance under load. The collector maintains historical data about backpressure events, buffer fill levels, and consumer activity, enabling analysis of system behavior during periods of high load.
