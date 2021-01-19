@@ -901,6 +901,65 @@ Console.WriteLine(metrics.GetSummary());
 // Output: MetricAggregation[Type=hourly, Throughput=119.10 items/s, SuccessRate=99.44%, AvgLatency=45.20ms, P95=120.50ms, Backpressure=0.35%]
 ```
 
+## BackpressureMetricsCollector
+
+`BackpressureMetricsCollector` collects and tracks backpressure-related metrics for a specific pipeline stage. It monitors buffer utilization, activation patterns, and backpressure events to provide comprehensive observability into system health and performance under load. The collector maintains historical data about backpressure events, buffer fill levels, and consumer activity, enabling analysis of system behavior during periods of high load.
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the backpressure metrics collector for a specific stage
+var collector = new BackpressureMetricsCollector("DataProcessing");
+
+// Poll for current metrics
+collector.Poll();
+
+// Manually record a backpressure event
+collector.RecordManualEvent("Buffer capacity exceeded during peak load");
+
+// Get stage-specific backpressure metrics
+var stageMetrics = collector.GetStageMetrics();
+if (stageMetrics != null)
+{
+    Console.WriteLine($"Stage: {stageMetrics.StageName}");
+    Console.WriteLine($"Backpressured: {stageMetrics.WasBackpressured}");
+    Console.WriteLine($"Peak buffer fill: {stageMetrics.PeakBufferFillPercent}%");
+    Console.WriteLine($"Total dropped items: {stageMetrics.TotalDroppedItems}");
+}
+
+// Get a complete snapshot of backpressure metrics
+var snapshot = collector.GetSnapshot();
+Console.WriteLine($"Current buffer fill: {snapshot.CurrentBufferFillPercent}%");
+Console.WriteLine($"Activation count: {snapshot.ActivationCount}");
+Console.WriteLine($"Total active duration: {snapshot.TotalActiveDurationMs}ms");
+Console.WriteLine($"Last activation: {snapshot.LastActivationAt}");
+
+// Get recent backpressure events
+var recentEvents = collector.GetRecentEvents();
+Console.WriteLine($"Recent events: {recentEvents.Count}");
+
+// Get stage-specific backpressure events
+var stageEvents = collector.GetStageEvents();
+Console.WriteLine($"Stage events: {stageEvents.Count}");
+
+// Reset metrics when backpressure situation resolves
+collector.Reset();
+
+// Access public properties
+Console.WriteLine($"Stage name: {collector.StageName}");
+Console.WriteLine($"Was backpressured: {collector.WasBackpressured}");
+Console.WriteLine($"Peak buffer fill: {collector.PeakBufferFillPercent}%");
+Console.WriteLine($"Current buffer fill: {collector.CurrentBufferFillPercent}%");
+Console.WriteLine($"Total dropped items: {collector.TotalDroppedItems}");
+```
+
 ## MetricsService
 
 `MetricsService` collects, aggregates, and analyzes pipeline metrics. It tracks throughput, latency, error rates, and backpressure across pipeline stages, providing real-time monitoring and historical analysis capabilities. The service maintains sliding window metrics for recent performance and generates health reports, trend analysis, and distribution statistics.
