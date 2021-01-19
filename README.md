@@ -1729,6 +1729,113 @@ if (parsedCommand.RequiredOptions.Contains("source") && !parsedCommand.HasFlag("
 Console.WriteLine($"Ingesting data from {source} in {format} format...");
 ```
 
+## ExportService
+
+`ExportService` handles the export of pipeline data to various file formats including CSV, JSON, and Parquet. It provides methods for exporting data points, results, metrics, and multi-format outputs, with support for batch processing and detailed export tracking through comprehensive result objects. The service tracks export success/failure status, file paths, record counts, file sizes, and timing information.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+// Setup dependency injection
+var services = new ServiceCollection();
+services.AddPipelineServices();
+var provider = services.BuildServiceProvider();
+
+// Get the export service
+var exportService = provider.GetRequiredService<ExportService>();
+
+// Export data points to CSV format
+var exportResult = await exportService.ExportDataPointsAsync(
+    dataPoints: new List<DataPoint>
+    {
+        new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001") { Quality = 95 },
+        new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002") { Quality = 92 },
+        new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003") { Quality = 97 }
+    },
+    outputPath: Path.Combine(Directory.GetCurrentDirectory(), "exports", "data-points.csv"),
+    format: "csv"
+);
+
+Console.WriteLine($"Export successful: {exportResult.Success}");
+Console.WriteLine($"Output path: {exportResult.OutputPath}");
+Console.WriteLine($"Records exported: {exportResult.RecordCount}");
+Console.WriteLine($"File size: {exportResult.FileSizeBytes} bytes");
+Console.WriteLine($"Error message: {exportResult.ErrorMessage}");
+Console.WriteLine($"Export duration: {(exportResult.EndTime - exportResult.StartTime).TotalMilliseconds}ms");
+
+// Export results to JSON format
+var results = new List<ProcessingResult>
+{
+    new ProcessingResult(1, true, "DataProcessing") { ProcessingTimeMs = 150 },
+    new ProcessingResult(2, true, "DataProcessing") { ProcessingTimeMs = 120 }
+};
+
+var resultsExport = await exportService.ExportResultsAsync(
+    results: results,
+    outputPath: Path.Combine(Directory.GetCurrentDirectory(), "exports", "results.json"),
+    format: "json"
+);
+
+Console.WriteLine($"\nResults export: Success={resultsExport.Success}, Records={resultsExport.RecordCount}");
+
+// Export metrics to CSV format
+var metricsExport = await exportService.ExportMetricsAsync(
+    metrics: new List<MetricAggregation>
+    {
+        new MetricAggregation(1, DateTimeOffset.UtcNow.AddMinutes(-1).ToUnixTimeMilliseconds(), 
+            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), "minute")
+        {
+            TotalItemsProcessed = 1500,
+            TotalItemsFailed = 5,
+            AverageProcessingTimeMs = 45.2
+        }
+    },
+    outputPath: Path.Combine(Directory.GetCurrentDirectory(), "exports", "metrics.csv"),
+    format: "csv"
+);
+
+Console.WriteLine($"\nMetrics export: Success={metricsExport.Success}, Records={metricsExport.RecordCount}");
+
+// Export multiple formats in a single operation
+var multiExport = await exportService.ExportMultiFormatAsync(
+    dataPoints: new List<DataPoint>
+    {
+        new DataPoint(4, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 21.5, "IoTSensor-004") { Quality = 94 },
+        new DataPoint(5, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.9, "IoTSensor-005") { Quality = 88 }
+    },
+    outputPath: Path.Combine(Directory.GetCurrentDirectory(), "exports"),
+    formats: new List<string> { "csv", "json", "parquet" }
+);
+
+Console.WriteLine($"\nMulti-format export results:");
+foreach (var result in multiExport)
+{
+    Console.WriteLine($"  Format: {result.OutputPath.Split('.').Last()}, Success: {result.Success}");
+}
+
+// Use BatchExportProcessor for large datasets
+var batchProcessor = new BatchExportProcessor(exportService, batchSize: 1000);
+var batchResult = await batchProcessor.ExportInBatchesAsync(
+    dataPoints: Enumerable.Range(1, 5000).Select(i => 
+        new DataPoint(i, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 20.0 + i % 10, 
+        $"IoTSensor-{i:D4}") { Quality = 90 + i % 10 }),
+    outputPath: Path.Combine(Directory.GetCurrentDirectory(), "exports", "batch-data"),
+    format: "csv"
+);
+
+Console.WriteLine($"\nBatch export completed: Success={batchResult.Success}, Exported={batchResult.ExportedRecords}");
+Console.WriteLine($"Generated {batchResult.BatchFiles.Count} batch files:");
+foreach (var batchFile in batchResult.BatchFiles)
+{
+    Console.WriteLine($"  {Path.GetFileName(batchFile)}");
+}
+```
+
 ## CommandExecutor
 
 `CommandExecutor` provides a robust mechanism for executing command-line operations within the pipeline, supporting both synchronous and asynchronous execution patterns. It handles command invocation, output capture, error detection, and provides utilities for data ingestion, querying, status monitoring, and visualization. The executor supports both direct command execution and factory-based creation of data loaders and exporters, making it suitable for pipeline operations that require external tool integration or data processing workflows.
