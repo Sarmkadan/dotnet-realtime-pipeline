@@ -545,6 +545,31 @@ else
 }
 ```
 
+## ThroughputCounter
+
+`ThroughputCounter` tracks events-per-second throughput using a sliding time window with thread-safe operations. It provides both global throughput measurement and stage-specific metrics, making it ideal for monitoring pipeline performance and identifying bottlenecks.
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+
+// Create a throughput counter with a 60-second sliding window
+var throughputCounter = new ThroughputCounter(windowSeconds: 60);
+
+// Record events globally
+throughputCounter.RecordEvents(150);
+
+// Record events for a specific pipeline stage
+throughputCounter.RecordEvents("DataProcessing", 200);
+
+// Get current throughput (events per second)
+double globalThroughput = throughputCounter.GetThroughput();
+Console.WriteLine($"Global throughput: {globalThroughput:F2} eps");
+
+// Get throughput for a specific stage
+double stageThroughput = throughputCounter.GetThroughput("DataProcessing");
+Console.WriteLine($"DataProcessing stage throughput: {stageThroughput:F2} eps");
+```
+
 ## PipelineOrchestrator
 
 `PipelineOrchestrator` is the central orchestrator for the real-time data pipeline, managing the end-to-end data flow from ingestion through processing to query and monitoring. It coordinates pipeline stages, handles data ingestion, batch processing, and provides comprehensive observability through health monitoring, throughput tracking, and performance analysis. The orchestrator maintains pipeline state, manages backpressure scenarios, and exposes metrics for operational decision-making.
