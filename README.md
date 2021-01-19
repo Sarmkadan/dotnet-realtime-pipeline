@@ -1733,6 +1733,88 @@ Console.WriteLine($"Ingesting data from {source} in {format} format...");
 
 `ExportService` handles the export of pipeline data to various file formats including CSV, JSON, and Parquet. It provides methods for exporting data points, results, metrics, and multi-format outputs, with support for batch processing and detailed export tracking through comprehensive result objects. The service tracks export success/failure status, file paths, record counts, file sizes, and timing information.
 
+## InMemoryDataPointRepository
+
+`InMemoryDataPointRepository` is an in-memory implementation of `IDataPointRepository` that stores data points in volatile memory. It provides fast read/write operations suitable for testing scenarios, development environments, or as a fallback repository when persistent storage is unavailable. The repository supports all standard repository operations including CRUD operations, querying by various criteria, and pagination.
+
+```csharp
+using DotNetRealtimePipeline.Data.Repositories;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+// Create an in-memory repository
+var repository = new InMemoryDataPointRepository();
+
+// Create and add data points
+var dataPoint1 = new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 23.5, "IoTSensor-001")
+{
+    Quality = 95,
+    Metadata = new Dictionary<string, object> { { "sensorType", "temperature" } }
+};
+
+var dataPoint2 = new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 24.1, "IoTSensor-002")
+{
+    Quality = 92,
+    Metadata = new Dictionary<string, object> { { "sensorType", "temperature" } }
+};
+
+var dataPoint3 = new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "IoTSensor-003")
+{
+    Quality = 97,
+    Metadata = new Dictionary<string, object> { { "sensorType", "temperature" } }
+};
+
+await repository.CreateAsync(dataPoint1);
+await repository.CreateAsync(dataPoint2);
+await repository.CreateAsync(dataPoint3);
+
+// Retrieve data points by ID
+var retrievedPoint = await repository.GetByIdAsync(2);
+Console.WriteLine($"Retrieved point: ID={retrievedPoint?.Id}, Value={retrievedPoint?.Value}");
+
+// Query data points by source
+var sourcePoints = await repository.GetBySourceAsync("IoTSensor-001");
+Console.WriteLine($"Points from IoTSensor-001: {sourcePoints.Count}");
+
+// Query data points by time range
+var timeRangePoints = await repository.GetByTimeRangeAsync(
+    DateTimeOffset.UtcNow.AddMinutes(-10).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Points in time range: {timeRangePoints.Count}");
+
+// Query data points by quality threshold
+var highQualityPoints = await repository.GetByQualityThresholdAsync(95);
+Console.WriteLine($"High quality points (>=95): {highQualityPoints.Count}");
+
+// Update a data point
+var updatedPoint = await repository.GetByIdAsync(1);
+if (updatedPoint != null)
+{
+    updatedPoint.Value = 25.3;
+    await repository.UpdateAsync(updatedPoint);
+}
+
+// Delete a data point
+bool deleted = await repository.DeleteAsync(3);
+Console.WriteLine($"Data point 3 deleted: {deleted}");
+
+// Count total data points
+int totalCount = await repository.CountAsync();
+Console.WriteLine($"Total data points: {totalCount}");
+
+// Get paged results
+var pagedResults = await repository.GetPagedAsync(pageIndex: 0, pageSize: 2);
+Console.WriteLine($"Page 0 has {pagedResults.Count} items");
+
+// Clear all data points
+repository.Clear();
+int afterClear = await repository.CountAsync();
+Console.WriteLine($"Data points after clear: {afterClear}");
+```
+
 ```csharp
 using DotNetRealtimePipeline.Services;
 using Microsoft.Extensions.DependencyInjection;
