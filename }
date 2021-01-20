@@ -1,0 +1,9 @@
+
+The example:
+
+1. Instantiates the required services and workers.  
+2. Starts all workers via `WorkerCoordinator.StartAll()`.  
+3. Waits for a period while the workers operate.  
+4. Gracefully stops everything with `WorkerCoordinator.StopAllAsync()` and disposes the coordinator.
+
+This pattern ensures that background processing, metrics aggregation, and health checks run concurrently and are shut down cleanly when the application exits.
