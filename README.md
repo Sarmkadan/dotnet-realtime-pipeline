@@ -12,3 +12,5 @@ It works together with `MetricsAggregationWorker`, `HealthCheckWorker`, and `Wor
 ### Usage example
 The following example demonstrates how to create, start, stop, and dispose the workers using their real public members. It assumes that the required services (`PipelineOrchestrator`, `MetricsService`) have parameterless constructors or are otherwise available.
 
+## CacheService
+The `CacheService` class provides an in-memory caching mechanism with support for time-to-live (TTL) and eviction policies. It allows for storing and retrieving values based on a given key, as well as tracking cache statistics. Here's an example of how to use the `CacheService`:
