@@ -141,6 +141,179 @@ Console.WriteLine($"Cache Status: {cacheStatus}");
 ## CacheService
 The `CacheService` class provides an in-memory caching mechanism with support for time-to-live (TTL) and eviction policies. It allows for storing and retrieving values based on a given key, as well as tracking cache statistics. Here's an example of how to use the `CacheService`:
 
+## BatchProcessor
+
+The `BatchProcessor` class provides a generic utility for processing large collections of items in configurable batch sizes. It efficiently handles batch creation, parallel processing, and progress tracking for CPU-intensive or I/O-bound operations.
+
+### Key Features
+- Process large datasets in configurable batch sizes
+- Track processing progress with detailed statistics
+- Support for both synchronous and asynchronous processing
+- Built-in exception handling with `BatchProcessingException`
+- Progress tracking with start time, last update time, and batch statistics
+- Generic implementation supporting any input/output types
+
+### Usage Examples
+
+#### Basic Batch Processing
+```csharp
+// Create sample data
+var dataPoints = Enumerable.Range(1, 1000)
+    .Select(i => new DataPoint(
+        id: i,
+        timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        value: i * 1.5,
+        source: $"sensor-{i:D3}"
+    ))
+    .ToList();
+
+// Create batches (200 items per batch)
+var batchProcessor = new BatchProcessor<DataPoint, ProcessingResult>(
+    dataPoints,
+    batchSize: 200
+);
+
+Console.WriteLine($"Total batches: {batchProcessor.TotalBatches}");
+Console.WriteLine($"Total items: {batchProcessor.TotalItems}");
+
+// Process all batches
+var results = await batchProcessor.ProcessAsync();
+
+Console.WriteLine($"Processed batches: {batchProcessor.ProcessedBatches}");
+Console.WriteLine($"Processed items: {batchProcessor.ProcessedItems}");
+Console.WriteLine($"Total processing time: {DateTime.Now - batchProcessor.StartTime}");
+```
+
+#### Custom Batch Processing with Transformations
+```csharp
+// Sample data
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 25.5, "sensor-001"),
+    new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 30.2, "sensor-002"),
+    new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "sensor-003")
+};
+
+// Custom processing function
+async Task<ProcessingResult> ProcessDataPointAsync(DataPoint dataPoint, int batchIndex, int itemIndex)
+{
+    // Simulate processing
+    await Task.Delay(10); // Simulate work
+    
+    return new ProcessingResult
+    {
+        ResultId = $"result-{batchIndex}-{itemIndex}",
+        Success = true,
+        ProcessingTimeMs = 10,
+        ProcessedAt = DateTimeOffset.UtcNow,
+        StageName = "data-processing"
+    };
+}
+
+// Create and process with custom function
+var processor = new BatchProcessor<DataPoint, ProcessingResult>(
+    dataPoints,
+    batchSize: 2,
+    processFunc: ProcessDataPointAsync
+);
+
+var processingResults = await processor.ProcessAsync();
+
+foreach (var result in processingResults)
+{
+    Console.WriteLine($"Result {result.ResultId}: Success={result.Success}, Time={result.ProcessingTimeMs}ms");
+}
+```
+
+#### Processing with Progress Tracking
+```csharp
+var largeDataset = GenerateLargeDataset(10000); // Assume this generates 10,000 items
+
+var processor = new BatchProcessor<Domain.Models.DataPoint, Domain.Models.ProcessingResult>(
+    largeDataset,
+    batchSize: 500
+);
+
+Console.WriteLine($"Starting batch processing at {processor.StartTime}");
+
+// Process with progress updates
+var results = await processor.ProcessAsync();
+
+Console.WriteLine($"\nProcessing completed!");
+Console.WriteLine($"Total batches: {processor.TotalBatches}");
+Console.WriteLine($"Processed batches: {processor.ProcessedBatches}");
+Console.WriteLine($"Total items: {processor.TotalItems}");
+Console.WriteLine($"Processed items: {processor.ProcessedItems}");
+Console.WriteLine($"Duration: {DateTime.Now - processor.StartTime}");
+Console.WriteLine($"Last update: {processor.LastUpdateTime}");
+Console.WriteLine($"\nResults summary:");
+Console.WriteLine($"  Success rate: {results.Count(r => r.Success)}/{results.Count} ({results.Count(r => r.Success) * 100.0 / results.Count:F1}%)");
+Console.WriteLine($"  Average processing time: {results.Average(r => r.ProcessingTimeMs):F2}ms");
+```
+
+#### Error Handling with BatchProcessingException
+```csharp
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 25.5, "sensor-001"),
+    new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 30.2, "sensor-002"),
+    new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "sensor-003")
+};
+
+try
+{
+    var processor = new BatchProcessor<DataPoint, ProcessingResult>(
+        dataPoints,
+        batchSize: 1,
+        processFunc: async (dp, batchIdx, itemIdx) => 
+        {
+            if (dp.Id == 2)
+                throw new InvalidOperationException("Simulated processing error");
+            
+            await Task.Delay(5);
+            return new ProcessingResult { ResultId = $"result-{dp.Id}", Success = true };
+        }
+    );
+    
+    var results = await processor.ProcessAsync();
+}
+catch (BatchProcessingException ex)
+{
+    Console.WriteLine($"Batch processing failed!");
+    Console.WriteLine($"Failed batch: {ex.FailedBatchIndex}");
+    Console.WriteLine($"Failed item index: {ex.FailedItemIndex}");
+    Console.WriteLine($"Inner exception: {ex.InnerException?.Message}");
+}
+```
+
+#### Using DataPointBatchProcessor (Specialized Implementation)
+```csharp
+// Create a batch processor specifically for DataPoint processing
+var dataPoints = new List<Domain.Models.DataPoint>
+{
+    new Domain.Models.DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 25.5m, "sensor-001"),
+    new Domain.Models.DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 30.2m, "sensor-002"),
+    new Domain.Models.DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8m, "sensor-003")
+};
+
+var dataPointProcessor = new DataPointBatchProcessor(dataPoints, batchSize: 2);
+
+var processingResults = await dataPointProcessor.ProcessBatchAsync();
+
+Console.WriteLine($"Processed {processingResults.Count} results");
+foreach (var result in processingResults)
+{
+    Console.WriteLine($"  Result {result.ResultId}: {result.Success}");
+}
+```
+
+### Return Types
+
+- **`BatchProcessor<TInput, TOutput>`**: Generic batch processor with configurable batch size and processing function
+- **`BatchProcessingException`**: Exception thrown when batch processing fails, containing batch and item index information
+- **`DataPointBatchProcessor`**: Specialized batch processor for `DataPoint` objects with domain-specific processing
+
+
 ## SerializationHelper
 
 The `SerializationHelper` class provides utility methods for serializing and deserializing pipeline objects to/from JSON, CSV, and other formats. It supports both single objects and collections, with proper escaping and formatting for each format.
