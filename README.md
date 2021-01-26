@@ -48,3 +48,46 @@ long windowSizeMs = 300000; // 5 minute window
 long roundedTimestampMs = DateTimeExtensions.RoundToWindowBoundary(timestampMs, windowSizeMs);
 Console.WriteLine($"Rounded to window boundary: {roundedTimestampMs}");
 ```
+
+## CompressionHelper
+The `CompressionHelper` class provides methods for compressing and decompressing data using GZIP and Deflate algorithms, along with file-level compression/decompression and compression efficiency analysis. It supports string and file operations, and includes utilities to calculate compression ratios and compare algorithm performance.
+
+### Usage Examples
+
+#### Compress and decompress data
+```csharp
+string originalData = "This is a sample text to compress.";
+
+// Compress using GZIP
+byte[] compressedGzip = CompressionHelper.CompressGzip(originalData);
+string decompressedGzip = CompressionHelper.DecompressGzip(compressedGzip);
+Console.WriteLine($"GZIP Decompressed: {decompressedGzip}");
+
+// Compress using Deflate
+byte[] compressedDeflate = CompressionHelper.CompressDeflate(originalData);
+string decompressedDeflate = CompressionHelper.DecompressDeflate(compressedDeflate);
+Console.WriteLine($"Deflate Decompressed: {decompressedDeflate}");
+```
+
+#### Analyze compression efficiency
+```csharp
+CompressionStats stats = CompressionAnalyzer.AnalyzeCompression(originalData);
+Console.WriteLine($"Compression Stats: {stats}");
+Console.WriteLine($"Original Size: {stats.OriginalSizeBytes}B");
+Console.WriteLine($"Compressed Size: {stats.CompressedSizeBytes}B");
+Console.WriteLine($"Savings: {stats.SavingsBytes}B ({stats.CompressionRatioPercent:F1}%)");
+```
+
+#### Compare compression algorithms
+```csharp
+CompressionComparison comparison = CompressionAnalyzer.CompareAlgorithms(originalData);
+Console.WriteLine($"Best Algorithm: {comparison.BestAlgorithm}");
+Console.WriteLine($"GZIP Ratio: {comparison.GzipRatioPercent:F1}%");
+Console.WriteLine($"Deflate Ratio: {comparison.DeflateRatioPercent:F1}%");
+```
+
+#### Compress and decompress files
+```csharp
+await CompressionHelper.CompressFileAsync("input.txt", "output.gz");
+await CompressionHelper.DecompressFileAsync("output.gz", "decompressed.txt");
+```
