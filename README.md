@@ -140,3 +140,183 @@ Console.WriteLine($"Cache Status: {cacheStatus}");
 
 ## CacheService
 The `CacheService` class provides an in-memory caching mechanism with support for time-to-live (TTL) and eviction policies. It allows for storing and retrieving values based on a given key, as well as tracking cache statistics. Here's an example of how to use the `CacheService`:
+
+## SerializationHelper
+
+The `SerializationHelper` class provides utility methods for serializing and deserializing pipeline objects to/from JSON, CSV, and other formats. It supports both single objects and collections, with proper escaping and formatting for each format.
+
+### Key Features
+- Convert `DataPoint` objects to JSON strings
+- Parse JSON strings back to `DataPoint` objects
+- Serialize collections of data points to JSON arrays
+- Convert data points to CSV format (single or batch)
+- Serialize processing results and metrics to JSON
+- Convert timestamps between Unix milliseconds and ISO 8601 strings
+- Convert objects to dictionaries for flexible serialization
+
+### Usage Examples
+
+#### Serialize a DataPoint to JSON
+```csharp
+var dataPoint = new DataPoint(
+    id: 12345,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 42.75,
+    source: "sensor-001"
+);
+
+// Add optional properties
+dataPoint.Quality = 95;
+dataPoint.Tags = "temperature,environment";
+
+dataPoint.Metadata = new Dictionary<string, object>
+{
+    ["unit"] = "celsius",
+    ["location"] = "room-101"
+};
+
+// Serialize to JSON
+string json = SerializationHelper.ToJson(dataPoint);
+Console.WriteLine(json);
+```
+
+#### Deserialize JSON to DataPoint
+```csharp
+string jsonData = @"{
+    \"Id\": 12345,
+    \"Timestamp\": 1719580800000,
+    \"Value\": 42.75,
+    \"Source\": \"sensor-001\",
+    \"Quality\": 95,
+    \"Tags\": \"temperature,environment\",
+    \"Metadata\": {
+        \"unit\": \"celsius\",
+        \"location\": \"room-101\"
+    }
+}";
+
+DataPoint deserialized = SerializationHelper.FromJson(jsonData);
+Console.WriteLine($"Deserialized: {deserialized.Id} - {deserialized.Value}");
+```
+
+#### Serialize a collection to JSON array
+```csharp
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 25.5, "sensor-001"),
+    new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 30.2, "sensor-002"),
+    new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "sensor-003")
+};
+
+string jsonArray = SerializationHelper.ToJsonArray(dataPoints);
+Console.WriteLine(jsonArray);
+```
+
+#### Convert DataPoint to CSV
+```csharp
+var dataPoint = new DataPoint(
+    id: 67890,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 19.3,
+    source: "sensor-004"
+);
+
+dataPoint.Quality = 88;
+dataPoint.Tags = "humidity,environment";
+
+// Convert to CSV (with header)
+string csv = SerializationHelper.ToCsv(dataPoint);
+Console.WriteLine(csv);
+
+// Convert to CSV without header
+string csvNoHeader = SerializationHelper.ToCsv(dataPoint, includeHeader: false);
+```
+
+#### Serialize a batch of DataPoints to CSV
+```csharp
+var batch = new List<DataPoint>
+{
+    new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 25.5, "sensor-001"),
+    new DataPoint(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 30.2, "sensor-002"),
+    new DataPoint(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.8, "sensor-003")
+};
+
+string csvBatch = SerializationHelper.ToCsvBatch(batch);
+Console.WriteLine(csvBatch);
+```
+
+#### Serialize ProcessingResults
+```csharp
+var results = new List<ProcessingResult>
+{
+    new ProcessingResult
+    {
+        ResultId = "result-001",
+        Success = true,
+        ProcessingTimeMs = 150,
+        ProcessedAt = DateTimeOffset.UtcNow,
+        StageName = "validation"
+    },
+    new ProcessingResult
+    {
+        ResultId = "result-002",
+        Success = false,
+        ErrorMessage = "Validation failed",
+        ProcessingTimeMs = 85,
+        ProcessedAt = DateTimeOffset.UtcNow,
+        StageName = "validation"
+    }
+};
+
+string resultsJson = SerializationHelper.SerializeResults(results);
+Console.WriteLine(resultsJson);
+```
+
+#### Serialize Metrics
+```csharp
+var metrics = new MetricAggregation
+{
+    ComputedAt = DateTimeOffset.UtcNow,
+    TotalItemsProcessed = 1000,
+    TotalItemsFailed = 25,
+    TotalItemsSkipped = 15,
+    AverageProcessingTimeMs = 125.5,
+    BackpressureEvents = 3
+};
+
+string metricsJson = SerializationHelper.SerializeMetrics(metrics);
+Console.WriteLine(metricsJson);
+```
+
+#### Convert timestamp formats
+```csharp
+// Unix timestamp to ISO 8601
+long unixTime = 1719580800000;
+string iso8601 = SerializationHelper.UnixToIso8601(unixTime);
+Console.WriteLine($"ISO 8601: {iso8601}");
+
+// ISO 8601 to Unix timestamp
+string isoString = "2024-06-28T12:00:00.000Z";
+long unixTimestamp = SerializationHelper.Iso8601ToUnix(isoString);
+Console.WriteLine($"Unix timestamp: {unixTimestamp}");
+```
+
+#### Convert objects to dictionaries
+```csharp
+var dataPoint = new DataPoint(
+    id: 99999,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 45.6,
+    source: "sensor-005"
+);
+
+var dict = SerializationHelper.ToDictionary(dataPoint);
+Console.WriteLine($"Dictionary has {dict.Count} keys:");
+foreach (var kvp in dict)
+{
+    Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
+}
+```
+
+## BatchSerializationHelper
+The `BatchSerializationHelper` class extends the functionality of `SerializationHelper` by providing asynchronous file I/O operations for batch processing of data points in JSON or CSV format.
