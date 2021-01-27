@@ -34,3 +34,45 @@ monitor.Start();
 monitor.Stop();
 ```
 This example demonstrates path validation, directory checks, filename sanitization, disk space queries, and file system monitoring using `PathHelper` and `FileSystemMonitor`.
+
+## RetryHelper
+The `RetryHelper` class implements retry logic with exponential backoff, jitter, and customizable retry conditions. It supports both synchronous and asynchronous operations, allowing developers to define retry policies with specific delays, maximum attempts, and exception types to retry on.
+
+Example usage:
+```csharp
+// Configure retry policy with exponential backoff and jitter
+var policy = new RetryPolicyBuilder()
+    .WithMaxAttempts(5)
+    .WithInitialDelay(500)
+    .WithMaxDelay(30000)
+    .WithJitter(true)
+    .RetryOn<HttpRequestException>()
+    .RetryOn<TimeoutException>()
+    .Build();
+
+// Execute async operation with retry policy
+try
+{
+    var result = await policy.ExecuteAsync<string>(async () =>
+    {
+        // Simulate a flaky API call
+        if (new Random().Next(0, 3) == 0)
+            throw new HttpRequestException("Simulated network failure");
+        
+        return await FetchDataFromServiceAsync();
+    });
+    
+    Console.WriteLine($"Success: {result}");
+}
+catch (Exception ex) when (ex is OperationCanceledException)
+{
+    Console.WriteLine($"Operation failed after retries: {ex.Message}");
+}
+
+// Track retry statistics
+var stats = new RetryStatistics();
+stats.RecordAttempt(true, 500);  // Record successful attempt
+stats.RecordAttempt(false, 1000); // Record failed attempt
+Console.WriteLine($"Success rate: {stats.SuccessRate:F2}%");
+```
+This example demonstrates configuring a retry policy with exponential backoff, jitter, and specific retryable exceptions, then using it to execute an asynchronous operation while tracking retry statistics.
