@@ -1,93 +1,42 @@
 // existing content ...
 
-## DateTimeExtensions
-The `DateTimeExtensions` class provides utility methods for converting between `DateTime` and Unix timestamp formats, as well as calculating time window boundaries and ages. It enables easy conversion to and from Unix timestamps in milliseconds.
+## StatisticsHelper
+The `StatisticsHelper` class provides statistical analysis methods for numerical datasets, including mean, median, standard deviation, percentile calculation, outlier detection, and correlation analysis. It supports both single-value calculations and time-series analysis like moving averages.
 
 ### Usage Examples
 
-#### Convert to and from Unix timestamps
+#### Calculate basic statistics
 ```csharp
-var dateTime = new DateTime(2024, 9, 16, 10, 30, 0, DateTimeKind.Utc);
-long unixTimestampMs = dateTime.ToUnixMilliseconds();
-Console.WriteLine($"Unix timestamp: {unixTimestampMs}");
+List<double> values = new List<double> { 12.5, 15.3, 14.7, 16.2, 13.8, 100.0 };
 
-DateTime convertedDateTime = DateTimeExtensions.FromUnixMilliseconds(unixTimestampMs);
-Console.WriteLine($"Converted back to DateTime: {convertedDateTime}");
+double mean = StatisticsHelper.CalculateMean(values);
+double median = StatisticsHelper.CalculateMedian(values);
+double stdDev = StatisticsHelper.CalculateStandardDeviation(values);
+double iqr90 = StatisticsHelper.CalculatePercentile(values, 90);
+
+Console.WriteLine($"Mean: {mean:F2}");
+Console.WriteLine($"Median: {median:F2}");
+Console.WriteLine($"Std Dev: {stdDev:F2}");
+Console.WriteLine($"90th Percentile: {iqr90:F2}");
 ```
 
-#### Get current Unix timestamp
+#### Analyze time-series data
 ```csharp
-long currentUnixTimestampMs = DateTimeExtensions.GetCurrentUnixMilliseconds();
-Console.WriteLine($"Current Unix timestamp: {currentUnixTimestampMs}");
+List<double> timeSeries = new List<double> { 10, 12, 14, 13, 15, 18, 16, 20 };
+var movingAverages = StatisticsHelper.CalculateMovingAverage(timeSeries, 3);
+
+Console.WriteLine("3-period Moving Averages:");
+Console.WriteLine(string.Join(", ", movingAverages.Select(x => x.ToString("F2"))));
 ```
 
-#### Calculate time window boundaries
+#### Detect outliers and correlation
 ```csharp
-long timestampMs = 1721481600000; // Example timestamp
-long windowSizeMs = 60000; // 1 minute window
+List<double> xValues = new List<double> { 1, 2, 3, 4, 5 };
+List<double> yValues = new List<double> { 2, 4, 6, 8, 10 };
 
-long windowStart = DateTimeExtensions.GetWindowStart(timestampMs, windowSizeMs);
-long windowEnd = DateTimeExtensions.GetWindowEnd(timestampMs, windowSizeMs);
+var outliers = StatisticsHelper.FindOutliers(values);
+double correlation = StatisticsHelper.CalculateCorrelation(xValues, yValues);
 
-Console.WriteLine($"Window start: {windowStart}");
-Console.WriteLine($"Window end: {windowEnd}");
-```
-
-#### Calculate age of a timestamp
-```csharp
-long oldTimestampMs = 1721474400000; // Example old timestamp
-long ageMs = DateTimeExtensions.GetAgeMs(oldTimestampMs);
-Console.WriteLine($"Age: {ageMs}ms");
-```
-
-#### Round to window boundary
-```csharp
-long timestampMs = 172148123456; // Example timestamp
-long windowSizeMs = 300000; // 5 minute window
-
-long roundedTimestampMs = DateTimeExtensions.RoundToWindowBoundary(timestampMs, windowSizeMs);
-Console.WriteLine($"Rounded to window boundary: {roundedTimestampMs}");
-```
-
-## CompressionHelper
-The `CompressionHelper` class provides methods for compressing and decompressing data using GZIP and Deflate algorithms, along with file-level compression/decompression and compression efficiency analysis. It supports string and file operations, and includes utilities to calculate compression ratios and compare algorithm performance.
-
-### Usage Examples
-
-#### Compress and decompress data
-```csharp
-string originalData = "This is a sample text to compress.";
-
-// Compress using GZIP
-byte[] compressedGzip = CompressionHelper.CompressGzip(originalData);
-string decompressedGzip = CompressionHelper.DecompressGzip(compressedGzip);
-Console.WriteLine($"GZIP Decompressed: {decompressedGzip}");
-
-// Compress using Deflate
-byte[] compressedDeflate = CompressionHelper.CompressDeflate(originalData);
-string decompressedDeflate = CompressionHelper.DecompressDeflate(compressedDeflate);
-Console.WriteLine($"Deflate Decompressed: {decompressedDeflate}");
-```
-
-#### Analyze compression efficiency
-```csharp
-CompressionStats stats = CompressionAnalyzer.AnalyzeCompression(originalData);
-Console.WriteLine($"Compression Stats: {stats}");
-Console.WriteLine($"Original Size: {stats.OriginalSizeBytes}B");
-Console.WriteLine($"Compressed Size: {stats.CompressedSizeBytes}B");
-Console.WriteLine($"Savings: {stats.SavingsBytes}B ({stats.CompressionRatioPercent:F1}%)");
-```
-
-#### Compare compression algorithms
-```csharp
-CompressionComparison comparison = CompressionAnalyzer.CompareAlgorithms(originalData);
-Console.WriteLine($"Best Algorithm: {comparison.BestAlgorithm}");
-Console.WriteLine($"GZIP Ratio: {comparison.GzipRatioPercent:F1}%");
-Console.WriteLine($"Deflate Ratio: {comparison.DeflateRatioPercent:F1}%");
-```
-
-#### Compress and decompress files
-```csharp
-await CompressionHelper.CompressFileAsync("input.txt", "output.gz");
-await CompressionHelper.DecompressFileAsync("output.gz", "decompressed.txt");
+Console.WriteLine($"Outliers: {string.Join(", ", outliers)}");
+Console.WriteLine($"Correlation: {correlation:F2}");
 ```
