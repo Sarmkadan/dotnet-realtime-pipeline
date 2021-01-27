@@ -76,3 +76,44 @@ stats.RecordAttempt(false, 1000); // Record failed attempt
 Console.WriteLine($"Success rate: {stats.SuccessRate:F2}%");
 ```
 This example demonstrates configuring a retry policy with exponential backoff, jitter, and specific retryable exceptions, then using it to execute an asynchronous operation while tracking retry statistics.
+
+## PerformanceHelper
+The `PerformanceHelper` class provides utilities for measuring execution time of synchronous and asynchronous operations, running benchmarks, and retrieving memory usage statistics. It exposes the `BenchmarkResult` and `MemoryStats` types for inspecting collected data.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+// Measure a synchronous operation
+var syncResult = PerformanceHelper.MeasureExecution(() =>
+{
+    // Simulate work
+    Thread.Sleep(150);
+    return 42;
+});
+Console.WriteLine($"Sync result: {syncResult.Result}, elapsed: {syncResult.ElapsedMs}ms");
+
+// Measure an asynchronous operation
+var asyncResult = await PerformanceHelper.MeasureExecutionAsync(async () =>
+{
+    await Task.Delay(200);
+    return "done";
+});
+Console.WriteLine($"Async result: {asyncResult.Result}, elapsed: {asyncResult.ElapsedMs}ms");
+
+// Run a benchmark
+var benchmark = PerformanceHelper.Benchmark(() =>
+{
+    // Operation to benchmark
+    Math.Sqrt(12345);
+}, iterations: 500);
+Console.WriteLine(benchmark);
+
+// Get memory statistics
+var memStats = PerformanceHelper.GetMemoryStats();
+Console.WriteLine(memStats);
+```
+The example demonstrates how to use `MeasureExecution`, `MeasureExecutionAsync`, `Benchmark`, and `GetMemoryStats`, and prints the resulting `BenchmarkResult` and `MemoryStats` objects.
