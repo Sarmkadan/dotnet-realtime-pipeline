@@ -1,42 +1,42 @@
 // existing content ...
 
-## StatisticsHelper
-The `StatisticsHelper` class provides statistical analysis methods for numerical datasets, including mean, median, standard deviation, percentile calculation, outlier detection, and correlation analysis. It supports both single-value calculations and time-series analysis like moving averages.
+## ValidationHelper
+The `ValidationHelper` class provides validation methods for pipeline entities like data points, pipeline configurations, and processing results. It includes utility methods for time range checks and value bounds validation.
 
-### Usage Examples
-
-#### Calculate basic statistics
+Example usage:
 ```csharp
-List<double> values = new List<double> { 12.5, 15.3, 14.7, 16.2, 13.8, 100.0 };
+// Validate data points
+var helper = new ValidationHelper();
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint { Id = 1, Timestamp = 1620000000000, Value = 10.5 },
+    new DataPoint { Id = 2, Timestamp = 1620000000001, Value = 20.3 }
+};
+var validationResult = helper.ValidateDataPoints(dataPoints);
+if (!validationResult.IsValid)
+{
+    Console.WriteLine(validationResult.GetSummary());
+    foreach (var invalidId in validationResult.InvalidIndices)
+    {
+        Console.WriteLine($"Invalid data point ID: {invalidId}");
+    }
+}
 
-double mean = StatisticsHelper.CalculateMean(values);
-double median = StatisticsHelper.CalculateMedian(values);
-double stdDev = StatisticsHelper.CalculateStandardDeviation(values);
-double iqr90 = StatisticsHelper.CalculatePercentile(values, 90);
+// Validate pipeline configuration
+var config = new PipelineConfig { /* ... */ };
+var configResult = ValidationHelper.ValidatePipelineConfig(config);
+if (!configResult.IsValid)
+{
+    Console.WriteLine(configResult.GetSummary());
+}
 
-Console.WriteLine($"Mean: {mean:F2}");
-Console.WriteLine($"Median: {median:F2}");
-Console.WriteLine($"Std Dev: {stdDev:F2}");
-Console.WriteLine($"90th Percentile: {iqr90:F2}");
+// Check if a data point is within a time range
+bool isInRange = ValidationHelper.IsInTimeRange(dataPoints[0], 1620000000000, 1620000000005);
+Console.WriteLine($"Is in range: {isInRange}");
+
+// Check if a value is within bounds
+bool isWithinBounds = ValidationHelper.IsWithinBounds(15.0, 10.0, 20.0);
+Console.WriteLine($"Is within bounds: {isWithinBounds}");
 ```
 
-#### Analyze time-series data
-```csharp
-List<double> timeSeries = new List<double> { 10, 12, 14, 13, 15, 18, 16, 20 };
-var movingAverages = StatisticsHelper.CalculateMovingAverage(timeSeries, 3);
-
-Console.WriteLine("3-period Moving Averages:");
-Console.WriteLine(string.Join(", ", movingAverages.Select(x => x.ToString("F2"))));
-```
-
-#### Detect outliers and correlation
-```csharp
-List<double> xValues = new List<double> { 1, 2, 3, 4, 5 };
-List<double> yValues = new List<double> { 2, 4, 6, 8, 10 };
-
-var outliers = StatisticsHelper.FindOutliers(values);
-double correlation = StatisticsHelper.CalculateCorrelation(xValues, yValues);
-
-Console.WriteLine($"Outliers: {string.Join(", ", outliers)}");
-Console.WriteLine($"Correlation: {correlation:F2}");
-```
+This example demonstrates validating data points, pipeline configurations, time range checks, and value bounds validation. The `ValidationResult` object provides detailed information about validation outcomes through its `IsValid`, `ErrorMessage`, and `InvalidIndices` properties.
