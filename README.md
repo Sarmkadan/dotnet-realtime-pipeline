@@ -1,42 +1,36 @@
-// existing content ...
-
-## ValidationHelper
-The `ValidationHelper` class provides validation methods for pipeline entities like data points, pipeline configurations, and processing results. It includes utility methods for time range checks and value bounds validation.
+## PathHelper
+The `PathHelper` class provides cross-platform file path validation, normalization, and directory operations. It includes utilities for path combination, disk space checks, file size formatting, and directory monitoring via `FileSystemMonitor`.
 
 Example usage:
 ```csharp
-// Validate data points
-var helper = new ValidationHelper();
-var dataPoints = new List<DataPoint>
-{
-    new DataPoint { Id = 1, Timestamp = 1620000000000, Value = 10.5 },
-    new DataPoint { Id = 2, Timestamp = 1620000000001, Value = 20.3 }
-};
-var validationResult = helper.ValidateDataPoints(dataPoints);
-if (!validationResult.IsValid)
-{
-    Console.WriteLine(validationResult.GetSummary());
-    foreach (var invalidId in validationResult.InvalidIndices)
-    {
-        Console.WriteLine($"Invalid data point ID: {invalidId}");
-    }
-}
+// Validate and normalize paths
+bool isValid = PathHelper.IsValidPath("/invalid/path/");
+string normalized = PathHelper.Normalize("C:\\\\Windows\\\\..\\\\Users");
+string combined = PathHelper.CombinePaths("data", "logs", "2023-10");
 
-// Validate pipeline configuration
-var config = new PipelineConfig { /* ... */ };
-var configResult = ValidationHelper.ValidatePipelineConfig(config);
-if (!configResult.IsValid)
-{
-    Console.WriteLine(configResult.GetSummary());
-}
+// Check file relationships
+bool isInDir = PathHelper.IsPathInDirectory("/home/user/data/file.txt", "/home/user/data");
 
-// Check if a data point is within a time range
-bool isInRange = ValidationHelper.IsInTimeRange(dataPoints[0], 1620000000000, 1620000000005);
-Console.WriteLine($"Is in range: {isInRange}");
+// Sanitize and generate filenames
+string safeName = PathHelper.SanitizeFilename("report<>.txt");
+string uniquePath = PathHelper.GenerateUniqueFilename("report.txt", "/output");
 
-// Check if a value is within bounds
-bool isWithinBounds = ValidationHelper.IsWithinBounds(15.0, 10.0, 20.0);
-Console.WriteLine($"Is within bounds: {isWithinBounds}");
+// Disk space and file operations
+long freeSpace = PathHelper.GetAvailableDiskSpace("/");
+long totalSpace = PathHelper.GetTotalDiskSpace("/");
+PathHelper.EnsureDirectory("/temp/backups");
+
+// Temporary files and formatting
+string tempFile = PathHelper.GetTemporaryFilePath(".log");
+long dirSize = PathHelper.GetDirectorySize("/var/logs");
+string formattedSize = PathHelper.FormatFileSize(dirSize);
+
+// File system monitoring
+using var monitor = new PathHelper.FileSystemMonitor("/watched-folder");
+monitor.Changed += (sender, e) => Console.WriteLine($"File changed: {e.FullPath}");
+monitor.Created += (sender, e) => Console.WriteLine($"File created: {e.FullPath}");
+monitor.Start();
+// ... monitor for changes ...
+monitor.Stop();
 ```
-
-This example demonstrates validating data points, pipeline configurations, time range checks, and value bounds validation. The `ValidationResult` object provides detailed information about validation outcomes through its `IsValid`, `ErrorMessage`, and `InvalidIndices` properties.
+This example demonstrates path validation, directory checks, filename sanitization, disk space queries, and file system monitoring using `PathHelper` and `FileSystemMonitor`.
