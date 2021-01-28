@@ -161,3 +161,66 @@ Assert.Throws<ArgumentException>(() =>
     new MetricsServiceTests(mockRepository.Object).RecordFailure(null, "timeout"));
 ```
 This example demonstrates testing various scenarios including error handling for invalid inputs, health status generation, and performance trend analysis with the `MetricsServiceTests` class.
+
+## PipelineIntegrationTests
+The `PipelineIntegrationTests` class provides integration tests for the real-time data pipeline, validating end-to-end scenarios including pipeline lifecycle management, data ingestion from multiple sources, health monitoring, and metrics collection. It tests concurrent data ingestion, proper cleanup during pipeline shutdown, and query capabilities for filtered data retrieval.
+
+Example usage:
+```csharp
+// Initialize pipeline with configuration
+var pipelineConfig = new PipelineConfiguration
+{
+SourceType = DataSourceType.Kafka,
+BatchSize = 1000,
+MaxConcurrentStreams = 4
+};
+
+// Start and stop pipeline lifecycle
+var pipeline = new PipelineIntegrationTests(pipelineConfig);
+await pipeline.StartStop_ShouldInitializeAndCleanup();
+
+// Ingest single data point
+var dataPoint = new DataPoint
+{
+Timestamp = DateTime.UtcNow,
+Value = 42.5,
+Source = "sensor-001"
+};
+await pipeline.IngestDataPoint(dataPoint);
+
+// Ingest batch of data points
+var batch = new List<DataPoint>
+{
+new DataPoint { Timestamp = DateTime.UtcNow, Value = 10.1, Source = "sensor-001" },
+new DataPoint { Timestamp = DateTime.UtcNow, Value = 20.2, Source = "sensor-002" },
+new DataPoint { Timestamp = DateTime.UtcNow, Value = 30.3, Source = "sensor-003" }
+};
+await pipeline.IngestBatch(batch);
+
+// Get health metrics
+var healthReport = await pipeline.GetHealthReport();
+Console.WriteLine($"CPU Usage: {healthReport.CpuUsage}%");
+
+// Query filtered data points
+var queryResults = await pipeline.QueryDataPoints(
+startTime: DateTime.UtcNow.AddMinutes(-5),
+endTime: DateTime.UtcNow,
+sourceFilter: "sensor-001"
+);
+
+// Multiple source ingestion handling
+var multiSourcePipeline = new PipelineIntegrationTests(new PipelineConfiguration
+{
+SourceType = DataSourceType.Multiple,
+MaxConcurrentStreams = 8
+});
+await multiSourcePipeline.MultipleSourceIngestion_ShouldHandleConcurrentData();
+
+// Get metrics history
+var metricsHistory = await pipeline.GetMetricsHistory("ingestion-throughput", 100);
+foreach (var metric in metricsHistory)
+{
+Console.WriteLine($"{metric.Timestamp}: {metric.Value}");
+}
+```
+This example demonstrates pipeline lifecycle management, data ingestion from various sources, health monitoring, metrics collection, and concurrent data handling using the `PipelineIntegrationTests` class.
