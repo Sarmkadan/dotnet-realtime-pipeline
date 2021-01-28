@@ -117,3 +117,47 @@ var memStats = PerformanceHelper.GetMemoryStats();
 Console.WriteLine(memStats);
 ```
 The example demonstrates how to use `MeasureExecution`, `MeasureExecutionAsync`, `Benchmark`, and `GetMemoryStats`, and prints the resulting `BenchmarkResult` and `MemoryStats` objects.
+
+## MetricsServiceTests
+The `MetricsServiceTests` class provides unit tests for the `MetricsService` functionality, covering processing time recording, failure tracking, health reporting, and performance trend analysis. It validates proper error handling for invalid inputs and ensures correct behavior across various metric aggregation scenarios.
+
+Example usage:
+```csharp
+// Create a mock repository for testing
+var mockRepository = new Mock<IMetricsRepository>();
+
+// Test recording processing time with negative value (should throw)
+Assert.Throws<ArgumentException>(() => 
+    new MetricsServiceTests(mockRepository.Object).RecordProcessingTime("-pipeline", -100));
+
+// Test recording processing time with zero value (should not throw)
+new MetricsServiceTests(mockRepository.Object).RecordProcessingTime("-pipeline", 0);
+
+// Test health report generation when repository throws
+mockRepository.Setup(r => r.GetHealthMetricsAsync())
+    .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+var service = new MetricsServiceTests(mockRepository.Object);
+var healthStatus = await service.GenerateHealthReportAsync();
+Assert.Equal(HealthStatus.Unknown, healthStatus);
+
+// Test health report generation with healthy metrics
+mockRepository.Setup(r => r.GetHealthMetricsAsync())
+    .ReturnsAsync(new HealthMetrics
+    {
+        CpuUsage = 45.2,
+        MemoryUsage = 68.7,
+        DiskUsage = 72.3
+    });
+var healthyStatus = await service.GenerateHealthReportAsync();
+Assert.Equal(HealthStatus.Healthy, healthyStatus);
+
+// Test performance trend analysis with insufficient data
+var trendResult = await service.AnalyzePerformanceTrendAsync("response-time", 
+    new List<MetricSample> { new MetricSample(DateTime.UtcNow, 150) });
+Assert.Equal(TrendAnalysisResult.InsufficientData, trendResult);
+
+// Test failure recording with null stage name (should throw)
+Assert.Throws<ArgumentException>(() => 
+    new MetricsServiceTests(mockRepository.Object).RecordFailure(null, "timeout"));
+```
+This example demonstrates testing various scenarios including error handling for invalid inputs, health status generation, and performance trend analysis with the `MetricsServiceTests` class.
