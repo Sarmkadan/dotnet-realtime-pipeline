@@ -162,6 +162,42 @@ Assert.Throws<ArgumentException>(() =>
 ```
 This example demonstrates testing various scenarios including error handling for invalid inputs, health status generation, and performance trend analysis with the `MetricsServiceTests` class.
 
+## DataPointTests
+The `DataPointTests` class provides unit tests for the `DataPoint` model, covering validation logic, quality threshold checks, cloning behavior, and metadata management. It validates proper error handling for invalid inputs and ensures correct behavior across various data point scenarios.
+
+Example usage:
+```csharp
+// Create a valid data point with all required properties
+var dataPoint = new DataPoint(1, 1_000_000L, 42.5, "sensor-01")
+{
+    Quality = 85,
+    Tags = "env:production"
+};
+
+// Validate the data point (should return true for valid data)
+bool isValid = dataPoint.Validate();
+Console.WriteLine($"Validation result: {isValid}");
+
+// Test validation with zero ID (should return false)
+var invalidIdPoint = new DataPoint(0, 1_000_000L, 42.5, "sensor-01");
+bool isValidWithZeroId = invalidIdPoint.Validate();
+Console.WriteLine($"Validation with zero ID: {isValidWithZeroId}");
+
+// Check if quality meets threshold
+bool meetsThreshold = dataPoint.MeetsQualityThreshold(75);
+Console.WriteLine($"Meets quality threshold 75: {meetsThreshold}");
+
+// Clone with a new ID
+var clonedPoint = dataPoint.Clone(newId: 999);
+Console.WriteLine($"Original ID: {dataPoint.Id}, Cloned ID: {clonedPoint.Id}");
+
+// Add metadata
+clonedPoint.AddMetadata("region", "us-east-1");
+clonedPoint.AddMetadata("environment", "production");
+Console.WriteLine($"Metadata count: {clonedPoint.Metadata.Count}");
+```
+This example demonstrates validation, quality threshold checking, cloning with new identifiers, and metadata management using the `DataPointTests` class.
+
 ## PipelineIntegrationTests
 The `PipelineIntegrationTests` class provides integration tests for the real-time data pipeline, validating end-to-end scenarios including pipeline lifecycle management, data ingestion from multiple sources, health monitoring, and metrics collection. It tests concurrent data ingestion, proper cleanup during pipeline shutdown, and query capabilities for filtered data retrieval.
 
