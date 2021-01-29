@@ -260,3 +260,43 @@ Console.WriteLine($"{metric.Timestamp}: {metric.Value}");
 }
 ```
 This example demonstrates pipeline lifecycle management, data ingestion from various sources, health monitoring, metrics collection, and concurrent data handling using the `PipelineIntegrationTests` class.
+
+## IOutputFormatter
+
+The `IOutputFormatter` interface defines a contract for formatting data into various output formats such as JSON, CSV, table, and HTML. It provides both synchronous and asynchronous methods for flexibility in different scenarios. Implementations include `JsonOutputFormatter`, `CsvOutputFormatter`, `TableOutputFormatter`, and `HtmlOutputFormatter`.
+
+Example usage:
+```csharp
+// Create a data point to format
+var dataPoint = new DataPoint(1, 1_000_000L, 42.5, "sensor-01")
+{
+    Quality = 85,
+    Tags = "env:production"
+};
+
+// Use the JSON formatter
+var jsonFormatter = new JsonOutputFormatter();
+string jsonOutput = jsonFormatter.Format(dataPoint);
+Console.WriteLine(jsonOutput);
+
+// Use the CSV formatter for a list of data points
+var dataPoints = new List<DataPoint> { dataPoint };
+var csvFormatter = new CsvOutputFormatter();
+string csvOutput = csvFormatter.Format(dataPoints);
+Console.WriteLine(csvOutput);
+
+// Use the Table formatter
+var tableFormatter = new TableOutputFormatter();
+string tableOutput = tableFormatter.Format(dataPoints);
+Console.WriteLine(tableOutput);
+
+// Use the HTML formatter
+var htmlFormatter = new HtmlOutputFormatter();
+string htmlOutput = htmlFormatter.Format(dataPoints);
+Console.WriteLine(htmlOutput);
+
+// Use the factory to create formatters based on format type
+var jsonFormatter2 = OutputFormatterFactory.Create(OutputFormat.Json);
+string formatted = await jsonFormatter2.FormatAsync(dataPoint);
+```
+This example demonstrates creating and using different output formatters to format data in various formats.
