@@ -240,6 +240,60 @@ Console.WriteLine($"Average processing time: {metric.AverageProcessingTimeMs}ms"
 ```
 This example demonstrates creating a metric aggregation, calculating throughput, error rate, success rate, checking health status, calculating backpressure ratio, and computing average processing time using the `MetricAggregationTests` class.
 
+## DeadLetterQueueTests
+
+The `DeadLetterQueueTests` class provides unit tests for the `DeadLetterQueue` class, validating dead letter queue operations including enqueueing, peeking, retrying, acknowledging, and capacity management. Tests verify proper error handling for invalid inputs and ensure correct behavior across various dead letter queue scenarios.
+
+Example usage:
+```csharp
+// Create a dead letter queue with capacity of 100 and default max retries of 3
+var deadLetterQueue = new DeadLetterQueue(maxCapacity: 100, defaultMaxRetries: 3);
+
+// Enqueue a data point that failed processing
+var dataPoint = new DataPoint(1, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 42.5, "sensor-01");
+await deadLetterQueue.EnqueueAsync(dataPoint, "Ingestion", "Validation failed");
+
+// Peek at pending entries without removing them
+var pendingEntries = await deadLetterQueue.PeekAsync(10);
+Console.WriteLine($"Pending entries: {pendingEntries.Count}");
+
+// Dequeue entries for retry (marks them as InRetry status)
+var retryBatch = await deadLetterQueue.DequeueForRetryAsync(5);
+foreach (var entry in retryBatch)
+{
+    Console.WriteLine($"Retrying entry {entry.EntryId} from stage {entry.Stage}");
+    
+    // Simulate retry attempt
+    try
+    {
+        // Attempt to reprocess...
+        entry.RetryFailed("Still failing after retry"); // Mark as permanent failure if exhausted
+    }
+    catch
+    {
+        entry.RetryFailed("Retry attempt failed");
+    }
+}
+
+// Acknowledge successful processing (removes entry from queue)
+var entries = await deadLetterQueue.PeekAsync(1);
+await deadLetterQueue.AcknowledgeSuccessAsync(entries[0].EntryId);
+
+// Acknowledge permanent failure (marks entry as PermanentFailure)
+await deadLetterQueue.AcknowledgeFailureAsync(entries[0].EntryId, "Non-retryable error");
+
+// Get queue statistics
+var stats = await deadLetterQueue.GetStatsAsync();
+Console.WriteLine($"Total: {stats.TotalEntries}, Pending: {stats.PendingEntries}, Resolved: {stats.TotalResolved}");
+
+// Check if an entry can be retried
+var entry = new DeadLetterEntry { MaxRetries = 3, RetryCount = 0, Status = DeadLetterStatus.Pending };
+bool canRetry = entry.CanRetry; // true when under budget
+```
+This example demonstrates creating a dead letter queue, enqueueing failed data points, peeking at entries, dequeuing for retry, acknowledging success/failure, retrieving statistics, and checking retry eligibility.
+
+
+
 ## PipelineIntegrationTests
 The `PipelineIntegrationTests` class provides integration tests for the real-time data pipeline, validating end-to-end scenarios including pipeline lifecycle management, data ingestion from multiple sources, health monitoring, and metrics collection. It tests concurrent data ingestion, proper cleanup during pipeline shutdown, and query capabilities for filtered data retrieval.
 
