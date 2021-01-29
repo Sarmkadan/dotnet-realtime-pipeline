@@ -292,6 +292,66 @@ bool canRetry = entry.CanRetry; // true when under budget
 ```
 This example demonstrates creating a dead letter queue, enqueueing failed data points, peeking at entries, dequeuing for retry, acknowledging success/failure, retrieving statistics, and checking retry eligibility.
 
+## WindowingServiceTests
+
+The `WindowingServiceTests` class provides unit tests for the `WindowingService` class, validating windowing functionality including window creation, data point assignment to windows, statistics calculation, and window lifecycle management. Tests verify proper window creation with valid timestamps, correct data point assignment based on window boundaries, accurate statistics computation (count, average, minimum, maximum, standard deviation, percentiles), and proper window lifecycle operations.
+
+Example usage:
+```csharp
+// Create a pipeline configuration with tumbling window settings
+var config = new PipelineConfig
+{
+    WindowType = WindowType.TUMBLING,
+    WindowSizeMs = 5000,
+    WindowSlideMs = 5000
+};
+
+// Initialize the windowing service with the configuration
+var windowingService = new WindowingService(config);
+
+// Create a new window starting at timestamp 1000
+var window = windowingService.CreateWindow(1000);
+Console.WriteLine($"Created window: StartTime={window.StartTimeMs}");
+
+// Assign data points to appropriate windows based on their timestamps
+var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+var dataPoints = new[]
+{
+    new DataPoint(1, now * 10000, 10, "S1"),
+    new DataPoint(2, now * 10000, 20, "S1"),
+    new DataPoint(3, (now + 2500) * 10000, 30, "S1")
+};
+
+var windows = windowingService.AssignDataPointsToWindows(dataPoints);
+Console.WriteLine($"Assigned {dataPoints.Length} data points to {windows.Count} windows");
+
+// Calculate statistics for a window containing multiple data points
+var statsWindow = new WindowEvent
+{
+    StartTimeMs = 1000,
+    EndTimeMs = 6000,
+    Data = new List<DataPoint>
+    {
+        new(1, 2000, 10, "S1"),
+        new(2, 3000, 20, "S1"),
+        new(3, 4000, 30, "S1")
+    }
+};
+
+var statistics = windowingService.CalculateWindowStatistics(statsWindow);
+Console.WriteLine($"Window statistics - Count: {statistics.Count}, Average: {statistics.Average:F2}, Min: {statistics.Minimum}, Max: {statistics.Maximum}");
+
+// Get currently active windows
+var activeWindows = windowingService.GetActiveWindows();
+Console.WriteLine($"Active windows: {activeWindows.Count}");
+
+// Close a window and archive it
+window.Data.Add(new DataPoint(1, 2000, 42, "S1"));
+windowingService.CloseWindow(window);
+var archivedWindows = windowingService.GetArchivedWindows();
+Console.WriteLine($"Archived windows: {archivedWindows.Count}");
+```
+This example demonstrates configuring the windowing service, creating windows, assigning data points to windows, calculating window statistics including standard deviation and percentiles, retrieving active windows, and managing window lifecycle operations.
 
 
 ## PipelineIntegrationTests
