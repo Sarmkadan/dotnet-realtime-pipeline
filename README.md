@@ -198,6 +198,48 @@ Console.WriteLine($"Metadata count: {clonedPoint.Metadata.Count}");
 ```
 This example demonstrates validation, quality threshold checking, cloning with new identifiers, and metadata management using the `DataPointTests` class.
 
+## MetricAggregationTests
+
+The `MetricAggregationTests` class provides unit tests for the `MetricAggregation` class, validating various metric calculation methods including throughput, error rate, success rate, backpressure ratio, and average processing time calculations.
+
+Example usage:
+```csharp
+// Create a metric aggregation for testing
+var metric = new MetricAggregation(1, 0, 5_000, "STANDARD")
+{
+    TotalItemsProcessed = 500,
+    TotalItemsFailed = 50,
+    TotalItemsSkipped = 10,
+    TotalBackpressureMs = 1_000
+};
+
+// Calculate throughput: 500 items over 5 seconds = 100 items/second
+double throughput = metric.CalculateThroughput();
+Console.WriteLine($"Throughput: {throughput} items/second");
+
+// Calculate error rate: 50 failed out of 500 total = 10%
+double errorRate = metric.CalculateErrorRate();
+Console.WriteLine($"Error rate: {errorRate}%");
+
+// Calculate success rate: 450 successful out of 500 total = 90%
+double successRate = metric.CalculateSuccessRate();
+Console.WriteLine($"Success rate: {successRate}%");
+
+// Check if unhealthy: error rate (10%) exceeds 5% threshold
+bool isUnhealthy = metric.IsUnhealthy();
+Console.WriteLine($"Is unhealthy: {isUnhealthy}");
+
+// Calculate backpressure ratio: 1_000ms backpressure out of 5_000ms window = 20%
+double backpressureRatio = metric.CalculateBackpressureRatio();
+Console.WriteLine($"Backpressure ratio: {backpressureRatio}%");
+
+// Compute average processing time from samples
+var samples = new List<double> { 15.5, 22.3, 18.7, 20.1 };
+metric.ComputeAverageProcessingTime(samples);
+Console.WriteLine($"Average processing time: {metric.AverageProcessingTimeMs}ms");
+```
+This example demonstrates creating a metric aggregation, calculating throughput, error rate, success rate, checking health status, calculating backpressure ratio, and computing average processing time using the `MetricAggregationTests` class.
+
 ## PipelineIntegrationTests
 The `PipelineIntegrationTests` class provides integration tests for the real-time data pipeline, validating end-to-end scenarios including pipeline lifecycle management, data ingestion from multiple sources, health monitoring, and metrics collection. It tests concurrent data ingestion, proper cleanup during pipeline shutdown, and query capabilities for filtered data retrieval.
 
