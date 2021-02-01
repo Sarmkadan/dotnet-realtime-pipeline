@@ -1,50 +1,30 @@
-// ... (rest of the file remains the same)
-
-## DataPointRepositoryTests
-The `DataPointRepositoryTests` class provides unit tests for the `IDataPointRepository` implementation, covering data point addition, retrieval, updating, deletion, and clearing. It ensures correct behavior for various data point scenarios.
-
-Example usage:
-```csharp
-// Create a new instance of DataPointRepositoryTests
-var tests = new DataPointRepositoryTests();
-
-// Add a data point and verify it exists
-await tests.AddAsync_WithValidDataPoint_ShouldSucceed();
-
-// Get a data point by ID and verify it returns null for non-existent ID
-var nonExistent = await tests.GetByIdAsync_WithNonExistentId_ShouldReturnNull();
-
-// Get all data points and verify they are returned correctly
-var allPoints = await tests.GetAllAsync_WithMultiplePoints_ShouldReturnAll();
-
-// Get data points by source and verify they are returned correctly
-var pointsBySource = await tests.GetBySourceAsync_WithValidSource_ShouldReturnMatching();
-
-// Update a data point and verify it is updated correctly
-await tests.UpdateAsync_WithExistingId_ShouldUpdate();
-
-// Delete a data point and verify it is removed correctly
-await tests.DeleteAsync_WithExistingId_ShouldRemove();
-
-// Clear all data points and verify the repository is empty
-await tests.ClearAsync_ShouldRemoveAll();
-```
-
-## DataProcessingServiceTests
-The `DataProcessingServiceTests` class contains unit tests that verify the behavior of `DataProcessingService`, including successful processing of valid data points, handling of invalid or low‑quality points, and the correctness of its data‑quality analysis helpers.
+## BackpressureMetricsCollectorTests
+The `BackpressureMetricsCollectorTests` class provides unit tests for the `BackpressureMetricsCollector` class, verifying its ability to track and report backpressure metrics across pipeline stages. It includes tests for handling unknown stages, recording manual events, aggregating metrics, and resetting collected data.
 
 Example usage:
 ```csharp
 using DotNetRealtimePipeline.Tests.Unit;
 
-var tests = new DataProcessingServiceTests();
+var tests = new BackpressureMetricsCollectorTests();
 
-// Execute the async test methods (normally run by a test runner)
-await tests.ProcessDataPointAsync_ValidPoint_ShouldSucceed();
-await tests.ProcessDataPointAsync_InvalidPoint_ShouldFail();
-await tests.ProcessDataPointAsync_LowQuality_ShouldFail();
+// Test unknown stage behavior
+tests.GetStageMetrics_UnknownStage_ReturnsNull();
 
-// Execute the synchronous analysis tests
-tests.AnalyzeDataQuality_ValidPoints_ShouldReturnCorrectStats();
-tests.AnalyzeDataQuality_NullPoints_ShouldReturnDefault();
+// Test activation event recording
+tests.RecordManualEvent_Activation_IncrementsActivationCount();
+tests.RecordManualEvent_TwoActivations_CountIsTwo();
+
+// Test snapshot aggregation
+tests.GetSnapshot_WithNoEvents_ReturnsEmptySnapshot();
+tests.GetSnapshot_AggregatesAcrossStages();
+
+// Test event retrieval
+tests.GetRecentEvents_ReturnsUpToRequestedCount();
+tests.GetStageEvents_ReturnsOnlyEventsForThatStage();
+
+// Test reset functionality
+tests.Reset_ClearsAllMetricsAndEvents();
+
+// Test integration with backpressure activation
+tests.Poll_AfterBackpressureActivated_RecordsActivationEvent();
 ```
