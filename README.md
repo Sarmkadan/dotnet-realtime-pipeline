@@ -28,4 +28,23 @@ await tests.DeleteAsync_WithExistingId_ShouldRemove();
 
 // Clear all data points and verify the repository is empty
 await tests.ClearAsync_ShouldRemoveAll();
-``` 
+```
+
+## DataProcessingServiceTests
+The `DataProcessingServiceTests` class contains unit tests that verify the behavior of `DataProcessingService`, including successful processing of valid data points, handling of invalid or low‑quality points, and the correctness of its data‑quality analysis helpers.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+
+var tests = new DataProcessingServiceTests();
+
+// Execute the async test methods (normally run by a test runner)
+await tests.ProcessDataPointAsync_ValidPoint_ShouldSucceed();
+await tests.ProcessDataPointAsync_InvalidPoint_ShouldFail();
+await tests.ProcessDataPointAsync_LowQuality_ShouldFail();
+
+// Execute the synchronous analysis tests
+tests.AnalyzeDataQuality_ValidPoints_ShouldReturnCorrectStats();
+tests.AnalyzeDataQuality_NullPoints_ShouldReturnDefault();
+```
