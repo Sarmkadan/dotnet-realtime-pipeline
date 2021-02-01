@@ -55,3 +55,20 @@ var response = service.ApplyBackpressureAsync(
 // Remove from buffer
 service.RemoveFromBuffer("TestStage", 200);
 ```
+
+## PipelineVisualizerTests
+The `PipelineVisualizerTests` class provides unit tests for the `PipelineVisualizer` class, verifying its ability to visualize pipeline stages and their relationships. It includes tests for building nodes, rendering pipeline visualizations, and computing health labels for pipeline nodes. 
+
+Example usage:
+```csharp
+var visualizer = new PipelineVisualizerTests();
+visualizer.BuildNodes_WithValidConfig_ReturnsOneNodePerStage();
+visualizer.BuildNodes_EdgesAreLinkedSequentially();
+visualizer.Render_ContainsPipelineName();
+visualizer.Render_ContainsAllStageNames();
+visualizer.RenderCompact_ContainsSeparators();
+visualizer.PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical();
+visualizer.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning();
+visualizer.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy();
+```
+```
