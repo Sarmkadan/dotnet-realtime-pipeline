@@ -28,3 +28,30 @@ tests.Reset_ClearsAllMetricsAndEvents();
 // Test integration with backpressure activation
 tests.Poll_AfterBackpressureActivated_RecordsActivationEvent();
 ```
+
+## BackpressureServiceTests
+The `BackpressureServiceTests` class provides unit tests for the `BackpressureService` class, verifying its ability to manage backpressure across pipeline stages. It includes tests for creating contexts, adding to buffers, applying backpressure, and removing from buffers. 
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Domain.Enums;
+
+var service = new BackpressureService();
+
+// Create a context
+service.CreateContext("TestStage", 1000);
+
+// Add to buffer
+var result = service.TryAddToBuffer("TestStage", 500);
+
+// Apply backpressure with block strategy
+var response = service.ApplyBackpressureAsync(
+    "TestStage",
+    BackpressureStrategy.Block,
+    timeoutMs: 1000
+).Result;
+
+// Remove from buffer
+service.RemoveFromBuffer("TestStage", 200);
+```
