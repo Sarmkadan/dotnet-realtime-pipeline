@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// Service for querying and analyzing processed data in the pipeline.
 /// Provides convenient methods for data retrieval and analysis.
 /// </summary>
-public class QueryService
+public sealed class QueryService
 {
     private readonly IDataPointRepository _dataPointRepository;
     private readonly IMetricsRepository _metricsRepository;
@@ -260,7 +260,7 @@ public class QueryService
 /// <summary>
 /// Aggregated statistics for a data range.
 /// </summary>
-public class DataAggregateStatistics
+public sealed class DataAggregateStatistics
 {
     public long StartMs { get; set; }
     public long EndMs { get; set; }
@@ -280,7 +280,7 @@ public class DataAggregateStatistics
 /// <summary>
 /// Trend analysis results.
 /// </summary>
-public class TrendAnalysis
+public sealed class TrendAnalysis
 {
     public string Status { get; set; } = "UNKNOWN";
     public string Direction { get; set; } = "";
@@ -293,7 +293,7 @@ public class TrendAnalysis
 /// <summary>
 /// Time series decomposition results.
 /// </summary>
-public class TimeSeriesDecomposition
+public sealed class TimeSeriesDecomposition
 {
     public string Status { get; set; } = "UNKNOWN";
     public int OriginalCount { get; set; }

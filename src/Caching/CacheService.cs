@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// In-memory cache service with TTL support and eviction policies.
 /// Thread-safe implementation with configurable cache behavior and statistics tracking.
 /// </summary>
-public class CacheService<TKey, TValue> where TKey : notnull
+public sealed class CacheService<TKey, TValue> where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
     private readonly int _maxCapacity;
@@ -217,7 +217,7 @@ public class CacheService<TKey, TValue> where TKey : notnull
 /// <summary>
 /// Cache statistics for monitoring and analysis.
 /// </summary>
-public class CacheStatistics
+public sealed class CacheStatistics
 {
     public long TotalHits { get; set; }
     public long TotalMisses { get; set; }
@@ -257,7 +257,7 @@ public interface IDistributedCache
 /// <summary>
 /// In-memory implementation of distributed cache.
 /// </summary>
-public class InMemoryDistributedCache : IDistributedCache
+public sealed class InMemoryDistributedCache : IDistributedCache
 {
     private readonly CacheService<string, object> _cache;
 

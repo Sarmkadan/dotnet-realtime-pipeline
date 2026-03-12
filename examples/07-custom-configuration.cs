@@ -14,7 +14,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Custom configuration example demonstrating various configuration approaches for different scenarios.
 /// </summary>
-public class CustomConfigurationExample
+public sealed class CustomConfigurationExample
 {
     public static async Task RunAsync()
     {

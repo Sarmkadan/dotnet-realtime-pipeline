@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 /// Handles webhook delivery for pipeline events.
 /// Manages subscription, retry logic, and delivery tracking.
 /// </summary>
-public class WebhookHandler
+public sealed class WebhookHandler
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<WebhookHandler> _logger;
@@ -167,7 +167,7 @@ public class WebhookHandler
 /// <summary>
 /// Represents a webhook subscription.
 /// </summary>
-public class WebhookSubscription
+public sealed class WebhookSubscription
 {
     public string Id { get; set; }
     public string Url { get; set; }
@@ -196,7 +196,7 @@ public enum WebhookEventType
 /// <summary>
 /// Webhook payload structure.
 /// </summary>
-public class WebhookPayload
+public sealed class WebhookPayload
 {
     public string EventType { get; set; }
     public object Data { get; set; }
@@ -207,7 +207,7 @@ public class WebhookPayload
 /// <summary>
 /// Handler for receiving and processing webhook events from external sources.
 /// </summary>
-public class InboundWebhookHandler
+public sealed class InboundWebhookHandler
 {
     private readonly ILogger<InboundWebhookHandler> _logger;
     private readonly List<Func<WebhookPayload, Task>> _handlers = new();

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 /// Helper class for implementing retry logic with various strategies.
 /// Supports exponential backoff, jitter, and custom retry conditions.
 /// </summary>
-public class RetryHelper
+public sealed class RetryHelper
 {
     /// <summary>
     /// Executes an operation with exponential backoff retry strategy.
@@ -85,7 +85,7 @@ public class RetryHelper
 /// <summary>
 /// Builder for fluent retry configuration.
 /// </summary>
-public class RetryPolicyBuilder
+public sealed class RetryPolicyBuilder
 {
     private int _maxAttempts = 3;
     private int _initialDelayMs = 100;
@@ -157,7 +157,7 @@ public class RetryPolicyBuilder
 /// <summary>
 /// Represents a retry policy.
 /// </summary>
-public class RetryPolicy
+public sealed class RetryPolicy
 {
     public int MaxAttempts { get; set; }
     public int InitialDelayMs { get; set; }
@@ -207,7 +207,7 @@ public class RetryPolicy
 /// <summary>
 /// Retry statistics and monitoring.
 /// </summary>
-public class RetryStatistics
+public sealed class RetryStatistics
 {
     public int TotalAttempts { get; set; }
     public int SuccessfulAttempts { get; set; }
@@ -232,7 +232,7 @@ public class RetryStatistics
     }
 }
 
-public class RetryEvent
+public sealed class RetryEvent
 {
     public DateTime Timestamp { get; set; }
     public bool Success { get; set; }

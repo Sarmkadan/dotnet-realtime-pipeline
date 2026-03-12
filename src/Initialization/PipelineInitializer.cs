@@ -23,7 +23,7 @@ using System.Threading.Tasks;
 /// Orchestrates complete pipeline initialization with all components.
 /// Ensures proper startup sequence and dependency resolution.
 /// </summary>
-public class PipelineInitializer
+public sealed class PipelineInitializer
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<PipelineInitializer> _logger;
@@ -318,7 +318,7 @@ public class PipelineInitializer
 /// <summary>
 /// Result of pipeline initialization.
 /// </summary>
-public class InitializationResult
+public sealed class InitializationResult
 {
     public bool Success { get; set; }
     public int ComponentsInitialized { get; set; }

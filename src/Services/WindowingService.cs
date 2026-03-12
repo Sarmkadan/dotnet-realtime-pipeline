@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 /// Service for windowing operations on data streams.
 /// Manages time-based window creation, aggregation, and emission.
 /// </summary>
-public class WindowingService
+public sealed class WindowingService
 {
     private readonly PipelineConfig _config;
     private long _nextWindowId = 1;
@@ -265,7 +265,7 @@ public class WindowingService
 /// <summary>
 /// Statistics calculated for a window.
 /// </summary>
-public class WindowStatistics
+public sealed class WindowStatistics
 {
     public long WindowId { get; set; }
     public int DataPointCount { get; set; }
@@ -281,7 +281,7 @@ public class WindowStatistics
 /// <summary>
 /// Result of emitting a window.
 /// </summary>
-public class WindowEmissionResult
+public sealed class WindowEmissionResult
 {
     public long WindowId { get; set; }
     public long StartMs { get; set; }
@@ -295,7 +295,7 @@ public class WindowEmissionResult
 /// <summary>
 /// Summary of windowing state.
 /// </summary>
-public class WindowingSummary
+public sealed class WindowingSummary
 {
     public long TotalWindowsCreated { get; set; }
     public int ActiveWindowCount { get; set; }

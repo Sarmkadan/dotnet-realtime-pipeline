@@ -29,7 +29,7 @@ public abstract class ApiEndpointHandler
     /// <summary>
     /// Represents an API response.
     /// </summary>
-    public class ApiResponse<T>
+    public sealed class ApiResponse<T>
     {
         public bool Success { get; set; }
         public T Data { get; set; }
@@ -42,7 +42,7 @@ public abstract class ApiEndpointHandler
 /// <summary>
 /// Handler for data ingestion endpoint.
 /// </summary>
-public class DataIngestionHandler : ApiEndpointHandler
+public sealed class DataIngestionHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
@@ -136,7 +136,7 @@ public class DataIngestionHandler : ApiEndpointHandler
     }
 }
 
-public class BatchIngestResult
+public sealed class BatchIngestResult
 {
     public int SuccessfulCount { get; set; }
     public int FailedCount { get; set; }
@@ -146,7 +146,7 @@ public class BatchIngestResult
 /// <summary>
 /// Handler for pipeline status endpoint.
 /// </summary>
-public class StatusHandler : ApiEndpointHandler
+public sealed class StatusHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
@@ -201,7 +201,7 @@ public class StatusHandler : ApiEndpointHandler
     }
 }
 
-public class PipelineStatusInfo
+public sealed class PipelineStatusInfo
 {
     public string PipelineName { get; set; }
     public string Version { get; set; }
@@ -218,7 +218,7 @@ public class PipelineStatusInfo
 /// <summary>
 /// Handler for query endpoint.
 /// </summary>
-public class QueryHandler : ApiEndpointHandler
+public sealed class QueryHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
@@ -262,7 +262,7 @@ public class QueryHandler : ApiEndpointHandler
 /// <summary>
 /// API error response.
 /// </summary>
-public class ApiErrorResponse
+public sealed class ApiErrorResponse
 {
     public int StatusCode { get; set; }
     public string Message { get; set; }

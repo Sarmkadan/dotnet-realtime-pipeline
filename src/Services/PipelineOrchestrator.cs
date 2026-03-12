@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// Orchestrates the entire data processing pipeline.
 /// Coordinates multiple services and manages the flow of data through stages.
 /// </summary>
-public class PipelineOrchestrator
+public sealed class PipelineOrchestrator
 {
     private readonly DataProcessingService _processingService;
     private readonly WindowingService _windowingService;
@@ -237,7 +237,7 @@ public class PipelineOrchestrator
 /// <summary>
 /// Current status of the pipeline.
 /// </summary>
-public class PipelineStatus
+public sealed class PipelineStatus
 {
     public bool IsRunning { get; set; }
     public long TotalDataPointsProcessed { get; set; }
