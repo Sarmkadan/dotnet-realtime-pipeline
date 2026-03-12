@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -23,8 +24,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         PipelineConfig pipelineConfig)
     {
-        if (services == null) throw new ArgumentNullException(nameof(services));
-        if (pipelineConfig == null) throw new ArgumentNullException(nameof(pipelineConfig));
+        if (services is null) throw new ArgumentNullException(nameof(services));
+        if (pipelineConfig is null) throw new ArgumentNullException(nameof(pipelineConfig));
 
         // Register repositories
         services.AddSingleton<IDataPointRepository, InMemoryDataPointRepository>();
@@ -60,7 +61,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         Action<PipelineConfig> configureOptions)
     {
-        if (configureOptions == null) throw new ArgumentNullException(nameof(configureOptions));
+        if (configureOptions is null) throw new ArgumentNullException(nameof(configureOptions));
 
         var config = CreateDefaultConfiguration();
         configureOptions(config);

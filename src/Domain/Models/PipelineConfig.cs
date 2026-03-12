@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -84,7 +85,7 @@ public class PipelineConfig
     /// </summary>
     public void AddStage(PipelineStageDef stage)
     {
-        if (stage == null) throw new ArgumentNullException(nameof(stage));
+        if (stage is null) throw new ArgumentNullException(nameof(stage));
         Stages.Add(stage);
         LastModifiedAt = DateTime.UtcNow;
     }

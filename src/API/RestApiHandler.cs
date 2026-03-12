@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -58,7 +59,7 @@ public class DataIngestionHandler : ApiEndpointHandler
     {
         try
         {
-            if (dataPoint == null)
+            if (dataPoint is null)
             {
                 return new ApiResponse<bool>
                 {
@@ -97,7 +98,7 @@ public class DataIngestionHandler : ApiEndpointHandler
     {
         try
         {
-            if (dataPoints == null || dataPoints.Count == 0)
+            if (dataPoints is null || dataPoints.Count == 0)
             {
                 return new ApiResponse<BatchIngestResult>
                 {

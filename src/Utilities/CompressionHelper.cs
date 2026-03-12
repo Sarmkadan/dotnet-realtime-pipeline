@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -23,7 +24,7 @@ public class CompressionHelper
     public static byte[] CompressGzip(string data)
     {
         if (string.IsNullOrEmpty(data))
-            return Array.Empty<byte>();
+            return []byte>();
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
 
@@ -43,7 +44,7 @@ public class CompressionHelper
     /// </summary>
     public static string DecompressGzip(byte[] compressedData)
     {
-        if (compressedData == null || compressedData.Length == 0)
+        if (compressedData is null || compressedData.Length == 0)
             return string.Empty;
 
         using (var inputStream = new MemoryStream(compressedData))
@@ -65,7 +66,7 @@ public class CompressionHelper
     public static byte[] CompressDeflate(string data)
     {
         if (string.IsNullOrEmpty(data))
-            return Array.Empty<byte>();
+            return []byte>();
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
 
@@ -85,7 +86,7 @@ public class CompressionHelper
     /// </summary>
     public static string DecompressDeflate(byte[] compressedData)
     {
-        if (compressedData == null || compressedData.Length == 0)
+        if (compressedData is null || compressedData.Length == 0)
             return string.Empty;
 
         using (var inputStream = new MemoryStream(compressedData))
