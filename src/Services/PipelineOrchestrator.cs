@@ -219,14 +219,12 @@ public sealed class PipelineOrchestrator
                             );
                         }
 
-                        var windows = _windowingService.AssignDataPointsToWindows(dataPoints);
-                        foreach (var window in windows)
+                        var emittedWindows = _windowingService.ProcessDataPoints(dataPoints);
+                        foreach (var emission in emittedWindows)
                         {
-                            if (_windowingService.IsWindowComplete(window))
-                            {
-                                var emission = _windowingService.EmitWindow(window);
-                                // Output window results
-                            }
+                            // Output window results
+                            // Log or further process the emitted window (emission.AggregatedData, emission.Statistics, etc.)
+                            System.Diagnostics.Debug.WriteLine($"Emitted Window: ID={emission.WindowId}, Start={emission.StartMs}, End={emission.EndMs}, Count={emission.DataPointCount}");
                         }
                     }
                     catch (Exception ex)

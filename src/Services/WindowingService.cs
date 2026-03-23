@@ -57,29 +57,115 @@ public sealed class WindowingService
     }
 
     /// <summary>
-    /// Gets or creates windows for a set of data points.
+    /// Processes a list of data points, assigning them to appropriate windows
+    /// and emitting any windows that become complete.
     /// </summary>
-    public List<WindowEvent> AssignDataPointsToWindows(List<DataPoint> dataPoints)
+    public List<WindowEmissionResult> ProcessDataPoints(List<DataPoint> dataPoints)
     {
         if (dataPoints is null || dataPoints.Count == 0)
             return new();
 
-        var windows = new Dictionary<long, WindowEvent>();
+        var emittedWindows = new List<WindowEmissionResult>();
 
         foreach (var dataPoint in dataPoints)
         {
-            long windowStartMs = (dataPoint.Timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
-
-            if (!windows.TryGetValue(windowStartMs, out var window))
-            {
-                window = CreateWindow(windowStartMs);
-                windows[windowStartMs] = window;
-            }
-
-            window.TryAddDataPoint(dataPoint);
+            ProcessDataPointForWindows(dataPoint);
         }
 
-        return windows.Values.ToList();
+        // Check for and emit any windows that have completed
+        var completedWindowIds = new List<long>();
+        foreach (var window in _activeWindows.Values.ToList()) // ToList() to avoid modifying collection during iteration
+        {
+            if (IsWindowComplete(window))
+            {
+                emittedWindows.Add(EmitWindow(window));
+                completedWindowIds.Add(window.WindowId);
+            }
+        }
+
+        foreach (var windowId in completedWindowIds)
+        {
+            _activeWindows.Remove(windowId);
+        }
+
+        return emittedWindows;
+    }
+
+    /// <summary>
+    /// Processes a single data point, assigning it to relevant active windows.
+    /// </summary>
+    private void ProcessDataPointForWindows(DataPoint dataPoint)
+    {
+        if (_config.WindowType.ToUpper() == "TUMBLING")
+        {
+            long windowStartMs = (dataPoint.Timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
+            long windowEndMs = windowStartMs + _config.WindowSizeMs;
+
+            if (!_activeWindows.TryGetValue(windowStartMs, out var window))
+            {
+                window = CreateWindow(windowStartMs);
+                _activeWindows[windowStartMs] = window;
+            }
+            window.TryAddDataPoint(dataPoint);
+        }
+        else if (_config.WindowType.ToUpper() == "SLIDING")
+        {
+            var applicableWindowStarts = GetApplicableSlidingWindowStarts(dataPoint.Timestamp);
+
+            foreach (var windowStartMs in applicableWindowStarts)
+            {
+                long windowEndMs = windowStartMs + _config.WindowSizeMs;
+
+                // Create window if it doesn't exist, using WindowStartMs as key for sliding windows
+                if (!_activeWindows.TryGetValue(windowStartMs, out var window))
+                {
+                    window = CreateWindow(windowStartMs);
+                    _activeWindows[windowStartMs] = window;
+                }
+                window.TryAddDataPoint(dataPoint);
+            }
+        }
+        else
+        {
+            // Handle other window types or default behavior
+            // For now, re-use tumbling window logic for unknown types as a fallback
+            long windowStartMs = (dataPoint.Timestamp / _config.WindowSizeMs) * _config.WindowSizeMs;
+            long windowEndMs = windowStartMs + _config.WindowSizeMs;
+
+            if (!_activeWindows.TryGetValue(windowStartMs, out var window))
+            {
+                window = CreateWindow(windowStartMs);
+                _activeWindows[windowStartMs] = window;
+            }
+            window.TryAddDataPoint(dataPoint);
+        }
+    }
+
+    /// <summary>
+    /// Calculates all relevant window start times for a given timestamp in a sliding window context.
+    /// </summary>
+    private IEnumerable<long> GetApplicableSlidingWindowStarts(long timestamp)
+    {
+        long windowSize = _config.WindowSizeMs;
+        long slide = _config.WindowSlideMs;
+
+        // Calculate the earliest possible window start that could contain this timestamp
+        // A data point 'ts' can belong to windows that start between (ts - windowSize + 1) and ts (inclusive).
+        // And the start time must be a multiple of 'slide'.
+        long earliestPossibleStart = timestamp - windowSize + 1;
+
+        // Round down to the nearest slide multiple
+        long firstWindowStart = (earliestPossibleStart / slide) * slide;
+        if (firstWindowStart < 0) firstWindowStart = 0; // Window starts cannot be negative
+
+        for (long currentStart = firstWindowStart; currentStart <= timestamp; currentStart += slide)
+        {
+            // Ensure the window [currentStart, currentStart + windowSize) actually covers the timestamp
+            if (currentStart + windowSize > timestamp)
+            {
+                yield return currentStart;
+            }
+        }
     }
 
     /// <summary>
