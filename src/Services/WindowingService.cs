@@ -12,6 +12,7 @@ using DotNetRealtimePipeline.Domain.Exceptions;
 using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -215,13 +216,17 @@ public sealed class WindowingService
 
     /// <summary>
     /// Determines if a window is complete and ready for output.
+    /// Uses a monotonic clock source (<see cref="Stopwatch.GetTimestamp"/>) to guard against
+    /// NTP clock corrections that can cause <see cref="DateTimeOffset.UtcNow"/> to step backward,
+    /// which would otherwise emit duplicate events at window boundaries in containerised deployments.
     /// </summary>
     public bool IsWindowComplete(WindowEvent window)
     {
         if (window is null) throw new ArgumentNullException(nameof(window));
 
-        long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        return now > window.WindowEndMs;
+        long elapsedTicks = Stopwatch.GetTimestamp() - window.CreatedAtTicks;
+        long elapsedMs = (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency);
+        return elapsedMs >= window.GetDurationMs();
     }
 
     /// <summary>

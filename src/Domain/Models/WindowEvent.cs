@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.Domain.Models;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -25,9 +26,16 @@ public sealed class WindowEvent
     public string? Description { get; set; }
     public bool IsComplete { get; set; }
 
+    /// <summary>
+    /// Monotonic timestamp (from <see cref="Stopwatch.GetTimestamp()"/>) recorded when
+    /// this window was created. Used for clock-skew-safe completion detection.
+    /// </summary>
+    public long CreatedAtTicks { get; set; }
+
     public WindowEvent()
     {
         DataPoints = new();
+        CreatedAtTicks = Stopwatch.GetTimestamp();
     }
 
     public WindowEvent(long windowId, long startMs, long endMs, string aggregationType)
@@ -38,6 +46,7 @@ public sealed class WindowEvent
         AggregationType = aggregationType ?? throw new ArgumentNullException(nameof(aggregationType));
         DataPoints = new();
         CreatedAt = DateTime.UtcNow;
+        CreatedAtTicks = Stopwatch.GetTimestamp();
         IsComplete = false;
     }
 
