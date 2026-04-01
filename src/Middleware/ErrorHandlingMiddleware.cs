@@ -177,7 +177,7 @@ public sealed class ErrorHandlingMiddleware
 /// <summary>
 /// Represents a standardized error response with recovery information.
 /// </summary>
-public sealed class ErrorResponse
+public class ErrorResponse
 {
     public string ErrorCode { get; set; } = "ERROR";
     public string Message { get; set; } = string.Empty;
