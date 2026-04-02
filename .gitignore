@@ -1,0 +1,60 @@
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio cache/options
+.vs/
+.vscode/
+.idea/
+
+## Visual Studio Code
+*.code-workspace
+
+## Rider
+.idea/
+*.sln.iml
+*.sln.iml
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.DS_Store
+
+## Test Results
+TestResults/
+*.trx
+coverage.cobertura.xml
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+## Local environment files
+.env
+.env.local
+appsettings.local.json
+appsettings.Development.json
+
+## NuGet packages
+packages/
+*.nupkg
+
+## Temporary files
+*.tmp
+*.temp
