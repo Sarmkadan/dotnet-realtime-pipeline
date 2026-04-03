@@ -9,6 +9,7 @@ namespace DotNetRealtimePipeline.Services;
 using DotNetRealtimePipeline.Constants;
 using DotNetRealtimePipeline.Data.Repositories;
 using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Metrics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,13 +22,35 @@ using System.Threading.Tasks;
 public sealed class MetricsService
 {
     private readonly IMetricsRepository _repository;
+    private readonly IPipelineMetrics _throughputCounter;
     private long _nextMetricId = 1;
     private readonly List<double> _processingTimes = new();
 
-    public MetricsService(IMetricsRepository repository)
+    public MetricsService(IMetricsRepository repository, IPipelineMetrics? throughputCounter = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _throughputCounter = throughputCounter ?? new ThroughputCounter();
     }
+
+    /// <summary>
+    /// Returns the current pipeline throughput in events per second using a sliding window.
+    /// </summary>
+    public double GetThroughput() => _throughputCounter.GetThroughput();
+
+    /// <summary>
+    /// Returns the throughput for a specific pipeline stage in events per second.
+    /// </summary>
+    public double GetThroughput(string stageName) => _throughputCounter.GetThroughput(stageName);
+
+    /// <summary>
+    /// Records processed events for throughput tracking.
+    /// </summary>
+    public void RecordThroughput(long count) => _throughputCounter.RecordEvents(count);
+
+    /// <summary>
+    /// Records processed events for a specific stage for throughput tracking.
+    /// </summary>
+    public void RecordThroughput(string stageName, long count) => _throughputCounter.RecordEvents(stageName, count);
 
     /// <summary>
     /// Records the processing time of an operation.
