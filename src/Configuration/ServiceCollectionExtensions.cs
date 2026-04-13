@@ -41,6 +41,15 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<BackpressureService>();
         services.AddSingleton<PipelineOrchestrator>();
 
+        // Register visualization
+        services.AddSingleton<DotNetRealtimePipeline.Visualization.PipelineVisualizer>();
+
+        // Register backpressure metrics collector
+        services.AddSingleton<DotNetRealtimePipeline.Metrics.BackpressureMetricsCollector>();
+
+        // Register dead-letter queue
+        services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IDeadLetterQueue, DotNetRealtimePipeline.DeadLetter.DeadLetterQueue>();
+
         return services;
     }
 
