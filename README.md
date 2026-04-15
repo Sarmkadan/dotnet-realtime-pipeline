@@ -53,6 +53,20 @@ A high-performance, production-grade real-time data processing pipeline built wi
 - **Health check system** with detailed status reporting
 - **Performance trending** with historical analysis
 - **Custom event publishing** for integration with external monitoring systems
+- **Backpressure metrics collection** with time-series history and per-stage activation counts *(new)*
+
+### Pipeline Visualization
+- **ASCII topology diagrams** showing all stages with live buffer levels and throughput
+- **Per-stage health indicators** (HEALTHY / WARNING / CRITICAL) computed from buffer state
+- **Compact single-line summaries** suitable for embedding in log lines or dashboards
+- **CLI `visualize` command** for on-demand terminal rendering *(new)*
+
+### Dead Letter Handling
+- **Automatic capture** of failed data points routed to a dedicated dead-letter queue
+- **Configurable retry budget** per entry with automatic backoff and exhaustion tracking
+- **Inspect and replay** failed entries via `PeekAsync` and `DequeueForRetryAsync`
+- **Permanent failure acknowledgement** with resolution notes for auditing
+- **Queue statistics** (pending / in-retry / permanent-failure / total-resolved counts) *(new)*
 
 ### Quality Control
 - **Data validation** with configurable validation rules
@@ -762,6 +776,114 @@ dotnet run -- export --format csv --output metrics.csv
 
 # Analyze trends
 dotnet run -- trends --interval 3600000 --window 86400000
+
+# Render an ASCII pipeline topology diagram with live metrics
+dotnet run -- visualize
+
+# Compact single-line summary (useful in scripts / CI logs)
+dotnet run -- visualize --compact
+```
+
+## Pipeline Visualization
+
+The `PipelineVisualizer` service renders a live ASCII diagram of every pipeline stage
+with its current buffer fill, throughput (events/sec), dropped item count, and a health
+indicator.
+
+```csharp
+var visualizer = serviceProvider.GetRequiredService<PipelineVisualizer>();
+var config     = serviceProvider.GetRequiredService<PipelineConfig>();
+
+// Full block diagram
+Console.WriteLine(visualizer.Render(config));
+
+// Single-line summary
+Console.WriteLine(visualizer.RenderCompact(config));
+```
+
+Example output:
+
+```
+  Pipeline: DefaultPipeline  (v1.0.0)
+  ────────────────────────────────────────────────────────────────────────
+  +------------------------------------------------------+
+  | + Ingestion           (SOURCE)                       |
+  |   Buffer : [....................................] 0.0%|
+  |   EPS    :     0.00   Dropped:        0              |
+  +------------------------------------------------------+
+       │
+       ▼
+  +------------------------------------------------------+
+  | + Windowing           (WINDOW)                       |
+  |   Buffer : [....................................] 0.0%|
+  |   EPS    :     0.00   Dropped:        0              |
+  +------------------------------------------------------+
+  ────────────────────────────────────────────────────────────────────────
+  System health : HEALTHY
+  Pipeline EPS  : 0.0
+```
+
+## Backpressure Metrics
+
+`BackpressureMetricsCollector` builds a time-series history of backpressure events
+by polling `BackpressureService`.  It tracks activation count, cumulative active
+duration, peak buffer fill, and dropped items per stage.
+
+```csharp
+var collector = serviceProvider.GetRequiredService<BackpressureMetricsCollector>();
+
+// Poll on a timer (e.g. every second)
+collector.Poll();
+
+// Per-stage metrics
+var stageMetrics = collector.GetStageMetrics("Ingestion");
+Console.WriteLine($"Activations : {stageMetrics?.ActivationCount}");
+Console.WriteLine($"Peak buffer : {stageMetrics?.PeakBufferFillPercent:F1}%");
+Console.WriteLine($"Dropped     : {stageMetrics?.TotalDroppedItems}");
+
+// Pipeline-wide snapshot
+var snapshot = collector.GetSnapshot();
+Console.WriteLine($"Total activations : {snapshot.TotalActivations}");
+Console.WriteLine($"Total dropped     : {snapshot.TotalDroppedItems}");
+
+// Last 20 events across all stages
+var events = collector.GetRecentEvents(20);
+foreach (var e in events)
+    Console.WriteLine($"{e.Timestamp:HH:mm:ss} | {e.StageName} | {(e.IsActivation ? "ACTIVATED" : "released")} | buf={e.BufferFillPercent:F0}%");
+```
+
+## Dead Letter Handling
+
+The `IDeadLetterQueue` / `DeadLetterQueue` pair captures data points that could not
+be processed and exposes them for inspection, retry, or permanent failure
+acknowledgement.
+
+```csharp
+var dlq = serviceProvider.GetRequiredService<IDeadLetterQueue>();
+
+// Enqueue a failed data point
+await dlq.EnqueueAsync(dataPoint, stageName: "Transform", failureReason: "schema mismatch");
+
+// Pick up entries for retry
+var batch = await dlq.DequeueForRetryAsync(maxCount: 10);
+foreach (var entry in batch)
+{
+    try
+    {
+        await Reprocess(entry.DataPoint);
+        await dlq.AcknowledgeSuccessAsync(entry.EntryId);
+    }
+    catch (Exception ex)
+    {
+        entry.RetryFailed(ex.Message);
+        if (!entry.CanRetry)
+            await dlq.AcknowledgeFailureAsync(entry.EntryId, "exhausted retries");
+    }
+}
+
+// Check queue health
+var stats = await dlq.GetStatsAsync();
+Console.WriteLine($"DLQ  pending={stats.PendingEntries}  permanent-failures={stats.PermanentFailureEntries}");
 ```
 
 ## Troubleshooting
