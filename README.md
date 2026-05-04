@@ -71,4 +71,26 @@ visualizer.PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical(
 visualizer.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning();
 visualizer.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy();
 ```
+
+## PipelineBenchmarks
+The `PipelineBenchmarks` class provides performance benchmarks for the dotnet-realtime-pipeline library. It measures throughput and memory allocation for critical pipeline operations.
+
+To use `PipelineBenchmarks`, create an instance and call the `Setup` method to initialize the benchmark environment. Run individual benchmarks using their respective methods.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Benchmarks;
+
+var benchmarks = new PipelineBenchmarks();
+benchmarks.Setup();
+
+await benchmarks.IngestSingleDataPoint();
+await benchmarks.ProcessBatch(100);
+benchmarks.ProcessDataPointsThroughWindowing(1000);
+await benchmarks.GenerateHealthReport();
+benchmarks.BackpressureBufferOperations();
+await benchmarks.EndToEndThroughput();
+await benchmarks.MemoryAllocationBenchmark();
+
+benchmarks.Cleanup();
 ```
