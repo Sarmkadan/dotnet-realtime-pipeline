@@ -12,7 +12,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Integration;
 
-public class PipelineIntegrationTests
+public sealed class PipelineIntegrationTests
 {
     private ServiceProvider SetupServices()
     {

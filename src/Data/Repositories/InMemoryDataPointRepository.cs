@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// In-memory implementation of the data point repository.
 /// Suitable for development and testing scenarios.
 /// </summary>
-public class InMemoryDataPointRepository : IDataPointRepository
+public sealed class InMemoryDataPointRepository : IDataPointRepository
 {
     private readonly Dictionary<long, DataPoint> _dataPoints = new();
     private readonly object _lockObject = new();

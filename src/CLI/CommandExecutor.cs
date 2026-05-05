@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 /// Executes parsed commands with context-aware handling.
 /// Bridges CLI layer with service layer, managing dependencies and error handling.
 /// </summary>
-public class CommandExecutor
+public sealed class CommandExecutor
 {
     private readonly PipelineOrchestrator _orchestrator;
     private readonly ILogger<CommandExecutor> _logger;
@@ -222,7 +222,7 @@ public interface IDataExporter
     Task ExportAsync(List<DataPoint> data, string outputPath);
 }
 
-public class JsonDataLoader : IDataLoader
+public sealed class JsonDataLoader : IDataLoader
 {
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
@@ -232,7 +232,7 @@ public class JsonDataLoader : IDataLoader
     }
 }
 
-public class JsonDataExporter : IDataExporter
+public sealed class JsonDataExporter : IDataExporter
 {
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
@@ -241,7 +241,7 @@ public class JsonDataExporter : IDataExporter
     }
 }
 
-public class CsvDataLoader : IDataLoader
+public sealed class CsvDataLoader : IDataLoader
 {
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
@@ -250,7 +250,7 @@ public class CsvDataLoader : IDataLoader
     }
 }
 
-public class CsvDataExporter : IDataExporter
+public sealed class CsvDataExporter : IDataExporter
 {
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
@@ -258,7 +258,7 @@ public class CsvDataExporter : IDataExporter
     }
 }
 
-public class XmlDataExporter : IDataExporter
+public sealed class XmlDataExporter : IDataExporter
 {
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {

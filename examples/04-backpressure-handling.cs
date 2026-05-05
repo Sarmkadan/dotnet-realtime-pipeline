@@ -14,7 +14,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Backpressure handling example demonstrating buffer management under high load conditions.
 /// </summary>
-public class BackpressureHandlingExample
+public sealed class BackpressureHandlingExample
 {
     public static async Task RunAsync()
     {

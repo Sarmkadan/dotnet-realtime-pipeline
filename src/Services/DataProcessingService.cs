@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 /// Core service for processing data points through the pipeline.
 /// Handles validation, transformation, and routing.
 /// </summary>
-public class DataProcessingService
+public sealed class DataProcessingService
 {
     private readonly IDataPointRepository _repository;
     private readonly PipelineConfig _config;
@@ -207,7 +207,7 @@ public class DataProcessingService
 /// <summary>
 /// Analysis results for data quality.
 /// </summary>
-public class DataQualityAnalysis
+public sealed class DataQualityAnalysis
 {
     public int TotalPoints { get; set; }
     public int HighQualityCount { get; set; }
@@ -223,7 +223,7 @@ public class DataQualityAnalysis
 /// <summary>
 /// Statistics about data processing.
 /// </summary>
-public class DataProcessingStatistics
+public sealed class DataProcessingStatistics
 {
     public int TotalDataPoints { get; set; }
     public int ConfiguredMaxRetries { get; set; }

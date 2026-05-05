@@ -14,7 +14,7 @@ using System.Linq;
 /// Represents a windowed aggregation of data points over a time interval.
 /// Used for time-series aggregations and windowing operations.
 /// </summary>
-public class WindowEvent
+public sealed class WindowEvent
 {
     public long WindowId { get; set; }
     public long WindowStartMs { get; set; }

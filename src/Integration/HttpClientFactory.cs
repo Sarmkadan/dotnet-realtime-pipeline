@@ -16,7 +16,7 @@ using System.Net.Http.Headers;
 /// <summary>
 /// Factory for creating and configuring HTTP clients with retry and timeout policies.
 /// </summary>
-public class PipelineHttpClientFactory
+public sealed class PipelineHttpClientFactory
 {
     private readonly ILogger<PipelineHttpClientFactory> _logger;
     private readonly Dictionary<string, HttpClient> _clients = new();
@@ -139,7 +139,7 @@ public class PipelineHttpClientFactory
 /// <summary>
 /// Configuration for HTTP client behavior.
 /// </summary>
-public class HttpClientConfiguration
+public sealed class HttpClientConfiguration
 {
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
     public int MaxRetries { get; set; } = 3;
@@ -153,7 +153,7 @@ public class HttpClientConfiguration
 /// <summary>
 /// Builder pattern for fluent HTTP client configuration.
 /// </summary>
-public class HttpClientBuilder
+public sealed class HttpClientBuilder
 {
     private readonly HttpClientConfiguration _config = new();
     private readonly ILogger<HttpClientBuilder> _logger;

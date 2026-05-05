@@ -10,7 +10,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class DataPointTests
+public sealed class DataPointTests
 {
     private static DataPoint ValidPoint(long id = 1) =>
         new DataPoint(id, 1_000_000L, 42.5, "sensor-01") { Quality = 85 };

@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Represents aggregated metrics for monitoring pipeline performance.
 /// Tracks throughput, latency, error rates, and backpressure indicators.
 /// </summary>
-public class MetricAggregation
+public sealed class MetricAggregation
 {
     public long MetricId { get; set; }
     public long TimeWindowStartMs { get; set; }

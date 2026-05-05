@@ -11,7 +11,7 @@ using System;
 /// <summary>
 /// Base exception for all pipeline-related errors.
 /// </summary>
-public class PipelineException : Exception
+public sealed class PipelineException : Exception
 {
     public string? ErrorCode { get; set; }
     public object? ErrorDetails { get; set; }
@@ -38,7 +38,7 @@ public class PipelineException : Exception
 /// <summary>
 /// Thrown when a data point fails validation.
 /// </summary>
-public class InvalidDataPointException : PipelineException
+public sealed class InvalidDataPointException : PipelineException
 {
     public InvalidDataPointException(string message)
         : base(message, "INVALID_DATA_POINT") { }
@@ -50,7 +50,7 @@ public class InvalidDataPointException : PipelineException
 /// <summary>
 /// Thrown when backpressure limits are exceeded.
 /// </summary>
-public class BackpressureException : PipelineException
+public sealed class BackpressureException : PipelineException
 {
     public long BufferSize { get; set; }
     public long MaxCapacity { get; set; }
@@ -66,7 +66,7 @@ public class BackpressureException : PipelineException
 /// <summary>
 /// Thrown when a processing stage encounters an error.
 /// </summary>
-public class StageProcessingException : PipelineException
+public sealed class StageProcessingException : PipelineException
 {
     public string? StageName { get; set; }
     public int RetryCount { get; set; }
@@ -88,7 +88,7 @@ public class StageProcessingException : PipelineException
 /// <summary>
 /// Thrown when windowing configuration or operation fails.
 /// </summary>
-public class WindowingException : PipelineException
+public sealed class WindowingException : PipelineException
 {
     public long WindowId { get; set; }
 
@@ -105,7 +105,7 @@ public class WindowingException : PipelineException
 /// <summary>
 /// Thrown when a timeout occurs during processing.
 /// </summary>
-public class ProcessingTimeoutException : PipelineException
+public sealed class ProcessingTimeoutException : PipelineException
 {
     public long TimeoutMs { get; set; }
 
@@ -119,7 +119,7 @@ public class ProcessingTimeoutException : PipelineException
 /// <summary>
 /// Thrown when configuration is invalid or incomplete.
 /// </summary>
-public class InvalidConfigurationException : PipelineException
+public sealed class InvalidConfigurationException : PipelineException
 {
     public InvalidConfigurationException(string message)
         : base(message, "INVALID_CONFIGURATION") { }
@@ -128,7 +128,7 @@ public class InvalidConfigurationException : PipelineException
 /// <summary>
 /// Thrown when a required resource is not found.
 /// </summary>
-public class ResourceNotFoundException : PipelineException
+public sealed class ResourceNotFoundException : PipelineException
 {
     public string? ResourceId { get; set; }
     public string? ResourceType { get; set; }

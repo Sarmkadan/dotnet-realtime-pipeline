@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 /// Publisher for pipeline events using observer pattern.
 /// Decouples event producers from consumers through subscription-based notification.
 /// </summary>
-public class PipelineEventPublisher
+public sealed class PipelineEventPublisher
 {
     private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers = new();
     private readonly ILogger<PipelineEventPublisher> _logger;
@@ -187,7 +187,7 @@ public abstract class PipelineEventArgs
 /// <summary>
 /// Event args for data ingestion events.
 /// </summary>
-public class DataIngestedEventArgs : PipelineEventArgs
+public sealed class DataIngestedEventArgs : PipelineEventArgs
 {
     public DataPoint DataPoint { get; set; }
 }
@@ -195,7 +195,7 @@ public class DataIngestedEventArgs : PipelineEventArgs
 /// <summary>
 /// Event args for processing completion events.
 /// </summary>
-public class ProcessingCompletedEventArgs : PipelineEventArgs
+public sealed class ProcessingCompletedEventArgs : PipelineEventArgs
 {
     public ProcessingResult Result { get; set; }
 }
@@ -203,7 +203,7 @@ public class ProcessingCompletedEventArgs : PipelineEventArgs
 /// <summary>
 /// Event args for backpressure detection events.
 /// </summary>
-public class BackpressureDetectedEventArgs : PipelineEventArgs
+public sealed class BackpressureDetectedEventArgs : PipelineEventArgs
 {
     public string StageName { get; set; }
     public BackpressureContext Context { get; set; }
@@ -212,7 +212,7 @@ public class BackpressureDetectedEventArgs : PipelineEventArgs
 /// <summary>
 /// Event args for metrics collection events.
 /// </summary>
-public class MetricsCollectedEventArgs : PipelineEventArgs
+public sealed class MetricsCollectedEventArgs : PipelineEventArgs
 {
     public MetricAggregation Metrics { get; set; }
 }
@@ -220,15 +220,15 @@ public class MetricsCollectedEventArgs : PipelineEventArgs
 /// <summary>
 /// Event args for pipeline error events.
 /// </summary>
-public class PipelineErrorEventArgs : PipelineEventArgs
+public sealed class PipelineErrorEventArgs : PipelineEventArgs
 {
     public string OperationName { get; set; }
     public Exception Exception { get; set; }
 }
 
 // Event definitions
-public class DataIngestedEvent { }
-public class ProcessingCompletedEvent { }
-public class BackpressureDetectedEvent { }
-public class MetricsCollectedEvent { }
-public class PipelineErrorEvent { }
+public sealed class DataIngestedEvent { }
+public sealed class ProcessingCompletedEvent { }
+public sealed class BackpressureDetectedEvent { }
+public sealed class MetricsCollectedEvent { }
+public sealed class PipelineErrorEvent { }
