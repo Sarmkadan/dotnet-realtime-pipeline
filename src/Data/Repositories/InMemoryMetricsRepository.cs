@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -76,12 +77,12 @@ public class InMemoryMetricsRepository : IMetricsRepository
     /// </summary>
     public Task<MetricAggregation> SaveAsync(MetricAggregation metric)
     {
-        if (metric == null) throw new ArgumentNullException(nameof(metric));
+        if (metric is null) throw new ArgumentNullException(nameof(metric));
 
         lock (_lockObject)
         {
             var existing = _metrics.FirstOrDefault(m => m.MetricId == metric.MetricId);
-            if (existing != null)
+            if (existing is not null)
             {
                 _metrics.Remove(existing);
             }
@@ -106,7 +107,7 @@ public class InMemoryMetricsRepository : IMetricsRepository
         lock (_lockObject)
         {
             var metric = _metrics.FirstOrDefault(m => m.MetricId == metricId);
-            if (metric == null) return Task.FromResult(false);
+            if (metric is null) return Task.FromResult(false);
 
             _metrics.Remove(metric);
             return Task.FromResult(true);
@@ -121,7 +122,7 @@ public class InMemoryMetricsRepository : IMetricsRepository
         lock (_lockObject)
         {
             var latest = _metrics.LastOrDefault();
-            if (latest == null)
+            if (latest is null)
                 throw new InvalidOperationException("No metrics available");
 
             return Task.FromResult(latest);

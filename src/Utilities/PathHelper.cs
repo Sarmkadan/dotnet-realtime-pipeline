@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -50,7 +51,7 @@ public static class PathHelper
     /// </summary>
     public static string CombinePaths(params string[] segments)
     {
-        if (segments == null || segments.Length == 0)
+        if (segments is null || segments.Length == 0)
             return string.Empty;
 
         return Path.Combine(segments);
