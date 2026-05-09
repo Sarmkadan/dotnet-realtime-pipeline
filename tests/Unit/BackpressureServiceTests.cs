@@ -11,7 +11,7 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public class BackpressureServiceTests
+public sealed class BackpressureServiceTests
 {
     private readonly BackpressureService _service = new();
 

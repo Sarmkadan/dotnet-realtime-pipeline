@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// Helper class for data compression and decompression.
 /// Supports GZIP and Deflate algorithms with streaming support for large datasets.
 /// </summary>
-public class CompressionHelper
+public sealed class CompressionHelper
 {
     /// <summary>
     /// Compresses a string using GZIP compression.
@@ -151,7 +151,7 @@ public class CompressionHelper
 /// <summary>
 /// Helper for compression statistics and analysis.
 /// </summary>
-public class CompressionAnalyzer
+public sealed class CompressionAnalyzer
 {
     /// <summary>
     /// Analyzes compression efficiency for a dataset.
@@ -198,7 +198,7 @@ public class CompressionAnalyzer
 /// <summary>
 /// Statistics for a compression operation.
 /// </summary>
-public class CompressionStats
+public sealed class CompressionStats
 {
     public int OriginalSizeBytes { get; set; }
     public int CompressedSizeBytes { get; set; }
@@ -215,7 +215,7 @@ public class CompressionStats
 /// <summary>
 /// Comparison of different compression algorithms.
 /// </summary>
-public class CompressionComparison
+public sealed class CompressionComparison
 {
     public int OriginalSizeBytes { get; set; }
     public int GzipSizeBytes { get; set; }

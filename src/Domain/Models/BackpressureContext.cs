@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Manages backpressure state and flow control for the pipeline.
 /// Prevents buffer overflow and ensures graceful degradation under load.
 /// </summary>
-public class BackpressureContext
+public sealed class BackpressureContext
 {
     public long ContextId { get; set; }
     public string PipelineStageName { get; set; } = "";

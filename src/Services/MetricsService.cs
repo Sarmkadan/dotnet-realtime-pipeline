@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 /// Service for collecting, aggregating, and analyzing pipeline metrics.
 /// Tracks throughput, latency, error rates, and backpressure.
 /// </summary>
-public class MetricsService
+public sealed class MetricsService
 {
     private readonly IMetricsRepository _repository;
     private long _nextMetricId = 1;
@@ -235,7 +235,7 @@ public class MetricsService
 /// <summary>
 /// Health status report for the pipeline.
 /// </summary>
-public class HealthReport
+public sealed class HealthReport
 {
     public string Status { get; set; } = "UNKNOWN";
     public string Message { get; set; } = "";
@@ -254,7 +254,7 @@ public class HealthReport
 /// <summary>
 /// Performance trend analysis.
 /// </summary>
-public class PerformanceTrend
+public sealed class PerformanceTrend
 {
     public string TrendDirection { get; set; }
     public double ThroughputChangePercent { get; set; }
@@ -267,7 +267,7 @@ public class PerformanceTrend
 /// <summary>
 /// Distribution of metrics across sources and stages.
 /// </summary>
-public class MetricDistribution
+public sealed class MetricDistribution
 {
     public int TotalSources { get; set; }
     public Dictionary<string, long> SourceBreakdown { get; set; } = new();

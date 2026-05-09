@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Represents an event flowing through the stream at a specific point in time.
 /// Wraps data points with metadata about their processing context.
 /// </summary>
-public class StreamEvent
+public sealed class StreamEvent
 {
     public long EventId { get; set; }
     public long DataPointId { get; set; }

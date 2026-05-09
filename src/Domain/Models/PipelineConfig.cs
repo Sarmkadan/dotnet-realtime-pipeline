@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Configuration model for the entire data processing pipeline.
 /// Defines stages, buffers, windowing, and performance parameters.
 /// </summary>
-public class PipelineConfig
+public sealed class PipelineConfig
 {
     public long ConfigId { get; set; }
     public string PipelineName { get; set; } = "";
@@ -166,7 +166,7 @@ public class PipelineConfig
 /// <summary>
 /// Defines a single stage in the processing pipeline.
 /// </summary>
-public class PipelineStageDef
+public sealed class PipelineStageDef
 {
     public string StageName { get; set; } = "";
     public string StageType { get; set; } = "";

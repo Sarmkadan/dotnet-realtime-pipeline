@@ -13,7 +13,7 @@ namespace DotNetRealtimePipeline.Examples;
 /// <summary>
 /// Data querying example demonstrating various search and analysis operations.
 /// </summary>
-public class QueryingDataExample
+public sealed class QueryingDataExample
 {
     public static async Task RunAsync()
     {

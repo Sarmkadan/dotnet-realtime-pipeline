@@ -14,7 +14,7 @@ using System;
 /// Fluent builder for constructing pipeline configurations.
 /// Provides a convenient way to set up pipeline parameters.
 /// </summary>
-public class PipelineConfigurationBuilder
+public sealed class PipelineConfigurationBuilder
 {
     private readonly PipelineConfig _config;
 

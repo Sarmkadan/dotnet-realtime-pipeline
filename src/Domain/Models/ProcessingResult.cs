@@ -13,7 +13,7 @@ using System.Collections.Generic;
 /// Represents the result of processing a data point or window through the pipeline.
 /// Tracks success/failure, processing metrics, and output data.
 /// </summary>
-public class ProcessingResult
+public sealed class ProcessingResult
 {
     public long ResultId { get; set; }
     public bool Success { get; set; }

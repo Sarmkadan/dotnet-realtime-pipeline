@@ -51,7 +51,7 @@ public interface IOutputPlugin : IPipelinePlugin
 /// <summary>
 /// Plugin manager for registering and executing plugins.
 /// </summary>
-public class PluginManager
+public sealed class PluginManager
 {
     private readonly List<IPipelinePlugin> _plugins = new();
     private readonly ILogger<PluginManager> _logger;
@@ -186,7 +186,7 @@ public abstract class PipelinePluginBase : IPipelinePlugin
 /// <summary>
 /// Plugin configuration.
 /// </summary>
-public class PluginConfiguration
+public sealed class PluginConfiguration
 {
     public string Name { get; set; }
     public string Version { get; set; }
@@ -198,7 +198,7 @@ public class PluginConfiguration
 /// <summary>
 /// Plugin registry for discovering and loading plugins.
 /// </summary>
-public class PluginRegistry
+public sealed class PluginRegistry
 {
     private readonly Dictionary<string, PluginConfiguration> _configurations = new();
     private readonly ILogger<PluginRegistry> _logger;
@@ -245,7 +245,7 @@ public class PluginRegistry
 /// <summary>
 /// Example custom plugin implementation.
 /// </summary>
-public class LoggingPlugin : PipelinePluginBase, IDataProcessingPlugin
+public sealed class LoggingPlugin : PipelinePluginBase, IDataProcessingPlugin
 {
     public override string Name => "Logging Plugin";
     public override string Version => "1.0.0";
@@ -271,7 +271,7 @@ public class LoggingPlugin : PipelinePluginBase, IDataProcessingPlugin
 /// <summary>
 /// Pipeline hook system for extending functionality.
 /// </summary>
-public class HookManager
+public sealed class HookManager
 {
     private readonly Dictionary<string, List<Delegate>> _hooks = new();
     private readonly ILogger<HookManager> _logger;

@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 /// Middleware for comprehensive request and operation logging.
 /// Logs entry/exit points, timing information, and provides correlation IDs.
 /// </summary>
-public class LoggingMiddleware
+public sealed class LoggingMiddleware
 {
     private readonly ILogger<LoggingMiddleware> _logger;
     private static readonly string CorrelationIdHeader = "X-Correlation-ID";
@@ -95,7 +95,7 @@ public class LoggingMiddleware
 /// <summary>
 /// Middleware for structured operation timing and performance tracking.
 /// </summary>
-public class PerformanceLoggingMiddleware
+public sealed class PerformanceLoggingMiddleware
 {
     private readonly ILogger<PerformanceLoggingMiddleware> _logger;
 
@@ -156,7 +156,7 @@ public class PerformanceLoggingMiddleware
 /// <summary>
 /// Middleware for distributed tracing and correlation.
 /// </summary>
-public class CorrelationMiddleware
+public sealed class CorrelationMiddleware
 {
     private static readonly AsyncLocal<string> CorrelationContext = new();
 
