@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -116,7 +117,7 @@ public sealed class DynamicScalingService
     private void EvaluateStage(string stageName)
     {
         var context = _backpressureService.GetContext(stageName);
-        if (context == null)
+        if (context is null)
             return;
 
         if (!_states.TryGetValue(stageName, out var state))

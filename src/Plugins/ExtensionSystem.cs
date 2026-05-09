@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -66,7 +67,7 @@ public class PluginManager
     /// </summary>
     public void RegisterPlugin(IPipelinePlugin plugin)
     {
-        if (plugin == null)
+        if (plugin is null)
             throw new ArgumentNullException(nameof(plugin));
 
         _plugins.Add(plugin);

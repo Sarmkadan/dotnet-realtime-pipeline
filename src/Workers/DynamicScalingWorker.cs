@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -73,7 +74,7 @@ public sealed class DynamicScalingWorker : IDisposable
         _logger.LogInformation("Stopping dynamic scaling worker");
         _cancellationTokenSource.Cancel();
 
-        if (_workerTask != null)
+        if (_workerTask is not null)
         {
             try
             {
@@ -153,7 +154,7 @@ public static class DynamicScalingServiceExtensions
         int cooldownSeconds = 15,
         int evaluationIntervalMs = 5000)
     {
-        if (services == null) throw new ArgumentNullException(nameof(services));
+        if (services is null) throw new ArgumentNullException(nameof(services));
 
         services.AddSingleton(sp => new DynamicScalingService(
             sp.GetRequiredService<BackpressureService>(),

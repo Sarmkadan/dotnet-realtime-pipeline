@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -171,7 +172,7 @@ public class CacheService<TKey, TValue> where TKey : notnull
             .OrderBy(kvp => kvp.Value.LastAccessTime)
             .FirstOrDefault().Key;
 
-        if (lruKey != null)
+        if (lruKey is not null)
         {
             _cache.TryRemove(lruKey, out _);
         }
@@ -183,7 +184,7 @@ public class CacheService<TKey, TValue> where TKey : notnull
             .OrderBy(kvp => kvp.Value.AccessCount)
             .FirstOrDefault().Key;
 
-        if (lfuKey != null)
+        if (lfuKey is not null)
         {
             _cache.TryRemove(lfuKey, out _);
         }
@@ -195,7 +196,7 @@ public class CacheService<TKey, TValue> where TKey : notnull
             .OrderBy(kvp => kvp.Value.CreatedTime)
             .FirstOrDefault().Key;
 
-        if (fifoKey != null)
+        if (fifoKey is not null)
         {
             _cache.TryRemove(fifoKey, out _);
         }

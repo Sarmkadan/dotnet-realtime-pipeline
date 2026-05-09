@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -36,7 +37,7 @@ public class DataProcessingService
     /// </summary>
     public async Task<ProcessingResult> ProcessDataPointAsync(DataPoint dataPoint)
     {
-        if (dataPoint == null) throw new ArgumentNullException(nameof(dataPoint));
+        if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
 
         var stopwatch = Stopwatch.StartNew();
         var result = new ProcessingResult(
@@ -94,7 +95,7 @@ public class DataProcessingService
     /// </summary>
     public async Task<List<ProcessingResult>> ProcessBatchAsync(List<DataPoint> dataPoints)
     {
-        if (dataPoints == null || dataPoints.Count == 0)
+        if (dataPoints is null || dataPoints.Count == 0)
             return new();
 
         var results = new List<ProcessingResult>();
@@ -132,7 +133,7 @@ public class DataProcessingService
                 }
             }
 
-            if (result != null)
+            if (result is not null)
             {
                 results.Add(result);
             }
@@ -157,7 +158,7 @@ public class DataProcessingService
     /// </summary>
     public DataQualityAnalysis AnalyzeDataQuality(List<DataPoint> dataPoints)
     {
-        if (dataPoints == null || dataPoints.Count == 0)
+        if (dataPoints is null || dataPoints.Count == 0)
             return new DataQualityAnalysis { TotalPoints = 0, QualityScore = 0 };
 
         var analysis = new DataQualityAnalysis

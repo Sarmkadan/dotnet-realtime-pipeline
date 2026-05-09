@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -63,7 +64,7 @@ public class BackgroundProcessingWorker : IDisposable
         _logger.LogInformation("Stopping background processing worker");
         _cancellationTokenSource.Cancel();
 
-        if (_workerTask != null)
+        if (_workerTask is not null)
         {
             try
             {
@@ -189,7 +190,7 @@ public class MetricsAggregationWorker : IDisposable
         _logger.LogInformation("Stopping metrics aggregation worker");
         _cancellationTokenSource.Cancel();
 
-        if (_workerTask != null)
+        if (_workerTask is not null)
         {
             try
             {
@@ -303,7 +304,7 @@ public class HealthCheckWorker : IDisposable
         _logger.LogInformation("Stopping health check worker");
         _cancellationTokenSource.Cancel();
 
-        if (_workerTask != null)
+        if (_workerTask is not null)
         {
             try
             {

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -111,7 +112,7 @@ public class HealthCheckService
                 IsRunning = status.IsRunning,
                 HealthStatus = health?.Status.ToString() ?? "Unknown",
                 PendingItems = status.PendingItemsInQueue,
-                ThroughputOk = health != null && health.ThroughputItemsPerSecond > 0,
+                ThroughputOk = health is not null && health.ThroughputItemsPerSecond > 0,
                 ErrorRateAcceptable = (health?.SuccessRatePercent ?? 100) >= 80
             };
         }

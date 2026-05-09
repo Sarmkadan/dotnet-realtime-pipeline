@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -55,7 +56,7 @@ public class WindowEvent
     /// </summary>
     public bool TryAddDataPoint(DataPoint dataPoint)
     {
-        if (dataPoint == null) throw new ArgumentNullException(nameof(dataPoint));
+        if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
         if (dataPoint.Timestamp < WindowStartMs || dataPoint.Timestamp > WindowEndMs)
             return false;
 

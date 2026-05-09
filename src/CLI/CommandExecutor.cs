@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -32,7 +33,7 @@ public class CommandExecutor
     /// </summary>
     public async Task<int> ExecuteAsync(ParsedCommand command)
     {
-        if (command == null)
+        if (command is null)
             throw new ArgumentNullException(nameof(command));
 
         if (!command.IsValid)
