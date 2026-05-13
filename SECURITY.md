@@ -17,7 +17,7 @@ The security of `dotnet-realtime-pipeline` is a top priority. If you discover a 
 Instead, please use one of the following methods:
 
 1. **GitHub Private Advisory**: Use GitHub's built-in private advisory feature to report the vulnerability directly to the maintainers.
-2. **Email**: Contact us directly at `rutova2@gmail.com`.
+2. **GitHub Security Tab**: Navigate to the repository's Security tab and click "Report a vulnerability".
 
 ### Acknowledgment
 
