@@ -60,6 +60,9 @@ public sealed class PipelineOrchestrator
             _backpressureService.CreateContext(stage.StageName, _config.MaxBufferSize);
         }
 
+        // Initialize backpressure context for Windowing stage
+        _backpressureService.CreateContext(PipelineConstants.StageName_Windowing, _config.MaxBufferSize);
+
         // Start processing loop
         _ = ProcessingLoopAsync();
 
@@ -200,6 +203,22 @@ public sealed class PipelineOrchestrator
                 {
                     try
                     {
+                        // Check window buffer capacity before adding data points
+                        bool canAddToWindow = _backpressureService.TryAddToBuffer(
+                            PipelineConstants.StageName_Windowing,
+                            dataPoints.Count
+                        );
+
+                        if (!canAddToWindow)
+                        {
+                            // Apply backpressure on windowing stage and propagate to source
+                            await _backpressureService.ApplyBackpressureAsync(
+                                PipelineConstants.StageName_Windowing,
+                                Domain.Enums.BackpressureStrategy.Block,
+                                100
+                            );
+                        }
+
                         var windows = _windowingService.AssignDataPointsToWindows(dataPoints);
                         foreach (var window in windows)
                         {
