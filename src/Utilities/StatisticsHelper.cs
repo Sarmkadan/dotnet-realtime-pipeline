@@ -43,13 +43,15 @@ public static class StatisticsHelper
     /// <summary>
     /// Calculates the standard deviation of a dataset.
     /// </summary>
-    public static double CalculateStandardDeviation(List<double> values)
+    public static double CalculateStandardDeviation(List<double> values, bool population = false)
     {
         if (values is null || values.Count <= 1) return 0d;
 
         double mean = CalculateMean(values);
         double sumOfSquares = values.Sum(x => Math.Pow(x - mean, 2));
-        return Math.Sqrt(sumOfSquares / values.Count);
+        // Use Bessel's correction (N-1) for sample std dev by default
+        int divisor = population ? values.Count : values.Count - 1;
+        return Math.Sqrt(sumOfSquares / divisor);
     }
 
     /// <summary>
