@@ -131,12 +131,27 @@ public sealed class BackpressureService
             context.ActivateBackpressure();
         }
 
-        // Simulate backpressure delay
-        await Task.Delay((int)Math.Min(timeoutMs, 1000));
+        // Apply backpressure delay based on strategy
+        int delayMs = strategy == BackpressureStrategy.Throttle
+            ? (int)Math.Min(timeoutMs, 500)
+            : (int)Math.Min(timeoutMs, 1000);
+
+        await Task.Delay(delayMs);
 
         lock (_lockObject)
         {
-            var ctx = _contexts[stageName];
+            if (!_contexts.TryGetValue(stageName, out var ctx))
+            {
+                // Context was removed during the delay (e.g., by ResetBackpressure or Clear)
+                return new BackpressureResponse
+                {
+                    Applied = false,
+                    Reason = "Backpressure context was removed during processing",
+                    BufferFillPercent = 0,
+                    StrategyUsed = strategy.ToString()
+                };
+            }
+
             return new BackpressureResponse
             {
                 Applied = true,
