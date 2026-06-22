@@ -1,4 +1,4 @@
-![CI](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/ci.yml/badge.svg)
+![Build](https://github.com/sarmkadan/dotnet-realtime-pipeline/actions/workflows/build.yml/badge.svg)
 ![License](https://img.shields.io/github/license/sarmkadan/dotnet-realtime-pipeline)
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
 

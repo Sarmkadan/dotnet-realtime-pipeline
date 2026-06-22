@@ -49,6 +49,7 @@ public sealed class PipelineOrchestrator
     /// <summary>
     /// Starts the pipeline orchestrator.
     /// </summary>
+    /// <returns>A task that represents the asynchronous start operation.</returns>
     public async Task StartAsync()
     {
         if (_isRunning) return;
@@ -73,6 +74,7 @@ public sealed class PipelineOrchestrator
     /// <summary>
     /// Stops the pipeline orchestrator.
     /// </summary>
+    /// <returns>A task that represents the asynchronous stop operation.</returns>
     public async Task StopAsync()
     {
         _isRunning = false;
@@ -82,6 +84,8 @@ public sealed class PipelineOrchestrator
     /// <summary>
     /// Ingests a data point into the pipeline.
     /// </summary>
+    /// <param name="dataPoint">The data point to be ingested.</param>
+    /// <returns>A task representing the asynchronous operation, returning true if accepted, false otherwise.</returns>
     public async Task<bool> IngestDataPointAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -115,6 +119,7 @@ public sealed class PipelineOrchestrator
     /// <summary>
     /// Gets the current pipeline status.
     /// </summary>
+    /// <returns>The <see cref="PipelineStatus"/> object representing the current status.</returns>
     public PipelineStatus GetStatus()
     {
         return new PipelineStatus
@@ -133,6 +138,7 @@ public sealed class PipelineOrchestrator
     /// <summary>
     /// Gets the current health report.
     /// </summary>
+    /// <returns>A task representing the asynchronous health check, returning a <see cref="HealthReport"/>.</returns>
     public async Task<HealthReport> GetHealthReportAsync()
     {
         return await _metricsService.GenerateHealthReportAsync();
