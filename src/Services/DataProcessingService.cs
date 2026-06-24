@@ -35,6 +35,8 @@ public sealed class DataProcessingService
     /// <summary>
     /// Processes a single data point through the pipeline stages.
     /// </summary>
+    /// <param name="dataPoint">The <see cref="DataPoint"/> to be processed.</param>
+    /// <returns>A task that represents the asynchronous operation, returning a <see cref="ProcessingResult"/>.</returns>
     public async Task<ProcessingResult> ProcessDataPointAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -93,6 +95,8 @@ public sealed class DataProcessingService
     /// <summary>
     /// Processes a batch of data points, applying retry logic on failure.
     /// </summary>
+    /// <param name="dataPoints">The list of <see cref="DataPoint"/> to be processed.</param>
+    /// <returns>A task that represents the asynchronous operation, returning a list of <see cref="ProcessingResult"/>.</returns>
     public async Task<List<ProcessingResult>> ProcessBatchAsync(List<DataPoint> dataPoints)
     {
         if (dataPoints is null || dataPoints.Count == 0)
@@ -145,6 +149,9 @@ public sealed class DataProcessingService
     /// <summary>
     /// Retrieves and processes data points from a specific time window.
     /// </summary>
+    /// <param name="startMs">The start time of the window in milliseconds.</param>
+    /// <param name="endMs">The end time of the window in milliseconds.</param>
+    /// <returns>A task that represents the asynchronous operation, returning a list of <see cref="DataPoint"/> in the time window.</returns>
     public async Task<List<DataPoint>> GetProcessedDataInWindowAsync(long startMs, long endMs)
     {
         if (startMs > endMs)
@@ -156,6 +163,8 @@ public sealed class DataProcessingService
     /// <summary>
     /// Analyzes data quality statistics for a batch of points.
     /// </summary>
+    /// <param name="dataPoints">The list of <see cref="DataPoint"/> to analyze.</param>
+    /// <returns>A <see cref="DataQualityAnalysis"/> object containing the statistics.</returns>
     public DataQualityAnalysis AnalyzeDataQuality(List<DataPoint> dataPoints)
     {
         if (dataPoints is null || dataPoints.Count == 0)
@@ -181,6 +190,8 @@ public sealed class DataProcessingService
     /// <summary>
     /// Filters data points based on quality threshold.
     /// </summary>
+    /// <param name="minQuality">The minimum quality score to filter by.</param>
+    /// <returns>A task that represents the asynchronous operation, returning a list of <see cref="DataPoint"/>.</returns>
     public async Task<List<DataPoint>> FilterByQualityAsync(int minQuality)
     {
         return await _repository.GetByQualityThresholdAsync(minQuality);
@@ -189,6 +200,7 @@ public sealed class DataProcessingService
     /// <summary>
     /// Gets statistics about data processing.
     /// </summary>
+    /// <returns>A task that represents the asynchronous operation, returning a <see cref="DataProcessingStatistics"/> object.</returns>
     public async Task<DataProcessingStatistics> GetStatisticsAsync()
     {
         int totalCount = await _repository.CountAsync();
