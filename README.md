@@ -366,25 +366,32 @@ dotnet build -c Release
 dotnet run -c Release
 ```
 
-### Docker
+## Docker
+
+### Build
 
 ```bash
-# Build image
+# Build the application image
 docker build -t dotnet-realtime-pipeline .
+```
 
-# Run container
-docker run -p 5000:5000 dotnet-realtime-pipeline
+### Run
+
+```bash
+# Run the application container
+docker run -p 8080:8080 dotnet-realtime-pipeline
 ```
 
 ### Docker Compose
 
 ```bash
-# Start services
+# Start all services (Pipeline, Prometheus, Grafana, PostgreSQL)
 docker-compose up -d
 
-# View logs
-docker-compose logs -f app
+# View application logs
+docker-compose logs -f pipeline
 ```
+
 
 ## Usage Examples
 

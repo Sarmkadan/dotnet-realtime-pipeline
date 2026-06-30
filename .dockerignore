@@ -1,0 +1,11 @@
+bin/
+obj/
+.git/
+.vs/
+.vscode/
+.env
+logs/
+temp/
+*.user
+*.lock
+.DS_Store

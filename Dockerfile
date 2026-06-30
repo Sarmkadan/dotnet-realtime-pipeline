@@ -44,6 +44,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 ENTRYPOINT ["dotnet", "dotnet-realtime-pipeline.dll"]
 
 # Labels for metadata
-LABEL maintainer="Vladyslav Zaiets <vladyslav.zaiets@amdaris.com>"
+LABEL maintainer="Vladyslav Zaiets <rutova2@gmail.com>"
 LABEL description="Real-time data processing pipeline for .NET"
-LABEL version="2.0.0"
+LABEL version="1.0.0"
