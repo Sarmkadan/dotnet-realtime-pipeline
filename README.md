@@ -1,3 +1,29 @@
+# dotnet-realtime-pipeline
+
+An in-process, in-memory real-time data pipeline library for .NET with backpressure
+management, tumbling/sliding windowing, metrics collection, and a console demo entry
+point (`Program.cs`).
+
+## Quick Start
+
+```bash
+dotnet build dotnet-realtime-pipeline.csproj
+dotnet run --project dotnet-realtime-pipeline.csproj
+```
+
+The demo configures the pipeline via `AddPipelineServices(...)`, ingests 500 sample
+sensor points, and prints processing stats and a health report.
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the component breakdown, data flow,
+concurrency model, extension points, and known limitations.
+
+## Class Reference
+
+The sections below are generated per-class API notes; more per-class docs live in
+[docs/](docs/).
+
 ## BackpressureMetricsCollectorTests
 The `BackpressureMetricsCollectorTests` class provides unit tests for the `BackpressureMetricsCollector` class, verifying its ability to track and report backpressure metrics across pipeline stages. It includes tests for handling unknown stages, recording manual events, aggregating metrics, and resetting collected data.
 
