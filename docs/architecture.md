@@ -2,6 +2,23 @@
 
 This document provides a detailed technical overview of the dotnet-realtime-pipeline architecture.
 
+## What This Project Actually Is
+
+dotnet-realtime-pipeline is an **in-process, in-memory data pipeline library** with a
+console demo entry point (`Program.cs`). There is no hosted HTTP server: the classes under
+`src/API/` (`ApiEndpointHandler`, `DataIngestionHandler`, `StatusHandler`, `QueryHandler`)
+are plain in-process handler classes that wrap `PipelineOrchestrator` calls in an
+`ApiResponse<T>` envelope. To expose them over HTTP you would host them yourself (e.g. map
+them to ASP.NET Core endpoints). The same applies to the "CLI" and "Webhook" components -
+they are library classes, not running processes.
+
+Everything is wired through `Microsoft.Extensions.DependencyInjection` via
+`ServiceCollectionExtensions.AddPipelineServices(...)` (see
+`src/Configuration/ServiceCollectionExtensions.cs`), which registers all services,
+repositories and the shared `PipelineConfig` as **singletons**. Singleton lifetimes are
+correct here because the services hold long-lived mutable state (buffers, metric counters,
+window state) that must be shared across the whole pipeline.
+
 ## System Architecture
 
 ```
@@ -114,31 +131,33 @@ This document provides a detailed technical overview of the dotnet-realtime-pipe
 ```
 User Code
     │
-    ├─> IngestDataPointAsync(dataPoint)
-    │
-    └─> PipelineOrchestrator
+    └─> PipelineOrchestrator.IngestDataPointAsync(dataPoint)
             │
-            ├─> BackpressureService.TryAddToBuffer()
-            │   ├─ Check if buffer has capacity
-            │   └─ Return false if full (respects strategy)
+            ├─> BackpressureService.TryAddToBuffer("Ingestion", 1)
+            │   ├─ Buffer full → ApplyBackpressureAsync (Block, delay) and return false
+            │   └─ Otherwise → enqueue into the in-memory ingestion queue, return true
             │
-            ├─> DataProcessingService.ProcessDataPointAsync()
-            │   ├─ Validate data point
-            │   ├─ Calculate quality score (0-100)
-            │   ├─ Detect outliers
-            │   └─ Apply retry logic
-            │
-            ├─> WindowingService.AssignToWindow()
-            │   ├─ Determine window based on timestamp
-            │   └─ Add to appropriate window
-            │
-            ├─> IDataPointRepository.AddAsync()
-            │   └─ Persist to in-memory store
-            │
-            └─> PipelineEventPublisher.PublishAsync()
-                └─ Notify subscribers of new data
+            └─ (returns immediately; processing is asynchronous)
 
-[Timeline: ~5-10ms per point under normal conditions]
+Background loop (ProcessingLoopAsync, started by StartAsync):
+    │
+    ├─ Dequeue up to 100 points per iteration (Task.Delay(100) when idle)
+    │
+    ├─> DataProcessingService.ProcessBatchAsync(batch)
+    │   ├─ Validate each point (DataPoint.IsValid)
+    │   ├─ Quality check against MinDataQualityThreshold
+    │   └─ Persist accepted points via IDataPointRepository
+    │
+    ├─> MetricsService: record processing time + throughput per result
+    │
+    ├─> BackpressureService.TryAddToBuffer("Windowing", n)
+    │   └─> WindowingService.ProcessDataPoints(points)
+    │       └─ Assign to tumbling/sliding windows, emit closed windows
+    │       (buffer is drained again after the hand-off)
+    │
+    └─> BackpressureService.RemoveFromBuffer("Ingestion", batch.Count)
+
+[Latency for a single point is dominated by the 100ms polling interval]
 ```
 
 ### Query Path
@@ -191,20 +210,23 @@ Background Task (Periodic)
 ### Thread Safety
 
 1. **InMemoryDataPointRepository**
-   - Uses `ReaderWriterLockSlim` for concurrent reads with exclusive writes
-   - Supports multiple concurrent readers
-   - Exclusive access for additions
-   - Minimal lock contention under read-heavy loads
+   - Uses a single private lock object (`lock (_lockObject)`) around every operation
+   - Reads and writes are both exclusive - simple and correct, but readers do contend
+     with each other under load
 
 2. **BackpressureService**
-   - Uses `ConcurrentDictionary` for stage contexts
-   - Lock-free for buffer status checks
-   - Atomic operations for counter updates
+   - Uses a plain `Dictionary<string, BackpressureContext>` guarded by one lock object
+   - All buffer checks, additions and removals take that lock (not lock-free)
 
-3. **MetricsService**
+3. **PipelineOrchestrator**
+   - Ingestion enqueues into a `Queue<DataPoint>` guarded by `lock`; a single
+     background loop (`ProcessingLoopAsync`, started fire-and-forget from `StartAsync`)
+     drains it in batches of up to 100
+   - Success/failure counters are updated with `Interlocked.Increment`
+
+4. **MetricsService**
    - Thread-safe metric collection using `lock`
    - Synchronous aggregation during report generation
-   - Minimal contention due to short critical sections
 
 ### Parallelism Strategy
 
@@ -310,113 +332,68 @@ Overlapping windows that slide over time
 Use case: Moving averages, trend detection
 ```
 
-### Session Windows
+### Implementation Status
 
-```
-Time ─────────────────────────────────────────────>
+The window type is selected via the string `PipelineConfig.WindowType`
+(default `"TUMBLING"`). In `WindowingService`:
 
-[Session 1]  Gap   [Session 2]      Gap      [Session 3]
-  ├─ Data           ├─ Data
-  ├─ Data           ├─ Data
-  └─ Data           └─ Data
+- **Tumbling** and **Sliding** window *assignment* are implemented: `"SLIDING"` assigns a
+  point to all overlapping windows, anything else falls back to tumbling assignment.
+- **Session** windows have an aggregation branch (`"SESSION"`) but no session-gap
+  assignment logic - points are still bucketed by fixed window start.
+- **Global** windows exist only as a value of the `WindowType` enum; there is no
+  corresponding implementation.
 
-Dynamically sized based on data activity
-Use case: User session analysis, event grouping
-```
-
-### Global Windows
-
-```
-Time ─────────────────────────────────────────────>
-
-[────────── Single Global Window ──────────────]
-  All data goes into one window
-  Aggregated at end or on demand
-
-Use case: Final aggregation, end-of-batch reporting
-```
+The `WindowType` enum (`Tumbling/Sliding/Session/Global`) is declared in
+`src/Domain/Enums/PipelineEnums.cs` but the windowing code keys off the config string,
+not the enum.
 
 ## Quality Scoring
 
-Quality score (0-100) calculated based on:
+The pipeline does **not compute** a quality score. `DataPoint.Quality` is an `int`
+property (0-100, default `100`) that the **producer supplies** when creating the point.
+What the pipeline does with it:
 
-1. **Data Completeness** (40 points)
-   - All required fields present: +40
-   - Missing non-critical fields: +20
-   - Missing critical fields: +0
+- `DataPoint.IsValid()` rejects points whose `Quality` is outside 0-100
+- `DataProcessingService` fails a point during its "QualityCheck" stage when
+  `Quality < PipelineConfig.MinDataQualityThreshold`
+- `DataProcessingService.AnalyzeDataQuality(...)` reports aggregate statistics
+  (average/min/max quality, pass rate against the threshold)
+- The `DataQuality` enum (`Poor=0, Fair=25, Good=50, Excellent=75, Perfect=100`) provides
+  named bands but is not used to derive scores
 
-2. **Data Validity** (30 points)
-   - Value within expected range: +30
-   - Value slightly outside range: +15
-   - Value far outside range (outlier): +0
-
-3. **Data Freshness** (20 points)
-   - Recent data (< 1 hour old): +20
-   - Medium age (1-24 hours): +10
-   - Stale data (> 24 hours): +0
-
-4. **Consistency** (10 points)
-   - No duplicates: +10
-   - Duplicate detected: +5
-   - Multiple duplicates: +0
-
-```csharp
-// Example quality calculation
-var quality = 40 + 30 + 20 + 10 = 100 (Perfect)
-var quality = 40 + 15 + 10 + 5 = 70 (Good)
-var quality = 20 + 0 + 0 + 0 = 20 (Poor)
-```
+If you need computed quality (completeness/freshness/etc.), implement it in your producer
+or in a custom processing step before ingestion.
 
 ## Performance Characteristics
 
-### Memory
+Do not rely on hardcoded numbers - measure on your hardware. The repository ships a
+BenchmarkDotNet project (`dotnet-realtime-pipeline.Benchmarks/`, `PipelineBenchmarks`)
+covering single-point ingestion, batch processing, windowing throughput, health report
+generation, backpressure buffer operations and end-to-end throughput:
 
-| Configuration | Memory Impact |
-|---|---|
-| 10,000 items in buffer | ~2-5 MB |
-| Per data point | ~200-300 bytes |
-| Per window | ~1-2 KB |
-| Per metric aggregation | ~500-800 bytes |
+```bash
+dotnet run -c Release --project dotnet-realtime-pipeline.Benchmarks
+```
 
-### Throughput
+Structural characteristics worth knowing:
 
-| Scenario | Items/sec |
-|---|---|
-| Single point, no validation | 50,000+ |
-| Single point with validation | 10,000-20,000 |
-| Batch (100 items) with aggregation | 100,000+ |
-| High quality scoring enabled | 5,000-10,000 |
-
-### Latency
-
-| Operation | Latency |
-|---|---|
-| Data point ingestion | 0.1-1ms |
-| Buffer check | <0.1ms |
-| Validation | 0.5-2ms |
-| Quality score calculation | 1-3ms |
-| Window aggregation | 5-20ms |
-| Query (in-memory) | <1ms |
+- The processing loop polls the ingestion queue with a `Task.Delay(100)` idle wait and a
+  batch size of 100, so end-to-end latency for a single point is dominated by that
+  polling interval (up to ~100 ms), not by the per-point work.
+- All storage is in-memory behind coarse locks; queries are LINQ over the full
+  collection, i.e. O(n) per query.
 
 ## Extension Points
 
-### Adding Custom Services
+### Plugin System
 
-```csharp
-public class CustomProcessingService
-{
-    public async Task<CustomResult> ProcessAsync(DataPoint point)
-    {
-        // Custom logic
-        return result;
-    }
-}
+`src/Plugins/ExtensionSystem.cs` defines the plugin surface:
 
-// Register in DI
-services.AddScoped<CustomProcessingService>();
-
-var customService = serviceProvider.GetRequiredService<CustomProcessingService>();
-```
+- `IPipelinePlugin` - base plugin contract (with `PipelinePluginBase` as a convenience
+  base class)
+- `IDataProcessingPlugin`, `IDataTransformPlugin`, `IOutputPlugin` - specialized hooks
+- `PluginManager` / `PluginRegistry` - registration and lookup
 
 ### Custom Repository Implementation
 
@@ -426,20 +403,23 @@ public class PostgresDataPointRepository : IDataPointRepository
     // Implement interface with database persistence
 }
 
-// Register
-services.AddScoped<IDataPointRepository, PostgresDataPointRepository>();
+// Register instead of the default in-memory implementation.
+// Use a singleton: the pipeline services that consume the repository are
+// singletons themselves, so a scoped registration would be a captive dependency.
+services.AddSingleton<IDataPointRepository, PostgresDataPointRepository>();
 ```
+
+Note: `AddPipelineServices` registers `InMemoryDataPointRepository` with plain
+`AddSingleton` (not `TryAddSingleton`), and in Microsoft.Extensions.DependencyInjection
+the *last* registration wins for `GetRequiredService<T>`. So call
+`services.AddPipelineServices(...)` first, then add your override afterwards.
 
 ### Event Subscription
 
-```csharp
-var publisher = serviceProvider.GetRequiredService<PipelineEventPublisher>();
-
-publisher.Subscribe<DataPointProcessedEvent>(async @event =>
-{
-    Console.WriteLine($"Processed point: {@event.DataPointId}");
-});
-```
+`PipelineEventPublisher.Subscribe<T>(string eventName, Func<T, Task> handler)` subscribes
+a typed async handler to a named event (`T : PipelineEventArgs`). Note that
+`PipelineEventPublisher` is **not** registered by `AddPipelineServices`; construct it
+yourself or add it to your service collection.
 
 ## Monitoring and Observability
 
@@ -467,3 +447,24 @@ Detects performance trends over time:
 - **Downward Trend**: ↘️ Performance degrading
 - **Stable Trend**: → Consistent performance
 - **Oscillating Trend**: ↔️ Unstable behavior
+
+## Known Limitations
+
+- **In-memory only.** Both repositories (`InMemoryDataPointRepository`,
+  `InMemoryMetricsRepository`) hold data in process memory; nothing survives a restart.
+  The PostgreSQL service in `docker-compose.yml` is not wired to any repository
+  implementation.
+- **No hosted endpoints.** Despite the Dockerfile exposing port 8080, the entry point is
+  a console demo; the API/webhook/CLI classes must be hosted by consumer code.
+- **Best-effort shutdown.** `StopAsync` flips a flag and waits a fixed 500 ms; it does
+  not join the processing loop, so in-flight work past that window is abandoned and any
+  points still in the ingestion queue are lost.
+- **Fire-and-forget processing loop.** `StartAsync` starts `ProcessingLoopAsync` with
+  `_ = ...`; an unhandled exception escaping the loop's own try/catch would be
+  unobserved.
+- **Polling-based loop.** Idle polling with `Task.Delay(100)` bounds single-point
+  latency at ~100 ms; there is no event-based wakeup on enqueue.
+- **Window types partially implemented.** Session-gap assignment and Global windows are
+  not implemented (see "Implementation Status" above).
+- **Quality is producer-supplied.** No quality computation happens inside the pipeline
+  (see "Quality Scoring" above).
