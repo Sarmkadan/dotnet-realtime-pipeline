@@ -65,8 +65,14 @@ public sealed class PipelineOrchestrator
             _backpressureService.CreateContext(stage.StageName, _config.MaxBufferSize);
         }
 
-        // Initialize backpressure context for Windowing stage
-        _backpressureService.CreateContext(PipelineConstants.StageName_Windowing, _config.MaxBufferSize);
+        // Ensure the Windowing stage has a context even if the configured stages
+        // do not include one (the processing loop uses it directly). The default
+        // configuration already contains a "Windowing" stage, so guard against
+        // creating a duplicate context, which would throw.
+        if (_backpressureService.GetContext(PipelineConstants.StageName_Windowing) is null)
+        {
+            _backpressureService.CreateContext(PipelineConstants.StageName_Windowing, _config.MaxBufferSize);
+        }
 
         // Start processing loop
         _ = ProcessingLoopAsync();
@@ -287,12 +293,28 @@ public sealed class PipelineOrchestrator
                             );
                         }
 
-                        var emittedWindows = _windowingService.ProcessDataPoints(dataPoints);
-                        foreach (var emission in emittedWindows)
+                        try
                         {
-                            // Output window results
-                            // Log or further process the emitted window (emission.AggregatedData, emission.Statistics, etc.)
-                            System.Diagnostics.Debug.WriteLine($"Emitted Window: ID={emission.WindowId}, Start={emission.StartMs}, End={emission.EndMs}, Count={emission.DataPointCount}");
+                            var emittedWindows = _windowingService.ProcessDataPoints(dataPoints);
+                            foreach (var emission in emittedWindows)
+                            {
+                                // Output window results
+                                // Log or further process the emitted window (emission.AggregatedData, emission.Statistics, etc.)
+                                System.Diagnostics.Debug.WriteLine($"Emitted Window: ID={emission.WindowId}, Start={emission.StartMs}, End={emission.EndMs}, Count={emission.DataPointCount}");
+                            }
+                        }
+                        finally
+                        {
+                            // Drain the windowing buffer once the points have been handed
+                            // to the windowing service; otherwise the buffer level only ever
+                            // grows and the stage becomes permanently backpressured.
+                            if (canAddToWindow)
+                            {
+                                _backpressureService.RemoveFromBuffer(
+                                    PipelineConstants.StageName_Windowing,
+                                    dataPoints.Count
+                                );
+                            }
                         }
                     }
                     catch (Exception ex)
