@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using DotNetRealtimePipeline.Domain.Models;
 using FluentAssertions;
+using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
 /// Extension methods for <see cref="MetricAggregationTests"/> to simplify common test scenarios and operations.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1649:FileHeaderShouldMatchTypeName", Justification = "Extension class naming convention")]
 public static class MetricAggregationTestsExtensions
 {
     /// <summary>
@@ -128,7 +131,7 @@ public static class MetricAggregationTestsExtensions
             TotalBackpressureMs = 0
         };
 
-        metric.ComputeAverageProcessingTime(new System.Collections.Generic.List<double>(samples));
+        metric.ComputeAverageProcessingTime(new List<double>(samples));
         return metric;
     }
 
