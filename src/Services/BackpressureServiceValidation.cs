@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Services;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="BackpressureService"/> instances.
@@ -28,9 +27,6 @@ public static class BackpressureServiceValidation
 
         var errors = new List<string>();
 
-        // Validate BackpressureResponse properties if accessible
-        // Note: These are returned from methods, so we validate the service's state
-
         // Validate system status metrics
         var status = value.GetSystemStatus();
         if (status.TotalStages < 0)
@@ -48,7 +44,7 @@ public static class BackpressureServiceValidation
             errors.Add($"BackpressuredStages ({status.BackpressuredStages}) cannot exceed TotalStages ({status.TotalStages})");
         }
 
-        if (status.AverageBufferFillPercent < 0 || status.AverageBufferFillPercent > 100)
+        if (status.AverageBufferFillPercent is < 0 or > 100)
         {
             errors.Add($"AverageBufferFillPercent must be between 0 and 100, but was {status.AverageBufferFillPercent}");
         }
@@ -70,6 +66,8 @@ public static class BackpressureServiceValidation
 
         // Validate buffer status
         var bufferStatus = value.GetBufferStatus();
+        ArgumentNullException.ThrowIfNull(bufferStatus);
+
         foreach (var kvp in bufferStatus)
         {
             if (kvp.Value < 0)
@@ -77,14 +75,6 @@ public static class BackpressureServiceValidation
                 errors.Add($"Buffer size for stage '{kvp.Key}' must be non-negative, but was {kvp.Value}");
             }
         }
-
-        // Validate dropped item counts per stage
-        // Note: We can't directly access per-stage dropped counts without stage names,
-        // but the system status aggregates this
-
-        // Note: Applied, Reason, BufferFillPercent, StrategyUsed are properties of BackpressureResponse
-        // TotalStages, BackpressuredStages, AverageBufferFillPercent are properties of BackpressureSystemStatus
-        // These are validated above through the status object
 
         return errors.AsReadOnly();
     }
@@ -94,8 +84,10 @@ public static class BackpressureServiceValidation
     /// </summary>
     /// <param name="value">The service instance to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this BackpressureService value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
