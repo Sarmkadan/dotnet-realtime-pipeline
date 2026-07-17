@@ -31,7 +31,7 @@ public static class DataProcessingServiceExtensions
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(dataPoints);
 
-        var qualityThreshold = minQuality ?? service.GetConfigQualityThreshold();
+        var qualityThreshold = minQuality ?? GetConfigQualityThreshold(service);
         var filteredPoints = dataPoints.Where(p => p.Quality >= qualityThreshold).ToList();
 
         return await service.ProcessBatchAsync(filteredPoints);
@@ -54,6 +54,7 @@ public static class DataProcessingServiceExtensions
         bool includeQualityAnalysis = true)
     {
         ArgumentNullException.ThrowIfNull(service);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(startMs, endMs);
 
         var dataPoints = await service.GetProcessedDataInWindowAsync(startMs, endMs);
         DataQualityAnalysis? analysis = null;
@@ -87,7 +88,7 @@ public static class DataProcessingServiceExtensions
 
         var reportLines = new List<string>
         {
-            $"=== Data Quality Report ===",
+            "=== Data Quality Report ===",
             $"Total Points: {analysis.TotalPoints:N0}",
             $"Quality Score: {analysis.QualityScore}",
             $"Pass Rate: {analysis.PassRate.ToString("F2", culture)}%",
@@ -104,8 +105,7 @@ public static class DataProcessingServiceExtensions
             {
                 $"Min Quality: {analysis.MinQuality}",
                 $"Max Quality: {analysis.MaxQuality}",
-                $"Total Points: {analysis.TotalPoints:N0}",
-                $"Configured Threshold: {service.GetConfigQualityThreshold()}"
+                $"Configured Threshold: {GetConfigQualityThreshold(service)}"
             });
         }
 
@@ -137,31 +137,38 @@ public static class DataProcessingServiceExtensions
     }
 
     /// <summary>
-    /// Helper method to get the configured quality threshold from the service's config.
+    /// Gets the configured minimum quality threshold from the service's configuration.
     /// </summary>
     /// <param name="service">The data processing service instance.</param>
     /// <returns>The configured minimum quality threshold.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
-    private static int GetConfigQualityThreshold(this DataProcessingService service)
+    private static int GetConfigQualityThreshold(DataProcessingService service)
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        var configField = typeof(DataProcessingService).GetField(
-            "_config",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (configField?.GetValue(service) is PipelineConfig config)
+        try
         {
-            var thresholdProperty = typeof(PipelineConfig).GetProperty(
-                "MinDataQualityThreshold",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            var configField = typeof(DataProcessingService).GetField(
+                "_config",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-            if (thresholdProperty?.GetValue(config) is int threshold)
+            if (configField?.GetValue(service) is { } config)
             {
-                return threshold;
+                var thresholdProperty = typeof(PipelineConfig).GetProperty(
+                    "MinDataQualityThreshold",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+                if (thresholdProperty?.GetValue(config) is int threshold)
+                {
+                    return threshold;
+                }
             }
         }
+        catch
+        {
+            // Fall through to default if reflection fails
+        }
 
-        return 50; // Default threshold
+        return 50; // Default threshold when config cannot be accessed
     }
 }
