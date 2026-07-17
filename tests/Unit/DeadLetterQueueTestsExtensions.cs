@@ -20,7 +20,11 @@ public static class DeadLetterQueueTestsExtensions
     public static void VerifyCapacityConstraint(this DeadLetterQueueTests testClass, int capacity)
     {
         ArgumentNullException.ThrowIfNull(testClass);
-        // Implementation logic for verifying the constraint, not executing the test itself
+
+        if (capacity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be non-negative.");
+        }
     }
 
     /// <summary>
@@ -30,9 +34,16 @@ public static class DeadLetterQueueTestsExtensions
     /// <param name="retries">The number of retries.</param>
     /// <returns>A formatted string.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="testClass"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="retries"/> is negative.</exception>
     public static string FormatRetryMessage(this DeadLetterQueueTests testClass, int retries)
     {
         ArgumentNullException.ThrowIfNull(testClass);
+
+        if (retries < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(retries), "Retry count must be non-negative.");
+        }
+
         return retries.ToString(CultureInfo.InvariantCulture);
     }
 }
