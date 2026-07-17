@@ -291,6 +291,66 @@ bool stoppedSuccessfully = await initializer.SafeStopAsync();
 Console.WriteLine($"Pipeline stopped successfully: {stoppedSuccessfully}");
 ```
 
+## PerformanceHelperExtensions
+
+The `PerformanceHelperExtensions` class provides extension methods for performance benchmarking, memory analysis, and performance comparison operations. It includes methods for benchmarking synchronous and asynchronous operations, calculating statistical measures like standard deviation and percentiles, analyzing memory usage and GC pressure, and comparing performance between different runs.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+using System.Threading.Tasks;
+
+// Create a performance helper instance
+var performanceHelper = new PerformanceHelper();
+
+// Benchmark a synchronous operation (1000 iterations by default)
+var benchmarkResult = performanceHelper.Benchmark(() => {
+    // Your operation to benchmark here
+    for (int i = 0; i < 1000; i++) {
+        _ = i * i;
+    }
+});
+
+Console.WriteLine(benchmarkResult.ToDetailedString());
+Console.WriteLine($"Standard deviation: {benchmarkResult.GetStandardDeviation():F2}ms");
+
+// Benchmark an asynchronous operation
+var asyncBenchmarkResult = await performanceHelper.BenchmarkAsync(async () => {
+    // Your async operation to benchmark
+    await Task.Delay(10);
+});
+
+Console.WriteLine(asyncBenchmarkResult.ToCompactString());
+
+// Analyze memory usage
+var memoryStats = performanceHelper.GetMemoryStats();
+Console.WriteLine(memoryStats.ToDetailedString());
+Console.WriteLine($"GC Pressure Score: {memoryStats.GetGcPressureScore():F2}");
+Console.WriteLine($"Has memory pressure: {memoryStats.HasMemoryPressure()}");
+
+// Compare performance between two benchmark runs
+var baselineResult = performanceHelper.Benchmark(() => {
+    for (int i = 0; i < 100; i++) {
+        _ = i * i;
+    }
+});
+
+var improvedResult = performanceHelper.Benchmark(() => {
+    for (int i = 0; i < 100; i++) {
+        _ = Math.Sqrt(i);
+    }
+});
+
+double improvement = improvedResult.ComparePerformance(baselineResult);
+Console.WriteLine($"Performance improvement: {improvement:+0.00;-0.00;0.00}%");
+
+// Get raw measurements for custom analysis
+IReadOnlyList<long> measurements = benchmarkResult.GetMeasurements();
+Console.WriteLine($"Raw measurements count: {measurements.Count}");
+```
+
 ## CommandLineParserExtensions
 
 The `CommandLineParserExtensions` class provides extension methods for `CommandLineParser` to simplify command registration and parsing scenarios. It includes methods for registering individual commands, bulk registering commands from dictionaries or sequences, parsing command line arguments into structured commands, and executing parsed commands with proper error handling.
