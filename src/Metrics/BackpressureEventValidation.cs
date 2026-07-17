@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 namespace DotNetRealtimePipeline.Metrics;
 
@@ -45,6 +45,19 @@ public static class BackpressureEventValidation
             errors.Add("Timestamp cannot be default DateTime.");
         }
 
+        if (value.DroppedItems < 0)
+        {
+            errors.Add(string.Format(
+                CultureInfo.InvariantCulture,
+                "DroppedItems must be non-negative, but was {0}.",
+                value.DroppedItems));
+        }
+
+        if (value.IsActivation is false)
+        {
+            errors.Add("IsActivation must be true for activation events.");
+        }
+
         return errors.AsReadOnly();
     }
 
@@ -53,10 +66,8 @@ public static class BackpressureEventValidation
     /// </summary>
     /// <param name="value">The event to check.</param>
     /// <returns><c>true</c> if the instance is valid; otherwise, <c>false</c>.</returns>
-    public static bool IsValid(this BackpressureEvent value)
-    {
-        return value.Validate().Count == 0;
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
+    public static bool IsValid(this BackpressureEvent value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="BackpressureEvent"/> instance is valid.
