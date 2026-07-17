@@ -18,6 +18,8 @@ using System.Threading.Tasks;
 /// </summary>
 public static class DeadLetterQueueExtensions
 {
+    private const string ExceptionReconstructionFailedMessage = "Failed to reconstruct exception from stored type information";
+
     /// <summary>
     /// Attempts to dequeue and process entries for retry until the queue is empty or
     /// the maximum number of entries have been processed.
@@ -27,6 +29,7 @@ public static class DeadLetterQueueExtensions
     /// <param name="processEntry">Async function that processes a single entry.</param>
     /// <returns>Statistics about the processing operation.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> or <paramref name="processEntry"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<DeadLetterProcessingResult> ProcessForRetryAsync(
         this DeadLetterQueue queue,
         int maxCount,
@@ -69,13 +72,32 @@ public static class DeadLetterQueueExtensions
                     else
                     {
                         // Requeue the entry for another attempt
+                        Exception? exceptionToRequeue = null;
+                        if (entry.ExceptionType is not null)
+                        {
+                            try
+                            {
+                                var exceptionType = Type.GetType(entry.ExceptionType);
+                                if (exceptionType is not null)
+                                {
+                                    var constructor = exceptionType.GetConstructor(Type.EmptyTypes);
+                                    if (constructor is not null)
+                                    {
+                                        exceptionToRequeue = constructor.Invoke(null) as Exception;
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                // If we can't reconstruct the exception, proceed without it
+                            }
+                        }
+
                         await queue.EnqueueAsync(
                             entry.DataPoint,
                             entry.FailureStageName,
                             entry.FailureReason,
-                            entry.ExceptionType is not null
-                                ? Type.GetType(entry.ExceptionType)?.GetConstructor(Type.EmptyTypes)?.Invoke(null) as Exception
-                                : null);
+                            exceptionToRequeue);
                         failedCount++;
                     }
                 }
@@ -105,6 +127,7 @@ public static class DeadLetterQueueExtensions
     /// <param name="maxCount">Maximum number of entries to return.</param>
     /// <returns>Matching entries, ordered by enqueue time.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> or <paramref name="predicate"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<IReadOnlyList<DeadLetterEntry>> FindAsync(
         this DeadLetterQueue queue,
         Func<DeadLetterEntry, bool> predicate,
@@ -132,6 +155,7 @@ public static class DeadLetterQueueExtensions
     /// <returns>Matching entries, ordered by enqueue time.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="stageName"/> is null or empty.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<IReadOnlyList<DeadLetterEntry>> FindByStageAsync(
         this DeadLetterQueue queue,
         string stageName,
@@ -184,14 +208,15 @@ public static class DeadLetterQueueExtensions
             foreach (var entry in entries.OrderBy(e => e.EnqueuedAt))
             {
                 report.Add(entry.GetSummary());
+
                 if (entry.ExceptionType is not null)
                 {
-                    report.Add($"  Exception: {entry.ExceptionType}: {entry.ExceptionMessage ?? "No message"}");
+                    report.Add($" Exception: {entry.ExceptionType}: {entry.ExceptionMessage ?? "No message"}");
                 }
 
                 if (entry.Status == DeadLetterStatus.PermanentFailure && entry.ResolutionNote is not null)
                 {
-                    report.Add($"  Resolution: {entry.ResolutionNote}");
+                    report.Add($" Resolution: {entry.ResolutionNote}");
                 }
 
                 report.Add(string.Empty);
@@ -208,14 +233,14 @@ public static class DeadLetterQueueExtensions
 public sealed class DeadLetterProcessingResult
 {
     /// <summary>Total number of entries processed.</summary>
-    public int TotalProcessed { get; set; }
+    public int TotalProcessed { get; init; }
 
     /// <summary>Number of entries successfully processed.</summary>
-    public int SuccessfullyProcessed { get; set; }
+    public int SuccessfullyProcessed { get; init; }
 
     /// <summary>Number of entries that failed processing.</summary>
-    public int FailedProcessing { get; set; }
+    public int FailedProcessing { get; init; }
 
     /// <summary>List of entries that were processed.</summary>
-    public IReadOnlyList<DeadLetterEntry> EntriesProcessed { get; set; } = Array.Empty<DeadLetterEntry>();
+    public IReadOnlyList<DeadLetterEntry> EntriesProcessed { get; init; } = Array.Empty<DeadLetterEntry>();
 }
