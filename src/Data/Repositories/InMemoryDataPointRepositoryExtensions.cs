@@ -9,7 +9,6 @@ namespace DotNetRealtimePipeline.Data.Repositories;
 using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -26,12 +25,14 @@ public static class InMemoryDataPointRepositoryExtensions
     /// <param name="source">The source identifier.</param>
     /// <param name="tagFilter">Optional tag filter (comma-separated tags).</param>
     /// <returns>Filtered list of data points.</returns>
-    /// <exception cref="ArgumentException">Thrown when source is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="source"/> is null or whitespace.</exception>
     public static async Task<IReadOnlyList<DataPoint>> GetBySourceAsync(
         this InMemoryDataPointRepository repository,
         string source,
         string? tagFilter = null)
     {
+        ArgumentNullException.ThrowIfNull(repository);
         ArgumentException.ThrowIfNullOrWhiteSpace(source);
 
         var dataPoints = await repository.GetBySourceAsync(source);
@@ -44,7 +45,7 @@ public static class InMemoryDataPointRepositoryExtensions
         var tags = tagFilter.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         return dataPoints
             .Where(dp => !string.IsNullOrWhiteSpace(dp.Tags) &&
-                   tags.Any(tag => dp.Tags.Contains(tag, StringComparison.OrdinalIgnoreCase)))
+                tags.Any(tag => dp.Tags.Contains(tag, StringComparison.OrdinalIgnoreCase)))
             .ToList()
             .AsReadOnly();
     }
@@ -57,13 +58,16 @@ public static class InMemoryDataPointRepositoryExtensions
     /// <param name="endMs">End timestamp in milliseconds.</param>
     /// <param name="minQuality">Optional minimum quality threshold (0-100).</param>
     /// <returns>Filtered list of data points ordered by timestamp.</returns>
-    /// <exception cref="ArgumentException">Thrown when startMs > endMs or minQuality is invalid.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="startMs"/> > <paramref name="endMs"/>, or <paramref name="minQuality"/> is invalid.</exception>
     public static async Task<IReadOnlyList<DataPoint>> GetByTimeRangeAsync(
         this InMemoryDataPointRepository repository,
         long startMs,
         long endMs,
         int? minQuality = null)
     {
+        ArgumentNullException.ThrowIfNull(repository);
+
         if (startMs > endMs)
         {
             throw new ArgumentException("Start time must be <= end time", nameof(startMs));
@@ -91,12 +95,15 @@ public static class InMemoryDataPointRepositoryExtensions
     /// <param name="count">Number of most recent data points to retrieve.</param>
     /// <param name="minQuality">Optional minimum quality threshold (0-100).</param>
     /// <returns>List of most recent data points ordered by timestamp descending.</returns>
-    /// <exception cref="ArgumentException">Thrown when count is less than 1.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="count"/> is less than 1, or <paramref name="minQuality"/> is invalid.</exception>
     public static async Task<IReadOnlyList<DataPoint>> GetMostRecentAsync(
         this InMemoryDataPointRepository repository,
         int count,
         int? minQuality = null)
     {
+        ArgumentNullException.ThrowIfNull(repository);
+
         if (count < 1)
         {
             throw new ArgumentException("Count must be >= 1", nameof(count));
@@ -129,7 +136,8 @@ public static class InMemoryDataPointRepositoryExtensions
     /// <param name="maxValue">Maximum value (inclusive).</param>
     /// <param name="minQuality">Optional minimum quality threshold (0-100).</param>
     /// <returns>Filtered list of data points ordered by timestamp.</returns>
-    /// <exception cref="ArgumentException">Thrown when source is null or whitespace, or minValue > maxValue.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="source"/> is null or whitespace, <paramref name="minValue"/> > <paramref name="maxValue"/>, or <paramref name="minQuality"/> is invalid.</exception>
     public static async Task<IReadOnlyList<DataPoint>> GetByValueRangeAsync(
         this InMemoryDataPointRepository repository,
         string source,
@@ -137,6 +145,7 @@ public static class InMemoryDataPointRepositoryExtensions
         double maxValue,
         int? minQuality = null)
     {
+        ArgumentNullException.ThrowIfNull(repository);
         ArgumentException.ThrowIfNullOrWhiteSpace(source);
 
         if (minValue > maxValue)
