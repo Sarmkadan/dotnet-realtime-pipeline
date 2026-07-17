@@ -37,16 +37,16 @@ public static class StatisticsHelperJsonExtensions
     /// Deserializes a JSON string to a <see cref="StatisticsHelper"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized statistics helper instance, or <see langword="null"/> if the JSON is empty.</returns>
+    /// <returns>The deserialized statistics helper instance, or <see langword="null"/> if <paramref name="json"/> is <see langword="null"/> or empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static StatisticsHelper? FromJson(string json)
     {
-        if (string.IsNullOrEmpty(json))
-        {
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<StatisticsHelper>(json, _jsonOptions);
+        return string.IsNullOrEmpty(json)
+            ? null
+            : JsonSerializer.Deserialize<StatisticsHelper>(json, _jsonOptions);
     }
 
     /// <summary>
