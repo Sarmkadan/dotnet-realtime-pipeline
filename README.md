@@ -1200,6 +1200,58 @@ visualizer.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning();
 visualizer.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy();
 ```
 
+## PipelineVisualizerTestsExtensions
+
+The `PipelineVisualizerTestsExtensions` class provides extension methods for `PipelineVisualizerTests` to simplify common test scenarios and operations for pipeline visualization testing. It includes factory methods for creating pipeline configurations and visualization nodes, along with assertion methods for validating pipeline visualization output.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Domain.Models;
+using Xunit;
+
+var tests = new PipelineVisualizerTests();
+
+// Example 1: Create a pipeline configuration with 3 stages for testing
+var config = tests.CreatePipelineConfig(stageCount: 3, pipelineName: "SensorPipeline");
+config.ShouldHaveStageCount(3);
+
+// Example 2: Create a pipeline visualization node with backpressure
+var node = tests.CreateVisualizationNode(
+    isBackpressured: true,
+    bufferFillPercent: 85,
+    stageName: "DataProcessing"
+);
+node.ShouldHaveHealthLabel("CRITICAL");
+
+// Example 3: Create a healthy visualization node
+var healthyNode = tests.CreateVisualizationNode(
+    isBackpressured: false,
+    bufferFillPercent: 45,
+    stageName: "Validation"
+);
+healthyNode.ShouldHaveHealthLabel("HEALTHY");
+
+// Example 4: Validate pipeline visualization output contains expected stage names
+var visualizationOutput = "Pipeline: SensorPipeline -> Stage1 -> Stage2 -> Stage3";
+visualizationOutput.ShouldContainStageNames("SensorPipeline", "Stage1", "Stage2", "Stage3");
+
+// Example 5: Validate separator count in compact visualization
+var compactOutput = "Stage1 -> Stage2 -> Stage3";
+compactOutput.ShouldContainSeparatorCount(2);
+
+// Example 6: Chain multiple assertions for comprehensive validation
+var pipelineConfig = tests.CreatePipelineConfig(stageCount: 5, pipelineName: "FullPipeline");
+pipelineConfig.ShouldHaveStageCount(5);
+
+var pipelineNode = tests.CreateVisualizationNode(false, 35, "Aggregation");
+pipelineNode.ShouldHaveHealthLabel("HEALTHY");
+
+var pipelineOutput = pipelineConfig.ToString();
+pipelineOutput.ShouldContainStageNames("FullPipeline", "Stage1", "Stage2", "Stage3", "Stage4", "Stage5");
+```
+
 ## PipelineVisualizationNodeExtensions
 The `PipelineVisualizationNodeExtensions` class provides convenient extension methods for `PipelineVisualizationNode` to simplify common visualization and analysis operations. It includes methods for checking node health states, formatting metrics, and retrieving downstream stage information.
 
