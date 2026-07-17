@@ -38,7 +38,7 @@ public static class PipelineExceptionValidation
             errors.Add("ErrorCode cannot be null or empty.");
         }
 
-        // Validate derived type specific properties
+        // Validate derived type specific properties using pattern matching
         switch (value)
         {
             case InvalidDataPointException invalidDataPoint:
@@ -61,8 +61,7 @@ public static class PipelineExceptionValidation
                 ValidateProcessingTimeoutException(timeout, errors);
                 break;
 
-            case InvalidConfigurationException:
-            case ResourceNotFoundException:
+            case InvalidConfigurationException or ResourceNotFoundException:
                 // These have no additional validation beyond base
                 break;
         }
