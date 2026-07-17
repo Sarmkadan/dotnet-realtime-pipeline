@@ -168,6 +168,63 @@ Console.WriteLine(statusSummary);
 // Output: "DataProcessing (Processor) | HEALTHY | Buffer: 45.2% | Throughput: 12.50K eps | Dropped: 23 | Backpressure: INACTIVE"
 ```
 
+## PipelineConfigExtensions
+The `PipelineConfigExtensions` class provides convenient extension methods for `PipelineConfig` to simplify common operations on pipeline configurations and their stages. It includes methods for querying stage counts, checking stage existence, retrieving stage definitions, and filtering stages by various criteria.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Linq;
+
+// Assume config is a configured PipelineConfig instance
+var config = new PipelineConfig {
+    Stages = new List<PipelineStageDef> {
+        new PipelineStageDef { StageName = "ingestion", StageType = "source", Enabled = true },
+        new PipelineStageDef { StageName = "validation", StageType = "filter", Enabled = true },
+        new PipelineStageDef { StageName = "transformation", StageType = "transform", Enabled = false },
+        new PipelineStageDef { StageName = "aggregation", StageType = "aggregate", Enabled = true }
+    }
+};
+
+// Get the total number of stages
+int totalStages = config.GetTotalStages();
+Console.WriteLine($"Total stages: {totalStages}"); // Output: Total stages: 4
+
+// Check if the configuration has any stages
+bool hasStages = config.HasStages();
+Console.WriteLine($"Has stages: {hasStages}"); // Output: Has stages: True
+
+// Get all stage names
+var stageNames = config.GetStageNames();
+Console.WriteLine("Stage names: " + string.Join(", ", stageNames));
+// Output: Stage names: ingestion, validation, transformation, aggregation
+
+// Check if a specific stage exists
+bool hasIngestion = config.HasStage("ingestion");
+Console.WriteLine($"Has ingestion stage: {hasIngestion}"); // Output: Has ingestion stage: True
+
+// Get a stage by name
+var ingestionStage = config.GetStageByName("ingestion");
+Console.WriteLine($"Ingestion stage type: {ingestionStage?.StageType}"); // Output: Ingestion stage type: source
+
+// Find the first stage matching a predicate
+var firstFilter = config.FindStage(s => s.StageType == "filter");
+Console.WriteLine($"First filter stage: {firstFilter?.StageName}"); // Output: First filter stage: validation
+
+// Find all stages matching a predicate
+var allTransforms = config.FindStages(s => s.StageType == "transform");
+Console.WriteLine($"Transform stages count: {allTransforms.Count()}"); // Output: Transform stages count: 1
+
+// Get all enabled stages
+var enabledStages = config.GetEnabledStages();
+Console.WriteLine($"Enabled stages count: {enabledStages.Count()}"); // Output: Enabled stages count: 3
+
+// Get all stages of a specific type
+var aggregateStages = config.GetStagesByType("aggregate");
+Console.WriteLine($"Aggregate stages count: {aggregateStages.Count()}"); // Output: Aggregate stages count: 1
+```
+
 ## PipelineBenchmarks
 The `PipelineBenchmarks` class provides performance benchmarks for the dotnet-realtime-pipeline library. It measures throughput and memory allocation for critical pipeline operations.
 
