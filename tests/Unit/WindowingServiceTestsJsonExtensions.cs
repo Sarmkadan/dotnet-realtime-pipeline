@@ -10,9 +10,12 @@ using System.Text.Json;
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
-/// Provides JSON serialization helpers for <see cref="WindowingServiceTests"/> to support unit test serialization scenarios.
+/// Provides JSON serialization and deserialization extensions for <see cref="WindowingServiceTests"/> instances.
 /// </summary>
-public static class WindowingServiceTestsJsonExtensions
+/// <remarks>
+/// All methods are thread-safe and use a shared <see cref="JsonSerializerOptions"/> instance configured for camelCase property naming.
+/// </remarks>
+public sealed class WindowingServiceTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -27,7 +30,8 @@ public static class WindowingServiceTestsJsonExtensions
     /// <param name="value">The test instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the test instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonException">Thrown when serialization fails.</exception>
     public static string ToJson(this WindowingServiceTests value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -39,8 +43,9 @@ public static class WindowingServiceTestsJsonExtensions
     /// Deserializes a JSON string to a <see cref="WindowingServiceTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized <see cref="WindowingServiceTests"/> instance, or null if the JSON is invalid.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <returns>The deserialized <see cref="WindowingServiceTests"/> instance, or <see langword="null"/> if the JSON is invalid.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static WindowingServiceTests? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -53,8 +58,8 @@ public static class WindowingServiceTestsJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized instance if successful.</param>
-    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public static bool TryFromJson(string json, out WindowingServiceTests? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
