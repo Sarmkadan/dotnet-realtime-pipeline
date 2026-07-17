@@ -26,10 +26,7 @@ public static class DataPointRepositoryTestsValidation
         ArgumentNullException.ThrowIfNull(value);
 
         var problems = new List<string>();
-
-        // Validate test methods exist using reflection
-        var methods = typeof(DataPointRepositoryTests).GetMethods();
-        var methodNames = methods.Select(m => m.Name).ToHashSet();
+        var methodNames = GetTestMethodNames();
 
         if (!methodNames.Contains(nameof(DataPointRepositoryTests.AddAsync_WithValidDataPoint_ShouldSucceed)))
         {
@@ -96,5 +93,16 @@ public static class DataPointRepositoryTestsValidation
                 message: $"DataPointRepositoryTests instance is invalid. Problems: {string.Join(", ", problems)}",
                 paramName: nameof(value));
         }
+    }
+
+    /// <summary>
+    /// Gets the names of all test methods defined in <see cref="DataPointRepositoryTests"/>.
+    /// </summary>
+    /// <returns>A hash set containing the names of all test methods.</returns>
+    private static HashSet<string> GetTestMethodNames()
+    {
+        return typeof(DataPointRepositoryTests).GetMethods()
+            .Select(m => m.Name)
+            .ToHashSet();
     }
 }
