@@ -55,6 +55,76 @@ var content = new StringContent("{\"key\":\"value\"}", Encoding.UTF8, "applicati
 string postResult = await factory.PostJsonAsync("https://api.example.com/ingest", content);
 ```
 
+## BackpressureContextJsonExtensions
+
+The `BackpressureContextJsonExtensions` class provides System.Text.Json serialization extensions for `BackpressureContext`, enabling easy serialization to JSON strings and deserialization from JSON strings. This is particularly useful for persisting backpressure context state or transmitting it across process boundaries.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a backpressure context with sample data
+var context = new BackpressureContext(
+    pipelineStageName: "DataProcessing",
+    maxBufferCapacity: 10000,
+    maxConcurrentConsumers: 4
+);
+
+// Add some buffer data
+context.BufferSize = 8500;
+context.ItemsInBuffer = new Queue<long>(new[] { 1000L, 2000L, 3000L, 4000L, 5000L });
+context.BufferFillPercent = 85.0;
+context.BufferedItemsBySource = new Dictionary<string, long> {
+    ["sensor-ingest"] = 5000,
+    ["api-ingest"] = 3500
+};
+context.LastBackpressureActivated = DateTime.UtcNow.AddMinutes(-2);
+
+// Serialize to JSON string (compact format)
+string jsonCompact = context.ToJson();
+Console.WriteLine(jsonCompact);
+
+// Serialize to JSON string (indented for readability)
+string jsonIndented = context.ToJson(indented: true);
+Console.WriteLine(jsonIndented);
+
+// Deserialize from JSON string
+string json = @"
+{
+    "pipelineStageName": "DataProcessing",
+    "maxBufferCapacity": 10000,
+    "maxConcurrentConsumers": 4,
+    "bufferSize": 8500,
+    "itemsInBuffer": [1000,2000,3000,4000,5000],
+    "bufferFillPercent": 85.0,
+    "bufferedItemsBySource": {
+        "sensor-ingest": 5000,
+        "api-ingest": 3500
+    },
+    "lastBackpressureActivated": "2024-07-19T12:30:00.000Z"
+}";
+
+BackpressureContext? deserializedContext = BackpressureContextJsonExtensions.FromJson(json);
+Console.WriteLine($"Deserialized stage: {deserializedContext?.PipelineStageName}");
+
+// Try to deserialize with error handling
+if (BackpressureContextJsonExtensions.TryFromJson(json, out var tryDeserializedContext))
+{
+    Console.WriteLine("Successfully deserialized context");
+}
+else
+{
+    Console.WriteLine("Failed to deserialize context");
+}
+
+// Handle null/empty JSON gracefully
+BackpressureContext? nullContext = BackpressureContextJsonExtensions.FromJson(null);
+Console.WriteLine($"Null JSON result: {nullContext}"); // Output: Null JSON result:
+```
+
 ## BackpressureMetricsCollectorTests
 The `BackpressureMetricsCollectorTests` class provides unit tests for the `BackpressureMetricsCollector` class, verifying its ability to track and report backpressure metrics across pipeline stages. It includes tests for handling unknown stages, recording manual events, aggregating metrics, and resetting collected data.
 
