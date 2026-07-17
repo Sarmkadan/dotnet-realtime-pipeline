@@ -1469,6 +1469,75 @@ await publisher.PublishPipelineErrorAsync("IngestionOperation", new Exception("S
 await publisher.PublishDataIngestedBatchAsync(new[] { dataPoint });
 ```
 
+## RetryHelperJsonExtensions
+
+The `RetryHelperJsonExtensions` class provides System.Text.Json serialization extensions for `RetryHelper`, `RetryPolicy`, and `RetryStatistics` types. It enables serialization to JSON strings and deserialization from JSON strings, which is useful for persisting retry configuration state or transmitting it across process boundaries.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using Polly;
+using System;
+
+// Create retry policy and statistics for serialization
+var retryPolicy = Policy
+    .Handle<Exception>()
+    .WaitAndRetryAsync(
+        retryCount: 3,
+        sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+        onRetry: (exception, delay, retryCount, context) =>
+        {
+            Console.WriteLine($"Retry {retryCount} of 3. Waiting {delay.TotalSeconds}s. Error: {exception.Message}");
+        }
+    );
+
+var retryStatistics = new RetryStatistics
+{
+    TotalRetries = 5,
+    SuccessfulRetries = 4,
+    FailedRetries = 1,
+    AverageRetryDelayMs = 1500,
+    LastRetryAt = DateTime.UtcNow.AddMinutes(-2)
+};
+
+// Serialize retry policy to JSON string (compact format)
+string policyJsonCompact = retryPolicy.ToJson();
+Console.WriteLine(policyJsonCompact);
+
+// Serialize retry statistics to JSON string (indented for readability)
+string statisticsJsonIndented = retryStatistics.ToJson(indented: true);
+Console.WriteLine(statisticsJsonIndented);
+
+// Deserialize retry policy from JSON string
+string policyJson = @"{
+    \"Type\": \"AsyncRetryPolicy\",
+    \"RetryCount\": 3,
+    \"DelayProvider\": \"ExponentialBackoff\"
+}";
+
+var deserializedPolicy = RetryHelperJsonExtensions.FromJsonPolicy(policyJson);
+Console.WriteLine($"Deserialized policy type: {deserializedPolicy?.GetType().Name}");
+
+// Try to deserialize retry statistics with error handling
+string statsJson = @"{
+    \"TotalRetries\": 5,
+    \"SuccessfulRetries\": 4,
+    \"FailedRetries\": 1,
+    \"AverageRetryDelayMs\": 1500
+}";
+
+if (RetryHelperJsonExtensions.TryFromJsonStatistics(statsJson, out var tryDeserializedStats))
+{
+    Console.WriteLine("Successfully deserialized retry statistics");
+    Console.WriteLine($"Total retries: {tryDeserializedStats.TotalRetries}");
+}
+
+// Handle null/empty JSON gracefully
+RetryHelper? nullHelper = RetryHelperJsonExtensions.FromJson(null);
+Console.WriteLine($"Null JSON result: {nullHelper}");
+```
+
 ## ServiceCollectionExtensionsJsonExtensions
 
 The `ServiceCollectionExtensionsJsonExtensions` class provides System.Text.Json serialization extensions for working with `ServiceCollectionExtensions` configuration. It enables serialization to JSON strings and deserialization from JSON strings, which is useful for persisting configuration state or transmitting it across process boundaries.
