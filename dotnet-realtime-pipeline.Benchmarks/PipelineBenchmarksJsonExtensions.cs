@@ -6,7 +6,7 @@ namespace DotNetRealtimePipeline.Benchmarks;
 /// <summary>
 /// Provides JSON (de)serialization helpers for <see cref="PipelineBenchmarks"/> using <see cref="System.Text.Json"/>.
 /// </summary>
-public static class PipelineBenchmarksJsonExtensions
+public static sealed class PipelineBenchmarksJsonExtensions
 {
     // Cached options with camel‑case naming. WriteIndented is set per call.
     private static readonly JsonSerializerOptions _options = new()
@@ -54,18 +54,6 @@ public static class PipelineBenchmarksJsonExtensions
     /// </param>
     /// <returns><c>true</c> if deserialization succeeded; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <c>null</c>.</exception>
-    public static bool TryFromJson(string json, out PipelineBenchmarks? value)
-    {
-        ArgumentNullException.ThrowIfNull(json);
-        try
-        {
-            value = FromJson(json);
-            return true;
-        }
-        catch (JsonException)
-        {
-            value = null;
-            return false;
-        }
-    }
+    public static bool TryFromJson(string json, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out PipelineBenchmarks? value)
+        => ArgumentNullException.ThrowIfNull(json) is var _ && (value = JsonSerializer.Deserialize<PipelineBenchmarks?>(json, _options)) is not null;
 }
