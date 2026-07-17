@@ -40,6 +40,7 @@ public static class ProcessingResultJsonExtensions
         {
             WriteIndented = indented
         };
+
         return JsonSerializer.Serialize(value, options);
     }
 
@@ -49,8 +50,11 @@ public static class ProcessingResultJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized processing result, or null if the JSON is null or empty.</returns>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static ProcessingResult? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
@@ -65,8 +69,11 @@ public static class ProcessingResultJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized processing result if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out ProcessingResult? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
 
         if (string.IsNullOrWhiteSpace(json))
