@@ -121,6 +121,28 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## ApiEndpointHandlerExtensions
+The `ApiEndpointHandlerExtensions` class provides helper methods to streamline the creation of structured API responses, including standard successful and error results. It also simplifies the construction of paginated responses and allows for the seamless inclusion of batch processing statistics in the API output.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.API;
+
+// Successful response
+var okResponse = ApiEndpointHandlerExtensions.Ok(new { Id = 1, Name = "Success" });
+
+// Error response
+var errorResponse = ApiEndpointHandlerExtensions.Error<object>("Failed to process");
+
+// Paginated response
+var items = new List<string> { "item1", "item2", "item3" };
+var paginated = items.ToPaginatedResponse(page: 1, pageSize: 10, totalCount: 3);
+
+// Accessing pagination metadata
+int totalPages = paginated.Data.TotalPages;
+int currentPage = paginated.Data.Page;
+```
+
 ## ApiEndpointHandlerValidation
 The `ApiEndpointHandlerValidation` static class provides a set of extension methods for validating common API-related objects within the pipeline, such as `ApiEndpointHandler.ApiResponse<T>`, `BatchIngestResult`, and `PipelineStatusInfo`. It allows for concise validation of these objects using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
 
