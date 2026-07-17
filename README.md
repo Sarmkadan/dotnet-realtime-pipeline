@@ -1763,6 +1763,63 @@ var nullConfig = ServiceCollectionExtensionsJsonExtensions.FromJson(null);
 Console.WriteLine($"Null JSON result: {nullConfig}");
 ```
 
+## DateTimeExtensionsJsonExtensions
+
+The `DateTimeExtensionsJsonExtensions` class provides System.Text.Json serialization extensions for DateTime-related types, enabling easy serialization to JSON strings and deserialization from JSON strings using Unix milliseconds timestamps. This is particularly useful for persisting DateTime values or transmitting them across process boundaries.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+
+// Serialize DateTime to JSON string
+var dateTime = DateTime.UtcNow;
+string jsonCompact = dateTime.ToJson(); // Compact format
+string jsonIndented = dateTime.ToJson(indented: true); // Indented for readability
+Console.WriteLine(jsonCompact);
+
+// Serialize DateTimeOffset to JSON string
+var dateTimeOffset = DateTimeOffset.UtcNow;
+string offsetJson = dateTimeOffset.ToJson();
+Console.WriteLine(offsetJson);
+
+// Serialize Unix timestamp to JSON string
+long unixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+string timestampJson = unixMilliseconds.ToJson();
+Console.WriteLine(timestampJson);
+
+// Deserialize JSON string to DateTime
+string dateTimeJson = "1719369600000"; // 2024-06-25 00:00:00 UTC
+DateTime? deserializedDateTime = DateTimeExtensionsJsonExtensions.FromJsonToDateTime(dateTimeJson);
+Console.WriteLine($"Deserialized DateTime: {deserializedDateTime?.ToString("O")}");
+
+// Deserialize JSON string to DateTimeOffset
+dateTimeJson = "1719369600000";
+DateTimeOffset? deserializedOffset = DateTimeExtensionsJsonExtensions.FromJsonToDateTimeOffset(dateTimeJson);
+Console.WriteLine($"Deserialized DateTimeOffset: {deserializedOffset?.ToString("O")}");
+
+// Deserialize JSON string to Unix timestamp
+string timestampJsonInput = "1719369600000";
+long? deserializedTimestamp = DateTimeExtensionsJsonExtensions.FromJsonToUnixMilliseconds(timestampJsonInput);
+Console.WriteLine($"Deserialized timestamp: {deserializedTimestamp}");
+
+// Try to deserialize with error handling
+string invalidJson = "invalid";
+if (DateTimeExtensionsJsonExtensions.TryFromJsonToDateTime(invalidJson, out var tryDateTime))
+{
+    Console.WriteLine("Successfully deserialized (should not reach here)");
+}
+else
+{
+    Console.WriteLine("Failed to deserialize invalid JSON");
+}
+
+// Handle null/empty JSON gracefully
+DateTime? nullDateTime = DateTimeExtensionsJsonExtensions.FromJsonToDateTime(null);
+Console.WriteLine($"Null JSON result: {nullDateTime}"); // Output: Null JSON result:
+```
+
 ## DateTimeExtensionsValidation
 
 The `DateTimeExtensionsValidation` static class provides validation helpers for `DateTimeExtensions` static class methods. It includes extension methods for validating DateTime values and Unix timestamp parameters used in time-based pipeline operations, ensuring they meet business rules and data integrity constraints before conversion or processing.
