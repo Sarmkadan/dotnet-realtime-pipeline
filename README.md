@@ -217,6 +217,48 @@ bool hasCapacity = context.HasSufficientCapacityForBatch(batchSize: 1000, requir
 Console.WriteLine($"Has capacity for batch: {hasCapacity}");
 ```
 
+## ProcessingResultExtensions
+The `ProcessingResultExtensions` class provides extension methods for `ProcessingResult` to enhance pipeline processing scenarios. It includes methods for checking failure retryability, merging output data from multiple results, converting results to dictionaries for serialization, updating processing times, and detecting timeout scenarios.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Assume result is a ProcessingResult from a pipeline stage
+var result = new ProcessingResult(
+    stageName: "DataProcessing",
+    success: true,
+    outputData: new Dictionary<string, object> { { "processedItems", 100 }, { "throughput", 5000 } }
+);
+
+// Check if a failure is retryable
+bool isRetryable = result.IsRetryableFailure(maxRetryCount: 3);
+Console.WriteLine($"Is retryable: {isRetryable}");
+
+// Merge output data from another result
+var sourceResult = new ProcessingResult(
+    stageName: "Validation",
+    success: true,
+    outputData: new Dictionary<string, object> { { "validationPassed", true }, { "errorsFound", 0 } }
+);
+result.MergeOutputData(sourceResult, overwriteExisting: false);
+
+// Convert result to dictionary for serialization
+var resultDict = result.ToDictionary();
+Console.WriteLine($"Result has {resultDict.Count} properties");
+
+// Create a new result with updated processing time
+var updatedResult = result.WithProcessingTime(processingTimeMs: 125);
+Console.WriteLine($"Original processing time: {result.ProcessingTimeMs}ms");
+Console.WriteLine($"Updated processing time: {updatedResult.ProcessingTimeMs}ms");
+
+// Check if processing timed out
+bool isTimeout = updatedResult.IsTimeout(timeoutThresholdMs: 100);
+Console.WriteLine($"Timeout detected: {isTimeout}");
+```
+
 ## PipelineConfigExtensions
 The `PipelineConfigExtensions` class provides convenient extension methods for `PipelineConfig` to simplify common operations on pipeline configurations and their stages. It includes methods for querying stage counts, checking stage existence, retrieving stage definitions, and filtering stages by various criteria.
 
