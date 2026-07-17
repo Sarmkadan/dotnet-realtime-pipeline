@@ -1475,6 +1475,43 @@ int totalPages = paginated.Data.TotalPages;
 int currentPage = paginated.Data.Page;
 ```
 
+## BackgroundProcessingWorkerValidation
+
+The `BackgroundProcessingWorkerValidation` static class provides validation helpers for `BackgroundProcessingWorker` and related worker types. It includes extension methods for validating worker instances, checking validity status, and throwing exceptions when invalid states are detected. This ensures background processing workers are properly configured before execution.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Workers;
+using System;
+using System.Threading.Tasks;
+
+// Assume worker is an initialized instance of BackgroundProcessingWorker
+var worker = new BackgroundProcessingWorker(
+    stageName: "DataProcessing",
+    intervalMs: 1000,
+    maxConcurrentTasks: 4
+);
+
+// Validate the worker instance
+var validationErrors = worker.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Worker validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if worker is valid using IsValid extension method
+bool isValid = worker.IsValid();
+Console.WriteLine($"Worker is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+worker.EnsureValid();
+```
+
 ## ApiEndpointHandlerValidation
 The `ApiEndpointHandlerValidation` static class provides a set of extension methods for validating common API-related objects within the pipeline, such as `ApiEndpointHandler.ApiResponse<T>`, `BatchIngestResult`, and `PipelineStatusInfo`. It allows for concise validation of these objects using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
 
