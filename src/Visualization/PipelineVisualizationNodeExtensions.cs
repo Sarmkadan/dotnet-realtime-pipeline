@@ -138,8 +138,11 @@ public static class PipelineVisualizationNodeExtensions
     /// </summary>
     /// <param name="value">The numeric value to format.</param>
     /// <returns>A formatted string with suffix.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="value"/> is negative.</exception>
     private static string FormatNumber(double value)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+
         if (value >= 1_000_000_000)
         {
             return (value / 1_000_000_000).ToString("F2", CultureInfo.InvariantCulture) + "B";
