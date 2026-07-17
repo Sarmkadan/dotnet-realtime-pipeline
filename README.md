@@ -816,6 +816,62 @@ var state = service.GetOrCreateScalingState("NewStage");
 Console.WriteLine($"Stage {state.StageName} has {state.CurrentConsumers} consumers");
 ```
 
+## BackpressureServiceExtensions
+
+The `BackpressureServiceExtensions` class provides extension methods for `BackpressureService` that simplify backpressure management, buffer monitoring, and system health reporting across pipeline stages. It includes methods for creating and retrieving backpressure contexts, safely managing buffer operations, checking backpressure conditions, and generating comprehensive status reports.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Threading.Tasks;
+
+// Assume service is an initialized instance of BackpressureService
+var service = new BackpressureService();
+
+// Create or get a backpressure context for a pipeline stage
+var context = service.GetOrCreateContext("DataProcessing", maxBufferCapacity: 10000);
+Console.WriteLine($"Created context for stage: {context.PipelineStageName}");
+
+// Safely add items to buffer (returns false if capacity would be exceeded)
+bool added = service.SafeAddToBuffer("DataProcessing", 500);
+Console.WriteLine($"Added items to buffer: {added}");
+
+// Check current buffer fill percentage
+double fillPercent = service.GetBufferFillPercentage("DataProcessing");
+Console.WriteLine($"Buffer fill: {fillPercent:N2}%");
+
+// Check if backpressure should be applied
+bool shouldBackpressure = service.ShouldApplyBackpressure("DataProcessing");
+Console.WriteLine($"Should apply backpressure: {shouldBackpressure}");
+
+// Get dropped item count (indicates data loss from overflow)
+long droppedCount = service.GetDroppedItemCount("DataProcessing");
+Console.WriteLine($"Dropped items: {droppedCount}");
+
+// Get a comprehensive buffer status report
+string report = service.GetBufferStatusReport();
+Console.WriteLine(report);
+
+// Register a consumer with timeout support (wait up to 1 second)
+bool consumerRegistered = await service.TryRegisterConsumerAsync("DataProcessing", timeoutMs: 1000);
+Console.WriteLine($"Consumer registered: {consumerRegistered}");
+
+// Get enhanced system status with derived metrics
+var (status, metrics) = service.GetEnhancedSystemStatus();
+Console.WriteLine($"System health: {status.GetHealthStatus()}");
+Console.WriteLine($"Healthy stages: {metrics.HealthyStages}, Warning: {metrics.WarningStages}, Critical: {metrics.CriticalStages}");
+
+// Record a custom buffer metric
+service.RecordBufferMetric("DataProcessing", "CustomMetric", 42);
+
+// Get backpressure frequency (events per minute)
+double frequency = service.GetBackpressureFrequency("DataProcessing");
+Console.WriteLine($"Backpressure frequency: {frequency:N2} events/min");
+```
+
 ## EventSubscriberBaseExtensions
 The `EventSubscriberBaseExtensions` class provides utility extension methods for working with event subscribers in the real-time pipeline. It offers safe unsubscription handling, subscriber identification, metrics collection, and status monitoring capabilities. These methods enable consistent management of different subscriber types while providing type-specific metrics and health indicators.
 
