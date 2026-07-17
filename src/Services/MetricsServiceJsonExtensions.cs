@@ -40,19 +40,16 @@ public static class MetricsServiceJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<MetricsService>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<MetricsService>(json, _jsonOptions);
     }
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="MetricsService"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized metrics service instance if successful.</param>
+    /// <param name="value">Receives the deserialized metrics service instance if successful; otherwise, <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is <see langword="null"/>.</exception>
     public static bool TryFromJson(string json, out MetricsService? value)
@@ -61,14 +58,15 @@ public static class MetricsServiceJsonExtensions
 
         value = null;
 
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return true;
+        }
+
         try
         {
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                value = JsonSerializer.Deserialize<MetricsService>(json, _jsonOptions);
-            }
-
-            return true;
+            value = JsonSerializer.Deserialize<MetricsService>(json, _jsonOptions);
+            return value is not null;
         }
         catch (JsonException)
         {
