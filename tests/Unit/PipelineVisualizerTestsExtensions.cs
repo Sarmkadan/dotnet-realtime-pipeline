@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System.Globalization;
 using DotNetRealtimePipeline.Domain.Models;
@@ -130,23 +130,12 @@ public static class PipelineVisualizerTestsExtensions
     }
 
     /// <summary>
-    /// Counts the occurrences of a pattern in a string.
+    /// Counts the occurrences of a pattern in a string using ordinal comparison.
     /// </summary>
     /// <param name="text">The text to search.</param>
     /// <param name="pattern">The pattern to count.</param>
     /// <returns>The number of occurrences.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="text"/> or <paramref name="pattern"/> is null.</exception>
     private static int CountOccurrences(string text, string pattern)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(pattern);
-
-        int count = 0;
-        int index = 0;
-        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
-        {
-            count++;
-            index += pattern.Length;
-        }
-        return count;
-    }
+        => text.Split(new[] { pattern }, StringSplitOptions.None).Length - 1;
 }
