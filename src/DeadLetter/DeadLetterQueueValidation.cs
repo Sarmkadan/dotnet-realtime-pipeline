@@ -168,14 +168,13 @@ public static class DeadLetterQueueValidation
             problems.Add("DeadLetterEntry.FailureReason must not be null or empty.");
         }
 
-        // Validate ExceptionType (if not null, should not be empty or whitespace)
-        if (!string.IsNullOrWhiteSpace(entry.ExceptionType) &&
-            string.IsNullOrWhiteSpace(entry.ExceptionType))
+        // Validate ExceptionType (if set, should not be empty or whitespace)
+        if (string.IsNullOrWhiteSpace(entry.ExceptionType))
         {
             problems.Add("DeadLetterEntry.ExceptionType must not be empty if set.");
         }
 
-        // Validate ExceptionMessage (if not null, should not be empty or whitespace when ExceptionType is set)
+        // Validate ExceptionMessage (if ExceptionType is set, ExceptionMessage should be set)
         if (!string.IsNullOrWhiteSpace(entry.ExceptionType) &&
             string.IsNullOrWhiteSpace(entry.ExceptionMessage))
         {
@@ -255,8 +254,7 @@ public static class DeadLetterQueueValidation
         }
 
         // Validate ResolutionNote (if set, should not be empty or whitespace)
-        if (!string.IsNullOrWhiteSpace(entry.ResolutionNote) &&
-            string.IsNullOrWhiteSpace(entry.ResolutionNote))
+        if (string.IsNullOrWhiteSpace(entry.ResolutionNote))
         {
             problems.Add("DeadLetterEntry.ResolutionNote must not be empty if set.");
         }
