@@ -28,6 +28,45 @@ The sections below are generated per-class API notes; more per-class docs live i
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
 
+## PipelineInitializerExtensions
+
+The `PipelineInitializerExtensions` class provides extension methods for `PipelineInitializer` that enhance pipeline lifecycle management with additional functionality. It includes methods for initializing and starting pipelines in a single operation, retrying initialization on transient failures, safely stopping pipelines, and checking pipeline initialization state.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Initialization;
+using System;
+using System.Threading.Tasks;
+
+// Assume initializer is an initialized instance of PipelineInitializer
+var initializer = new PipelineInitializer();
+
+// Initialize and start pipeline in one operation
+var initAndStartResult = await initializer.InitializeAndStartAsync();
+Console.WriteLine($"Initialized and started: {initAndStartResult.Success}");
+if (!initAndStartResult.Success)
+{
+    Console.WriteLine($"Error: {initAndStartResult.ErrorMessage}");
+}
+
+// Initialize with automatic retry for transient failures
+var retryResult = await initializer.InitializeWithRetryAsync(maxAttempts: 5, delayBetweenAttempts: 2000);
+Console.WriteLine($"Retry initialization successful: {retryResult.Success}");
+
+// Check if pipeline is initialized
+bool isInitialized = initializer.IsInitialized();
+Console.WriteLine($"Pipeline initialized: {isInitialized}");
+
+// Get current pipeline state
+string pipelineState = initializer.GetPipelineState();
+Console.WriteLine($"Pipeline state: {pipelineState}");
+
+// Safely stop the pipeline (swallows exceptions)
+bool stoppedSuccessfully = await initializer.SafeStopAsync();
+Console.WriteLine($"Pipeline stopped successfully: {stoppedSuccessfully}");
+```
+
 ## CommandLineParserExtensions
 
 The `CommandLineParserExtensions` class provides extension methods for `CommandLineParser` to simplify command registration and parsing scenarios. It includes methods for registering individual commands, bulk registering commands from dictionaries or sequences, parsing command line arguments into structured commands, and executing parsed commands with proper error handling.
