@@ -7,7 +7,6 @@
 namespace DotNetRealtimePipeline.Metrics;
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 
 /// <summary>
@@ -43,16 +42,7 @@ public static class BackpressureEventExtensions
     /// Calculates the severity level of this backpressure event based on buffer fill percentage.
     /// </summary>
     /// <param name="event">The backpressure event to evaluate.</param>
-    /// <returns>
-    /// A <see cref="BackpressureSeverity"/> enum value indicating the severity level:
-    /// <list type="bullet">
-    ///   <item><see cref="BackpressureSeverity.None"/></item> for 0-30%
-    ///   <item><see cref="BackpressureSeverity.Low"/></item> for 31-60%
-    ///   <item><see cref="BackpressureSeverity.Medium"/></item> for 61-80%
-    ///   <item><see cref="BackpressureSeverity.High"/></item> for 81-95%
-    ///   <item><see cref="BackpressureSeverity.Critical"/></item> for 96-100%
-    /// </list>
-    /// </returns>
+    /// <returns>A <see cref="BackpressureSeverity"/> enum value indicating the severity level.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="event"/> is <c>null</c>.</exception>
     public static BackpressureSeverity GetSeverityLevel(this BackpressureEvent @event)
     {
@@ -77,9 +67,8 @@ public static class BackpressureEventExtensions
     public static string ToFormattedString(this BackpressureEvent @event)
     {
         ArgumentNullException.ThrowIfNull(@event);
-        return $"BackpressureEvent [Timestamp=" + @event.Timestamp.ToString("O") + $", Stage=" + @event.StageName +
-               $", BufferFill=" + @event.BufferFillPercent.ToString("F2", CultureInfo.InvariantCulture) + "%, IsActivation=" +
-               @event.IsActivation + $", DroppedItems=" + @event.DroppedItems + "]";
+
+        return $"BackpressureEvent [Timestamp={@event.Timestamp:O}, Stage={@event.StageName}, BufferFill={@event.BufferFillPercent:F2}%, IsActivation={@event.IsActivation}, DroppedItems={@event.DroppedItems}]";
     }
 
     /// <summary>
