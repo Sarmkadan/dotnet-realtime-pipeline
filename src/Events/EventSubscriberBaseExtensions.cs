@@ -31,9 +31,10 @@ public static class EventSubscriberBaseExtensions
         {
             subscriber.Unsubscribe();
         }
-        catch
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // Ignore exceptions from Unsubscribe if already unsubscribed
+            // Ignore exceptions from Unsubscribe if already unsubscribed or operation was cancelled
+        // OperationCanceledException should not be suppressed as it indicates intentional cancellation
         }
     }
 
@@ -180,13 +181,13 @@ public static class EventSubscriberBaseExtensions
         ArgumentNullException.ThrowIfNull(subscriber);
 
         var typeName = subscriber.GetType().Name;
-        var isSubscribed = "Subscribed"; // Since we can't access _isSubscribed directly
+        const string isSubscribed = "Subscribed"; // Since we can't access _isSubscribed directly
 
         var metricsParts = new List<string>();
 
         if (subscriber is ProcessingCompletionSubscriber processingSubscriber)
         {
-            metricsParts.Add($"Success: {processingSubscriber.GetSuccessRatePercent().ToString("F1", CultureInfo.InvariantCulture)}%");
+            metricsParts.Add(string.Create(CultureInfo.InvariantCulture, $"Success: {processingSubscriber.GetSuccessRatePercent():F1}%"));
         }
 
         if (subscriber is BackpressureAlertSubscriber backpressureSubscriber)
@@ -197,7 +198,7 @@ public static class EventSubscriberBaseExtensions
         if (subscriber is MetricsAggregationSubscriber metricsSubscriber)
         {
             metricsParts.Add($"Metrics: {metricsSubscriber.GetMetricsCount()}");
-            metricsParts.Add($"Avg Processing: {metricsSubscriber.GetAverageProcessingTime().ToString("F2", CultureInfo.InvariantCulture)}ms");
+            metricsParts.Add(string.Create(CultureInfo.InvariantCulture, $"Avg Processing: {metricsSubscriber.GetAverageProcessingTime():F2}ms"));
         }
 
         if (subscriber is ErrorAlertSubscriber errorSubscriber)
