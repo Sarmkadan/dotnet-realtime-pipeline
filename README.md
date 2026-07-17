@@ -245,3 +245,34 @@ else
 // Or, ensure validity by throwing an exception if invalid
 status.EnsureValid();
 ```
+
+## WebhookHandlerValidation
+The `WebhookHandlerValidation` static class provides validation extension methods for webhook-related components, including `WebhookHandler`, `WebhookSubscription`, and `WebhookPayload`. It allows for concise validation of these components using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Integration;
+
+// Example using WebhookSubscription
+var subscription = new WebhookSubscription {
+    Id = Guid.NewGuid().ToString(),
+    Url = "https://api.example.com/webhook",
+    EventTypes = 1, // Example enum value
+    CreatedAt = DateTime.UtcNow
+};
+
+// Check if the object is valid
+if (subscription.IsValid())
+{
+    // Process the subscription
+}
+else
+{
+    // Retrieve validation errors
+    var errors = subscription.Validate();
+    Console.WriteLine($"Validation failed: {string.Join(", ", errors)}");
+}
+
+// Or, ensure validity by throwing an exception if invalid
+subscription.EnsureValid();
+```
