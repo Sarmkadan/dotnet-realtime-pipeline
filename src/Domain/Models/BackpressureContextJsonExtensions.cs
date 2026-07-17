@@ -23,7 +23,8 @@ public static class BackpressureContextJsonExtensions
         WriteIndented = false,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         ReferenceHandler = ReferenceHandler.IgnoreCycles,
-        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+        Converters = { new QueueJsonConverter(), new DictionaryJsonConverter(), new DateTimeJsonConverter() }
     };
 
     /// <summary>
@@ -52,8 +53,9 @@ public static class BackpressureContextJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized backpressure context, or null if the JSON is null or empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static BackpressureContext? FromJson(string json)
+    public static BackpressureContext? FromJson(string? json)
     {
         if (string.IsNullOrEmpty(json))
         {
@@ -69,7 +71,8 @@ public static class BackpressureContextJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized backpressure context if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out BackpressureContext? value)
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    public static bool TryFromJson(string? json, out BackpressureContext? value)
     {
         value = null;
 
@@ -101,7 +104,7 @@ public static class BackpressureContextJsonExtensions
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
-                return new Queue<long>();
+                return null!;
             }
 
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -157,7 +160,7 @@ public static class BackpressureContextJsonExtensions
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
-                return new Dictionary<string, long>();
+                return null!;
             }
 
             if (reader.TokenType != JsonTokenType.StartObject)
@@ -165,7 +168,7 @@ public static class BackpressureContextJsonExtensions
                 throw new JsonException($"Expected StartObject, got {reader.TokenType}");
             }
 
-            var dictionary = new Dictionary<string, long>(StringComparer.Ordinal);
+            var dictionary = new Dictionary<string, long>();
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
                 if (reader.TokenType == JsonTokenType.PropertyName)
@@ -221,7 +224,7 @@ public static class BackpressureContextJsonExtensions
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
-                return DateTime.MinValue;
+                return default;
             }
 
             if (reader.TokenType == JsonTokenType.String)
@@ -229,7 +232,7 @@ public static class BackpressureContextJsonExtensions
                 string dateString = reader.GetString()!;
                 if (DateTime.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
                 {
-                    return result;
+                    return result.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(result, DateTimeKind.Utc) : result.ToUniversalTime();
                 }
             }
 
@@ -241,7 +244,11 @@ public static class BackpressureContextJsonExtensions
             DateTime value,
             JsonSerializerOptions options)
         {
-            if (value == DateTime.MinValue || value == default)
+            if (value == default)
+            {
+                writer.WriteNullValue();
+            }
+            else if (value == DateTime.MinValue)
             {
                 writer.WriteStringValue(string.Empty);
             }
