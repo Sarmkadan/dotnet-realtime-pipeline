@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
 
@@ -35,10 +35,7 @@ public static class BatchProcessorJsonExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions)
-            {
-                WriteIndented = true
-            }
+            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
             : _jsonSerializerOptions;
 
         return JsonSerializer.Serialize(value, options);
@@ -48,19 +45,16 @@ public static class BatchProcessorJsonExtensions
     /// Deserializes a JSON string to a <see cref="DataPointBatchProcessor"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized batch processor instance, or null if the JSON is empty.</returns>
+    /// <returns>The deserialized batch processor instance, or null if the JSON is empty or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static DataPointBatchProcessor? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<DataPointBatchProcessor>(json, _jsonSerializerOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<DataPointBatchProcessor>(json, _jsonSerializerOptions);
     }
 
     /// <summary>
@@ -76,13 +70,14 @@ public static class BatchProcessorJsonExtensions
 
         value = null;
 
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return true;
+        }
+
         try
         {
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                value = JsonSerializer.Deserialize<DataPointBatchProcessor>(json, _jsonSerializerOptions);
-            }
-
+            value = JsonSerializer.Deserialize<DataPointBatchProcessor>(json, _jsonSerializerOptions);
             return true;
         }
         catch (JsonException)
