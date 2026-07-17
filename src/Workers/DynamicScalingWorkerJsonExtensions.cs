@@ -62,22 +62,35 @@ public static class DynamicScalingWorkerJsonExtensions
     /// Attempts to deserialize a JSON string to a <see cref="DynamicScalingWorker"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized worker instance if successful.</param>
+    /// <param name="value">Receives the deserialized worker instance if successful; otherwise, null.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-    public static bool TryFromJson(string json, out DynamicScalingWorker? value)
+    public static bool TryFromJson(string json, out DynamicScalingWorker? value) =>
+        TryFromJson(json, _jsonSerializerOptions, out value);
+
+    /// <summary>
+    /// Attempts to deserialize a JSON string to a <see cref="DynamicScalingWorker"/> instance using custom serializer options.
+    /// </summary>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="options">The JSON serializer options to use.</param>
+    /// <param name="value">Receives the deserialized worker instance if successful; otherwise, null.</param>
+    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> or <paramref name="options"/> is null.</exception>
+    internal static bool TryFromJson(string json, JsonSerializerOptions options, out DynamicScalingWorker? value)
     {
         ArgumentNullException.ThrowIfNull(json);
+        ArgumentNullException.ThrowIfNull(options);
 
         value = null;
 
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return true;
+        }
+
         try
         {
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                value = JsonSerializer.Deserialize<DynamicScalingWorker>(json, _jsonSerializerOptions);
-            }
-
+            value = JsonSerializer.Deserialize<DynamicScalingWorker>(json, options);
             return true;
         }
         catch (JsonException)
