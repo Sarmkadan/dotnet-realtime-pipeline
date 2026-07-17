@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace DotNetRealtimePipeline.Domain.Models
@@ -20,14 +19,9 @@ namespace DotNetRealtimePipeline.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(aggregation);
 
-            var totalProcessed = aggregation.TotalItemsProcessed;
-            if (totalProcessed == 0)
-            {
-                return 0.0;
-            }
-
-            var failed = aggregation.TotalItemsFailed;
-            return 1.0 - ((double)failed / totalProcessed);
+            return aggregation.TotalItemsProcessed == 0
+                ? 0.0
+                : 1.0 - ((double)aggregation.TotalItemsFailed / aggregation.TotalItemsProcessed);
         }
 
         /// <summary>
@@ -40,12 +34,7 @@ namespace DotNetRealtimePipeline.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(aggregation);
 
-            if (aggregation.ErrorRateByStage == null || aggregation.ErrorRateByStage.Count == 0)
-            {
-                return 0.0;
-            }
-
-            return aggregation.ErrorRateByStage.Values.Average();
+            return aggregation.ErrorRateByStage?.Values.Average() ?? 0.0;
         }
 
         /// <summary>
@@ -71,8 +60,7 @@ namespace DotNetRealtimePipeline.Domain.Models
         {
             ArgumentNullException.ThrowIfNull(aggregation);
 
-            var durationMs = aggregation.GetTimeWindowDurationMs();
-            return TimeSpan.FromMilliseconds(durationMs);
+            return TimeSpan.FromMilliseconds(aggregation.GetTimeWindowDurationMs());
         }
 
         /// <summary>
@@ -101,8 +89,7 @@ namespace DotNetRealtimePipeline.Domain.Models
             return aggregation.ErrorRateByStage
                 ?.Where(kvp => kvp.Value > 0.0)
                 .OrderByDescending(kvp => kvp.Value)
-                .Select(kvp => kvp.Key)
-                ?? Enumerable.Empty<string>();
+                .Select(kvp => kvp.Key) ?? Enumerable.Empty<string>();
         }
 
         /// <summary>
@@ -129,13 +116,9 @@ namespace DotNetRealtimePipeline.Domain.Models
             ArgumentNullException.ThrowIfNull(aggregation);
 
             var totalDurationMs = aggregation.GetTimeWindowDurationMs();
-            if (totalDurationMs <= 0)
-            {
-                return 0.0;
-            }
-
-            var backpressureMs = aggregation.TotalBackpressureMs;
-            return (double)backpressureMs / totalDurationMs * 100.0;
+            return totalDurationMs <= 0
+                ? 0.0
+                : (double)aggregation.TotalBackpressureMs / totalDurationMs * 100.0;
         }
 
         /// <summary>
@@ -168,8 +151,6 @@ namespace DotNetRealtimePipeline.Domain.Models
             {
                 throw new ArgumentException("Aggregations collection cannot be empty.", nameof(aggregations));
             }
-
-            ArgumentNullException.ThrowIfNull(list);
 
             // Use first aggregation as base for metadata
             var first = list[0];
@@ -283,6 +264,11 @@ namespace DotNetRealtimePipeline.Domain.Models
                 filtered.MaxProcessingTimeMs = aggregation.MaxProcessingTimeMs * ratio;
                 filtered.P95ProcessingTimeMs = aggregation.P95ProcessingTimeMs * ratio;
                 filtered.P99ProcessingTimeMs = aggregation.P99ProcessingTimeMs * ratio;
+            }
+            else
+            {
+                filtered.MinProcessingTimeMs = 0;
+                filtered.MaxProcessingTimeMs = 0;
             }
 
             return filtered;
