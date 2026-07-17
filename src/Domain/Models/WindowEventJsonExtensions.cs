@@ -46,7 +46,9 @@ public static class WindowEventJsonExtensions
     /// Deserializes a JSON string to a <see cref="WindowEvent"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized window event, or null if the JSON is empty.</returns>
+    /// <returns>The deserialized window event.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static WindowEvent? FromJson(string json)
     {
