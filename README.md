@@ -894,6 +894,77 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## ExportServiceValidation
+
+The `ExportServiceValidation` static class provides validation helpers for `ExportResult` and `BatchExportResult` instances. It includes methods for comprehensive validation of export results, checking validity status, and throwing exceptions when invalid states are detected. This ensures data integrity when working with pipeline export operations.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Data;
+using System;
+using System.IO;
+
+// Create a valid ExportResult instance
+var exportResult = new ExportResult
+{
+    Success = true,
+    OutputPath = Path.GetFullPath("exported_data.csv"),
+    RecordCount = 1000,
+    FileSizeBytes = 15000,
+    ErrorMessage = null,
+    StartTime = DateTime.UtcNow.AddMinutes(-5),
+    EndTime = DateTime.UtcNow
+};
+
+// Validate the export result
+var validationErrors = exportResult.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Export validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if valid using IsValid extension method
+bool isValid = exportResult.IsValid();
+Console.WriteLine($"Export result is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+exportResult.EnsureValid();
+
+// Create a BatchExportResult instance
+var batchResult = new BatchExportResult
+{
+    Success = true,
+    ExportedRecords = 5000,
+    BatchFiles = new List<string> { "export_part1.csv", "export_part2.csv" },
+    ErrorMessage = null,
+    StartTime = DateTime.UtcNow.AddMinutes(-10),
+    EndTime = DateTime.UtcNow
+};
+
+// Validate batch export result
+var batchErrors = batchResult.Validate();
+if (batchErrors.Count > 0)
+{
+    Console.WriteLine("Batch export validation failed:");
+    foreach (var error in batchErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check batch validity
+bool batchIsValid = batchResult.IsValid();
+Console.WriteLine($"Batch export result is valid: {batchIsValid}");
+
+// Ensure batch validity
+batchResult.EnsureValid();
+```
+
 ## WindowingServiceExtensions
 
 The `WindowingServiceExtensions` class provides extension methods for `WindowingService` that enhance windowing operations with additional functionality. It includes methods for creating custom duration windows, processing data points with state tracking, calculating combined window statistics, and accessing window information.
