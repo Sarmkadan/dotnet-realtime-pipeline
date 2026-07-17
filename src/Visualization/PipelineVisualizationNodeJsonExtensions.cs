@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Visualization;
 
@@ -17,6 +17,11 @@ using System.Text.Json.Serialization;
 /// </summary>
 public static class PipelineVisualizationNodeJsonExtensions
 {
+    /// <summary>
+    /// Gets the default JSON serialization options used by the extension methods.
+    /// </summary>
+    public static JsonSerializerOptions JsonOptions => _jsonOptions;
+
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -25,11 +30,11 @@ public static class PipelineVisualizationNodeJsonExtensions
     };
 
     /// <summary>
-    /// Serializes the <see cref="PipelineVisualizationNode"/> to a JSON string.
+    /// Serializes the <see cref="PipelineVisualizationNode"/> to a JSON string using camelCase property naming.
     /// </summary>
     /// <param name="value">The node to serialize.</param>
     /// <param name="indented">Whether to indent the JSON for readability.</param>
-    /// <returns>A JSON representation of the node.</returns>
+    /// <returns>A JSON representation of the node with camelCase property names.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static string ToJson(this PipelineVisualizationNode value, bool indented = false)
     {
@@ -37,9 +42,7 @@ public static class PipelineVisualizationNodeJsonExtensions
 
         var options = indented
             ? new JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
+            { WriteIndented = true }
             : _jsonOptions;
 
         return JsonSerializer.Serialize(value, options);
@@ -51,6 +54,7 @@ public static class PipelineVisualizationNodeJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized node, or null if the JSON is invalid.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is malformed or cannot be deserialized.</exception>
     public static PipelineVisualizationNode? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
