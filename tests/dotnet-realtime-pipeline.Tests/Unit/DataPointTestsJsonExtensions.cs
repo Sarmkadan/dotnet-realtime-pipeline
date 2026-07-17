@@ -7,13 +7,14 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DotNetRealtimePipeline.Domain.Models;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
-/// Provides System.Text.Json serialization helpers for <see cref="DataPointTests"/> instances.
+/// Provides System.Text.Json serialization helpers for <see cref="DataPoint"/> instances.
 /// </summary>
-public static class DataPointTestsJsonExtensions
+public static class DataPointJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -24,13 +25,13 @@ public static class DataPointTestsJsonExtensions
     };
 
     /// <summary>
-    /// Serializes a <see cref="DataPointTests"/> instance to a JSON string.
+    /// Serializes a <see cref="DataPoint"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The data point tests instance to serialize.</param>
+    /// <param name="value">The data point to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
-    /// <returns>A JSON string representation of the data point tests instance.</returns>
+    /// <returns>A JSON string representation of the data point.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
-    public static string ToJson(this DataPointTests value, bool indented = false)
+    public static string ToJson(this DataPoint value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -42,18 +43,18 @@ public static class DataPointTestsJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a <see cref="DataPointTests"/> instance.
+    /// Deserializes a JSON string to a <see cref="DataPoint"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A <see cref="DataPointTests"/> instance, or null if the JSON is empty or whitespace.</returns>
+    /// <returns>A <see cref="DataPoint"/> instance if deserialization succeeds; otherwise, null.</returns>
     /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
-    public static DataPointTests? FromJson(string json)
+    public static DataPoint? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
-            return JsonSerializer.Deserialize<DataPointTests>(json, _jsonOptions);
+            return JsonSerializer.Deserialize<DataPoint>(json, _jsonOptions);
         }
         catch (JsonException)
         {
@@ -62,19 +63,19 @@ public static class DataPointTestsJsonExtensions
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a <see cref="DataPointTests"/> instance.
+    /// Attempts to deserialize a JSON string to a <see cref="DataPoint"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">When this method returns, contains the deserialized data point tests instance if successful; otherwise, null.</param>
+    /// <param name="value">When this method returns, contains the deserialized data point if successful; otherwise, null.</param>
     /// <returns>True if the deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
-    public static bool TryFromJson(string json, out DataPointTests? value)
+    public static bool TryFromJson(string json, out DataPoint? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
         try
         {
-            value = JsonSerializer.Deserialize<DataPointTests>(json, _jsonOptions);
+            value = JsonSerializer.Deserialize<DataPoint>(json, _jsonOptions);
             return true;
         }
         catch (JsonException)
