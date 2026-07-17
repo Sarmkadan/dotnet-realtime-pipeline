@@ -9,6 +9,7 @@ namespace DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 /// <summary>
 /// Provides extension methods for <see cref="DataPoint"/> to enhance data processing capabilities.
@@ -101,15 +102,10 @@ public static class DataPointExtensions
     {
         ArgumentNullException.ThrowIfNull(dataPoint);
 
-        var values = new List<T>();
-        foreach (var value in dataPoint.Metadata.Values)
-        {
-            if (value is T typedValue)
-            {
-                values.Add(typedValue);
-            }
-        }
-        return values.AsReadOnly();
+        return dataPoint.Metadata.Values
+            .OfType<T>()
+            .ToList()
+            .AsReadOnly();
     }
 
     /// <summary>
@@ -153,7 +149,7 @@ public static class DataPointExtensions
 
         return $"DataPoint[{dataPoint.Id}] - Source: {dataPoint.Source}, " +
                $"Timestamp: {DateTimeOffset.FromUnixTimeMilliseconds(dataPoint.Timestamp):O}, " +
-               $"Value: {dataPoint.Value.ToString(CultureInfo.InvariantCulture)}, " +
+               $"Value: {dataPoint.Value:G}, " +
                $"Quality: {dataPoint.Quality}%{metadataPart}";
     }
 
