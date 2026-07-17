@@ -193,6 +193,8 @@ public static class PerformanceHelperValidation
     public static IReadOnlyList<string> Validate<T>(
         this (T Result, long ElapsedMs) executionResult)
     {
+        ArgumentNullException.ThrowIfNull(executionResult);
+
         var problems = new List<string>();
 
         if (executionResult.ElapsedMs < 0)
@@ -241,6 +243,8 @@ public static class PerformanceHelperValidation
         this (T Result, long ElapsedMs) executionResult,
         T? expectedResult = default)
     {
+        ArgumentNullException.ThrowIfNull(executionResult);
+
         var problems = new List<string>();
 
         if (executionResult.ElapsedMs < 0)
