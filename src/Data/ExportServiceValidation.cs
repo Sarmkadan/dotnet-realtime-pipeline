@@ -3,7 +3,7 @@
 namespace DotNetRealtimePipeline.Data;
 
 /// <summary>
-/// Provides validation helpers for <see cref="ExportResult"/> instances.
+/// Provides validation helpers for <see cref="ExportResult"/> and <see cref="BatchExportResult"/> instances.
 /// </summary>
 public static class ExportServiceValidation
 {
@@ -19,11 +19,10 @@ public static class ExportServiceValidation
 
         var problems = new List<string>();
 
-        // Validate Success property
-        // Success should be true for a valid export result state
-        if (!value.Success)
+        // Validate Success property - Success should be true unless there's an error
+        if (!value.Success && string.IsNullOrEmpty(value.ErrorMessage))
         {
-            problems.Add("ExportResult.Success must be true for a valid instance.");
+            problems.Add("ExportResult.Success must be true when ErrorMessage is null or empty.");
         }
 
         // Validate OutputPath
@@ -48,7 +47,7 @@ public static class ExportServiceValidation
             problems.Add("ExportResult.FileSizeBytes cannot be negative.");
         }
 
-        // Validate ErrorMessage
+        // Validate ErrorMessage - must be empty when Success is true
         if (!string.IsNullOrEmpty(value.ErrorMessage) && value.Success)
         {
             problems.Add("ExportResult.ErrorMessage must be null or empty when Success is true.");
@@ -95,10 +94,10 @@ public static class ExportServiceValidation
 
         var problems = new List<string>();
 
-        // Validate Success property
-        if (!value.Success)
+        // Validate Success property - Success should be true unless there's an error
+        if (!value.Success && string.IsNullOrEmpty(value.ErrorMessage))
         {
-            problems.Add("BatchExportResult.Success must be true for a valid instance.");
+            problems.Add("BatchExportResult.Success must be true when ErrorMessage is null or empty.");
         }
 
         // Validate ExportedRecords
@@ -107,7 +106,7 @@ public static class ExportServiceValidation
             problems.Add("BatchExportResult.ExportedRecords cannot be negative.");
         }
 
-        // Validate BatchFiles
+        // Validate BatchFiles - collection itself cannot be null
         if (value.BatchFiles is null)
         {
             problems.Add("BatchExportResult.BatchFiles cannot be null.");
@@ -117,7 +116,7 @@ public static class ExportServiceValidation
             problems.Add("BatchExportResult.BatchFiles cannot be empty when records were exported.");
         }
 
-        // Validate ErrorMessage
+        // Validate ErrorMessage - must be empty when Success is true
         if (!string.IsNullOrEmpty(value.ErrorMessage) && value.Success)
         {
             problems.Add("BatchExportResult.ErrorMessage must be null or empty when Success is true.");
