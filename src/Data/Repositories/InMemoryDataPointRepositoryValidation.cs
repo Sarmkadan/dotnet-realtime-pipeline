@@ -19,7 +19,7 @@ public static class InMemoryDataPointRepositoryValidation
     /// </summary>
     /// <param name="value">The repository instance to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this InMemoryDataPointRepository value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -28,6 +28,12 @@ public static class InMemoryDataPointRepositoryValidation
 
         // Validate internal store integrity
         var store = value.GetInternalStore();
+
+        if (store is null)
+        {
+            errors.Add("Internal store dictionary is null");
+            return errors.AsReadOnly();
+        }
 
         foreach (var kvp in store)
         {
@@ -68,6 +74,11 @@ public static class InMemoryDataPointRepositoryValidation
             {
                 errors.Add($"DataPoint with ID {dataPoint.Id} has default CreatedAt value");
             }
+
+            if (dataPoint.Metadata is null)
+            {
+                errors.Add($"DataPoint with ID {dataPoint.Id} has null Metadata dictionary");
+            }
         }
 
         return errors.AsReadOnly();
@@ -78,17 +89,14 @@ public static class InMemoryDataPointRepositoryValidation
     /// </summary>
     /// <param name="value">The repository instance to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
-    public static bool IsValid(this InMemoryDataPointRepository value)
-    {
-        return Validate(value).Count == 0;
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    public static bool IsValid(this InMemoryDataPointRepository value) => Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures the repository state and data are valid, throwing an exception if not.
     /// </summary>
     /// <param name="value">The repository instance to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown when value is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when validation fails, with error details.</exception>
     public static void EnsureValid(this InMemoryDataPointRepository value)
     {
