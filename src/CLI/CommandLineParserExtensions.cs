@@ -49,6 +49,7 @@ namespace DotNetRealtimePipeline.CLI
         /// <param name="args">The command line arguments.</param>
         /// <returns>The exit code from the executed command (0 for success, non-zero for failure).</returns>
         /// <exception cref="ArgumentNullException"><paramref name="parser"/> or <paramref name="args"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when command execution fails unexpectedly.</exception>
         public static int TryParseAndExecute(this CommandLineParser parser, string[] args)
         {
             ArgumentNullException.ThrowIfNull(parser);
@@ -65,7 +66,7 @@ namespace DotNetRealtimePipeline.CLI
 
                 return parsed.ExecuteAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
                 return 1;
