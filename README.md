@@ -28,6 +28,107 @@ The sections below are generated per-class API notes; more per-class docs live i
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
 
+## HealthCheckServiceValidation
+
+The `HealthCheckServiceValidation` static class provides validation helpers for `HealthCheckService` and related health check types (`ComponentHealth`, `SystemHealthReport`, `QuickHealthStatus`). It includes extension methods for validating health check instances, checking validity status, and throwing exceptions when invalid states are detected. This ensures health check configurations are properly validated before use in pipeline monitoring.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Monitoring;
+using System;
+using System.Collections.Generic;
+
+// Create a HealthCheckService instance (typically registered via DI)
+var healthCheckService = new HealthCheckService();
+
+// Validate the health check service instance
+var validationErrors = healthCheckService.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("HealthCheckService validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if health check service is valid using IsValid extension method
+bool isValid = healthCheckService.IsValid();
+Console.WriteLine($"HealthCheckService is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+healthCheckService.EnsureValid();
+
+// Create a ComponentHealth instance for validation
+var componentHealth = new ComponentHealth
+{
+    Message = "All systems operational",
+    CheckedAt = DateTime.UtcNow,
+    Details = new Dictionary<string, object>
+    {
+        ["Status"] = "Healthy",
+        ["Components"] = 15,
+        ["BackpressureActive"] = false
+    }
+};
+
+// Validate component health
+var componentErrors = componentHealth.Validate();
+if (componentErrors.Count > 0)
+{
+    Console.WriteLine("ComponentHealth validation failed:");
+    foreach (var error in componentErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check component health validity
+bool componentIsValid = componentHealth.IsValid();
+Console.WriteLine($"ComponentHealth is valid: {componentIsValid}");
+
+// Ensure component health is valid
+componentHealth.EnsureValid();
+
+// Create a SystemHealthReport instance for validation
+var healthReport = new SystemHealthReport
+{
+    CheckedAt = DateTime.UtcNow,
+    OverallStatus = SystemHealth.Healthy,
+    Components = new List<ComponentHealth>
+    {
+        new ComponentHealth
+        {
+            Message = "Pipeline stage operational",
+            CheckedAt = DateTime.UtcNow,
+            Details = new Dictionary<string, object> { ["Stage"] = "DataProcessing" }
+        }
+    },
+    PipelineStatus = "Running",
+    Throughput = 12500,
+    SuccessRate = 99.8
+};
+
+// Validate system health report
+var reportErrors = healthReport.Validate();
+if (reportErrors.Count > 0)
+{
+    Console.WriteLine("SystemHealthReport validation failed:");
+    foreach (var error in reportErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check system health report validity
+bool reportIsValid = healthReport.IsValid();
+Console.WriteLine($"SystemHealthReport is valid: {reportIsValid}");
+
+// Ensure system health report is valid
+healthReport.EnsureValid();
+```
+
 ## PipelineInitializerExtensions
 
 The `PipelineInitializerExtensions` class provides extension methods for `PipelineInitializer` that enhance pipeline lifecycle management with additional functionality. It includes methods for initializing and starting pipelines in a single operation, retrying initialization on transient failures, safely stopping pipelines, and checking pipeline initialization state.
