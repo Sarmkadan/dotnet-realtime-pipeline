@@ -259,6 +259,72 @@ bool isTimeout = updatedResult.IsTimeout(timeoutThresholdMs: 100);
 Console.WriteLine($"Timeout detected: {isTimeout}");
 ```
 
+## DataPointExtensions
+The `DataPointExtensions` class provides convenient extension methods for `DataPoint` to enhance data processing capabilities. It includes methods for creating new data point instances with updated properties, working with metadata, formatting for logging, checking staleness, and managing IDs.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Assume dataPoint is a DataPoint instance
+var dataPoint = new DataPoint
+{
+    Id = 1,
+    Source = "TemperatureSensor",
+    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    Value = 23.5,
+    Quality = 95,
+    Tags = "sensor,temperature",
+    Metadata = new Dictionary<string, object>
+    {
+        ["Unit"] = "Celsius",
+        ["Location"] = "Room A101"
+    }
+};
+
+// Create a new data point with updated value
+var updatedValue = dataPoint.WithValue(24.1);
+Console.WriteLine($"Updated value: {updatedValue.Value}"); // Output: Updated value: 24.1
+
+// Create a new data point with updated timestamp
+var newTimestamp = DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeMilliseconds();
+var updatedTimestamp = dataPoint.WithTimestamp(newTimestamp);
+Console.WriteLine($"Updated timestamp: {DateTimeOffset.FromUnixTimeMilliseconds(updatedTimestamp.Timestamp):O}");
+
+// Create a new data point with updated quality
+var highQuality = dataPoint.WithQuality(98);
+Console.WriteLine($"Updated quality: {highQuality.Quality}%"); // Output: Updated quality: 98%
+
+// Add additional tags to the data point
+var tagged = dataPoint.WithTags("priority,critical");
+Console.WriteLine($"Tags: {tagged.Tags}"); // Output: Tags: sensor,temperature,priority,critical
+
+// Get all metadata values of a specific type
+var stringMetadata = dataPoint.GetMetadataValues<string>();
+Console.WriteLine($"Metadata count: {stringMetadata.Count}"); // Output: Metadata count: 2
+
+// Try to get a specific metadata value
+if (dataPoint.TryGetMetadataValue("Unit", out string unit))
+{
+    Console.WriteLine($"Unit: {unit}"); // Output: Unit: Celsius
+}
+
+// Format the data point for logging
+string logEntry = dataPoint.ToLogString(includeMetadata: true);
+Console.WriteLine(logEntry);
+// Output: DataPoint[1] - Source: TemperatureSensor, Timestamp: 2024-07-19T14:30:00.0000000Z, Value: 23.5, Quality: 95% | Metadata[2]
+
+// Check if data point is stale (older than 5 minutes)
+bool isStale = dataPoint.IsStale(maxAgeMs: 300000);
+Console.WriteLine($"Is stale: {isStale}");
+
+// Create a shallow copy with a new ID
+var copied = dataPoint.WithId(2);
+Console.WriteLine($"Original ID: {dataPoint.Id}, New ID: {copied.Id}"); // Output: Original ID: 1, New ID: 2
+```
+
 ## PipelineConfigExtensions
 The `PipelineConfigExtensions` class provides convenient extension methods for `PipelineConfig` to simplify common operations on pipeline configurations and their stages. It includes methods for querying stage counts, checking stage existence, retrieving stage definitions, and filtering stages by various criteria.
 
