@@ -65,16 +65,7 @@ public static class ThroughputCounterJsonExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        value = null;
-
-        try
-        {
-            value = JsonSerializer.Deserialize<ThroughputCounter>(json, _jsonOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+        value = JsonSerializer.Deserialize<ThroughputCounter>(json, _jsonOptions);
+        return value is not null;
     }
 }
