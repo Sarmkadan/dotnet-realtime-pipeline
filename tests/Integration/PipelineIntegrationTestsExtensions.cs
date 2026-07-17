@@ -14,7 +14,10 @@ namespace DotNetRealtimePipeline.Tests.Integration;
 /// <summary>
 /// Extension methods for <see cref="PipelineIntegrationTests"/> to reduce boilerplate and improve test clarity.
 /// </summary>
-public static class PipelineIntegrationTestsExtensions
+/// <remarks>
+/// All extension methods in this class are designed to be used within integration test classes that inherit from <see cref="PipelineIntegrationTests"/>.
+/// </remarks>
+public static sealed class PipelineIntegrationTestsExtensions
 {
     /// <summary>
     /// Creates a service provider, resolves the pipeline orchestrator, and starts it asynchronously.
@@ -28,7 +31,7 @@ public static class PipelineIntegrationTestsExtensions
 
         var serviceProvider = tests.SetupServices();
         var orchestrator = serviceProvider.GetRequiredService<PipelineOrchestrator>();
-        _ = orchestrator.StartAsync().AsTask().GetAwaiter().GetResult(); // Synchronously start to avoid async void
+        _ = orchestrator.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
         return (serviceProvider, orchestrator);
     }
@@ -36,14 +39,17 @@ public static class PipelineIntegrationTestsExtensions
     /// <summary>
     /// Generates a list of synthetic <see cref="DataPoint"/> instances with sequential IDs and customizable properties.
     /// </summary>
+    /// <param name="tests">The test instance.</param>
     /// <param name="count">Number of data points to generate.</param>
     /// <param name="sensorName">Sensor identifier for all generated points.</param>
     /// <param name="valueGenerator">Function to generate values based on index.</param>
     /// <returns>A list of <see cref="DataPoint"/> instances.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is non-positive.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="sensorName"/> is null or empty.</exception>
     public static List<DataPoint> GenerateDataPoints(this PipelineIntegrationTests tests, int count, string sensorName, Func<int, decimal> valueGenerator)
     {
+        ArgumentNullException.ThrowIfNull(tests);
         ArgumentException.ThrowIfNullOrEmpty(sensorName);
         if (count <= 0)
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be positive.");
@@ -63,9 +69,10 @@ public static class PipelineIntegrationTestsExtensions
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="milliseconds"/> is negative.</exception>
     public static async Task WaitForProcessingAsync(this PipelineIntegrationTests tests, int milliseconds)
     {
+        ArgumentNullException.ThrowIfNull(tests);
         if (milliseconds < 0)
             throw new ArgumentOutOfRangeException(nameof(milliseconds), "Delay must be non-negative.");
 
-        await Task.Delay(milliseconds);
+        await Task.Delay(milliseconds).ConfigureAwait(false);
     }
 }
