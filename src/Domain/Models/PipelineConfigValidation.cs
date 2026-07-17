@@ -41,13 +41,15 @@ public static class PipelineConfigValidation
         // WindowType validation
         if (string.IsNullOrWhiteSpace(value.WindowType))
         {
-            errors.Add($"WindowType must be a non-empty string.");
+            errors.Add("WindowType must be a non-empty string.");
         }
-        else if (!value.WindowType.Equals("TUMBLING", StringComparison.OrdinalIgnoreCase) &&
-                 !value.WindowType.Equals("SLIDING", StringComparison.OrdinalIgnoreCase) &&
-                 !value.WindowType.Equals("SESSION", StringComparison.OrdinalIgnoreCase))
+        else
         {
-            errors.Add($"WindowType must be one of: TUMBLING, SLIDING, SESSION (got '{value.WindowType}').");
+            var normalizedWindowType = value.WindowType.Trim().ToUpperInvariant();
+            if (normalizedWindowType != "TUMBLING" && normalizedWindowType != "SLIDING" && normalizedWindowType != "SESSION")
+            {
+                errors.Add($"WindowType must be one of: TUMBLING, SLIDING, SESSION (got '{value.WindowType}').");
+            }
         }
 
         // Positive numeric properties
@@ -108,6 +110,17 @@ public static class PipelineConfigValidation
             errors.Add($"MinDataQualityThreshold must be between 0 and 100 (got {value.MinDataQualityThreshold}).");
         }
 
+        // Boolean flag validations
+        if (value.ValidateOnIngestion && value.MinDataQualityThreshold <= 0)
+        {
+            errors.Add("MinDataQualityThreshold must be greater than 0 when ValidateOnIngestion is enabled.");
+        }
+
+        if (!value.EnableMetricsCollection && value.BackpressureTriggerThreshold >= 100)
+        {
+            errors.Add("BackpressureTriggerThreshold should typically be less than 100 when metrics collection is disabled.");
+        }
+
         // DateTime validation
         if (value.CreatedAt == default)
         {
@@ -126,11 +139,26 @@ public static class PipelineConfigValidation
         {
             errors.Add("LastModifiedAt cannot be in the future.");
         }
+        else if (value.LastModifiedAt < value.CreatedAt)
+        {
+            errors.Add("LastModifiedAt cannot be earlier than CreatedAt.");
+        }
 
         // Windowing consistency check
-        if (value.WindowSizeMs > 0 && value.WindowSlideMs > 0 && value.WindowSlideMs > value.WindowSizeMs)
+        if (value.WindowSizeMs > 0 && value.WindowSlideMs > 0)
         {
-            errors.Add("WindowSlideMs must be less than or equal to WindowSizeMs for proper windowing behavior.");
+            if (value.WindowSlideMs > value.WindowSizeMs)
+            {
+                errors.Add("WindowSlideMs must be less than or equal to WindowSizeMs for proper windowing behavior.");
+            }
+        }
+        else if (value.WindowSizeMs <= 0)
+        {
+            errors.Add("WindowSizeMs must be a positive value for windowing to be configured.");
+        }
+        else if (value.WindowSlideMs <= 0)
+        {
+            errors.Add("WindowSlideMs must be a positive value for windowing to be configured.");
         }
 
         // Stages collection
@@ -140,6 +168,11 @@ public static class PipelineConfigValidation
         }
         else
         {
+            if (value.Stages.Count == 0)
+            {
+                errors.Add("Stages collection must contain at least one stage.");
+            }
+
             foreach (var stage in value.Stages)
             {
                 if (stage is null)
@@ -169,6 +202,23 @@ public static class PipelineConfigValidation
         if (value.CustomSettings is null)
         {
             errors.Add("CustomSettings collection must not be null.");
+        }
+        else
+        {
+            foreach (var kvp in value.CustomSettings)
+            {
+                if (string.IsNullOrWhiteSpace(kvp.Key))
+                {
+                    errors.Add("CustomSettings collection contains an entry with a null or empty key.");
+                    break;
+                }
+
+                if (kvp.Value is null)
+                {
+                    errors.Add($"CustomSettings collection contains a null value for key '{kvp.Key}'.");
+                    break;
+                }
+            }
         }
 
         return errors.AsReadOnly();
