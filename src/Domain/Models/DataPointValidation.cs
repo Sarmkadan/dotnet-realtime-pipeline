@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Domain.Models;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="DataPoint"/> instances.
@@ -30,13 +29,13 @@ public static class DataPointValidation
         // Validate Id
         if (value.Id <= 0)
         {
-            errors.Add($"DataPoint.Id must be positive, but was {value.Id}.");
+            errors.Add("DataPoint.Id must be positive.");
         }
 
         // Validate Timestamp
         if (value.Timestamp <= 0)
         {
-            errors.Add($"DataPoint.Timestamp must be positive, but was {value.Timestamp}.");
+            errors.Add("DataPoint.Timestamp must be positive.");
         }
 
         // Validate Value (double can be any value, but NaN and Infinity are invalid)
@@ -58,7 +57,7 @@ public static class DataPointValidation
         // Validate Quality (0-100 range)
         if (value.Quality < 0 || value.Quality > 100)
         {
-            errors.Add($"DataPoint.Quality must be between 0 and 100, but was {value.Quality}.");
+            errors.Add("DataPoint.Quality must be between 0 and 100.");
         }
 
         // Validate CreatedAt (should not be default DateTime)
@@ -73,6 +72,12 @@ public static class DataPointValidation
             errors.Add("DataPoint.Metadata cannot be null.");
         }
 
+        // Validate Tags (if present, should not be whitespace)
+        if (value.Tags is not null && string.IsNullOrWhiteSpace(value.Tags))
+        {
+            errors.Add("DataPoint.Tags cannot be whitespace when set.");
+        }
+
         return errors.AsReadOnly();
     }
 
@@ -84,7 +89,7 @@ public static class DataPointValidation
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static bool IsValid(this DataPoint? value)
     {
-        return Validate(value).Count == 0;
+        return value is not null && Validate(value).Count == 0;
     }
 
     /// <summary>
@@ -101,7 +106,7 @@ public static class DataPointValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"DataPoint is invalid. Validation errors: {string.Join(" ", errors)}");
+                $"DataPoint is invalid. Validation errors: {string.Join("; ", errors)}");
         }
     }
 }
