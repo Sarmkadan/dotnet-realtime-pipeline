@@ -8,16 +8,19 @@ namespace DotNetRealtimePipeline.Integration;
 
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <summary>
-/// Provides JSON serialization extensions for <see cref="RawPipelineAccessor"/>.
+/// Provides System.Text.Json serialization extensions for <see cref="RawPipelineAccessor"/>.
 /// </summary>
 public static class RawPipelineAccessorJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
-        WriteIndented = false,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNameCaseInsensitive = true
     };
 
     /// <summary>
@@ -49,7 +52,9 @@ public static class RawPipelineAccessorJsonExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
-        return JsonSerializer.Deserialize<RawPipelineAccessor>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<RawPipelineAccessor>(json, _jsonOptions);
     }
 
     /// <summary>
@@ -63,6 +68,13 @@ public static class RawPipelineAccessorJsonExtensions
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
 
+        value = null;
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return false;
+        }
+
         try
         {
             value = JsonSerializer.Deserialize<RawPipelineAccessor>(json, _jsonOptions);
@@ -70,7 +82,6 @@ public static class RawPipelineAccessorJsonExtensions
         }
         catch (JsonException)
         {
-            value = null;
             return false;
         }
     }
