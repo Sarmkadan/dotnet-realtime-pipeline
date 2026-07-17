@@ -28,6 +28,53 @@ The sections below are generated per-class API notes; more per-class docs live i
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
 
+## CommandLineParserExtensions
+
+The `CommandLineParserExtensions` class provides extension methods for `CommandLineParser` to simplify command registration and parsing scenarios. It includes methods for registering individual commands, bulk registering commands from dictionaries or sequences, parsing command line arguments into structured commands, and executing parsed commands with proper error handling.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.CLI;
+using System;
+using System.Collections.Generic;
+
+// Assume parser is an initialized instance of CommandLineParser
+var parser = new CommandLineParser();
+
+// Register a single command with a factory method
+parser.RegisterCommand("ingest", () => new ParsedCommand("ingest", new Dictionary<string, string> 
+{
+    {"file", "data.json"}
+}));
+
+// Register multiple commands from a dictionary
+var commands = new Dictionary<string, Func<ParsedCommand>>
+{
+    ["ingest"] = () => new ParsedCommand("ingest", new Dictionary<string, string> { { "file", "data.json" } }),
+    ["query"] = () => new ParsedCommand("query", new Dictionary<string, string> { { "source", "sensors" } }),
+    ["status"] = () => new ParsedCommand("status")
+};
+parser.RegisterCommands(commands);
+
+// Register multiple commands from a sequence of tuples
+var commandRegistrations = new List<(string verb, Func<ParsedCommand> factory)>
+{
+    ("ingest", () => new ParsedCommand("ingest", new Dictionary<string, string> { { "file", "data.json" } })),
+    ("query", () => new ParsedCommand("query", new Dictionary<string, string> { { "source", "sensors" } })),
+    ("status", () => new ParsedCommand("status"))
+};
+parser.RegisterCommands(commandRegistrations);
+
+// Parse command line arguments into a structured command
+var parsedCommand = parser.ParseCommand(new[] { "ingest", "--file", "sensor_data.json" });
+Console.WriteLine($"Parsed command: {parsedCommand.CommandName}");
+
+// Attempt to parse and execute command with error handling
+int exitCode = parser.TryParseAndExecute(new[] { "ingest", "--file", "data.json" });
+Console.WriteLine($"Command executed with exit code: {exitCode}");
+```
+
 Example usage:
 
 ```csharp
