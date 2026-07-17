@@ -38,9 +38,11 @@ public static class RawPipelineAccessorValidation
     /// </summary>
     /// <param name="value">The <see cref="RawPipelineAccessor"/> to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static bool IsValid(this RawPipelineAccessor? value)
     {
-        return value is not null && Validate(value).Count == 0;
+        ArgumentNullException.ThrowIfNull(value);
+        return Validate(value).Count == 0;
     }
 
     /// <summary>
