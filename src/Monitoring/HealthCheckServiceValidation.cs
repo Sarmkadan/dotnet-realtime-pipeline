@@ -85,6 +85,10 @@ public static class HealthCheckServiceValidation
         {
             problems.Add("ComponentHealth.Details must not be null.");
         }
+        else if (value.Details.Count == 0)
+        {
+            problems.Add("ComponentHealth.Details must not be empty.");
+        }
 
         return problems.AsReadOnly();
     }
@@ -144,6 +148,10 @@ public static class HealthCheckServiceValidation
         if (value.Components is null)
         {
             problems.Add("SystemHealthReport.Components must not be null.");
+        }
+        else if (value.Components.Count == 0)
+        {
+            problems.Add("SystemHealthReport.Components must not be empty.");
         }
 
         if (value.PipelineStatus is null)
@@ -212,10 +220,18 @@ public static class HealthCheckServiceValidation
 
         var problems = new List<string>();
 
-        // HealthStatus can be null or empty, but should ideally not be
         if (value.HealthStatus is null)
         {
             problems.Add("QuickHealthStatus.HealthStatus must not be null.");
+        }
+        else if (string.IsNullOrWhiteSpace(value.HealthStatus))
+        {
+            problems.Add("QuickHealthStatus.HealthStatus must not be null or whitespace.");
+        }
+
+        if (!value.IsRunning && value.PendingItems > 0)
+        {
+            problems.Add("QuickHealthStatus.PendingItems must be 0 when IsRunning is false.");
         }
 
         // PendingItems should be non-negative
@@ -273,10 +289,7 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The component status to check.</param>
     /// <returns><c>true</c> since all ComponentStatus enum values are valid.</returns>
-    public static bool IsValid(this ComponentStatus value)
-    {
-        return true;
-    }
+    public static bool IsValid(this ComponentStatus value) => true;
 
     /// <summary>
     /// Validates a <see cref="SystemHealth"/> value.
@@ -294,8 +307,5 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The system health to check.</param>
     /// <returns><c>true</c> since all SystemHealth enum values are valid.</returns>
-    public static bool IsValid(this SystemHealth value)
-    {
-        return true;
-    }
+    public static bool IsValid(this SystemHealth value) => true;
 }
