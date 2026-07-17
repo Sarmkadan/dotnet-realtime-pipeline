@@ -19,7 +19,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="response">The API response to validate.</param>
     /// <returns>A list of human-readable validation problems, or an empty list if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if response is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="response"/> is null.</exception>
     public static IReadOnlyList<string> Validate<T>(this ApiEndpointHandler.ApiResponse<T> response)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -43,7 +43,11 @@ public static class ApiEndpointHandlerValidation
         }
 
         // Validate StatusCode
-        if (response.StatusCode < 100 || response.StatusCode > 599)
+        if (response.StatusCode is 0)
+        {
+            errors.Add("StatusCode must be set to a non-default value");
+        }
+        else if (response.StatusCode < 100 || response.StatusCode > 599)
         {
             errors.Add("StatusCode must be between 100 and 599");
         }
@@ -70,7 +74,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="result">The batch ingest result to validate.</param>
     /// <returns>A list of human-readable validation problems, or an empty list if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if result is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="result"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this BatchIngestResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -107,7 +111,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="status">The pipeline status info to validate.</param>
     /// <returns>A list of human-readable validation problems, or an empty list if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if status is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="status"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this PipelineStatusInfo status)
     {
         ArgumentNullException.ThrowIfNull(status);
@@ -194,7 +198,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="response">The API response to validate.</param>
     /// <exception cref="ArgumentException">Thrown if the response is not valid.</exception>
-    /// <exception cref="ArgumentNullException">Thrown if response is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="response"/> is null.</exception>
     public static void EnsureValid<T>(this ApiEndpointHandler.ApiResponse<T> response)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -214,7 +218,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="result">The batch ingest result to validate.</param>
     /// <exception cref="ArgumentException">Thrown if the result is not valid.</exception>
-    /// <exception cref="ArgumentNullException">Thrown if result is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="result"/> is null.</exception>
     public static void EnsureValid(this BatchIngestResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -234,7 +238,7 @@ public static class ApiEndpointHandlerValidation
     /// </summary>
     /// <param name="status">The pipeline status info to validate.</param>
     /// <exception cref="ArgumentException">Thrown if the status info is not valid.</exception>
-    /// <exception cref="ArgumentNullException">Thrown if status is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="status"/> is null.</exception>
     public static void EnsureValid(this PipelineStatusInfo status)
     {
         ArgumentNullException.ThrowIfNull(status);
