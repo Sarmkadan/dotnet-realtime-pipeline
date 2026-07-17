@@ -277,6 +277,57 @@ else
 status.EnsureValid();
 ```
 
+## DeadLetterQueueExtensions
+The `DeadLetterQueueExtensions` class provides extension methods for working with dead-letter entries in the pipeline. It includes methods for processing failed entries for retry, finding entries by various criteria, and generating comprehensive reports of dead-letter queue state.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.DeadLetter;
+using System;
+using System.Threading.Tasks;
+
+// Assume queue is an initialized instance of DeadLetterQueue
+var queue = new DeadLetterQueue();
+
+// Process entries for retry (up to 50 entries)
+var result = await queue.ProcessForRetryAsync(
+    maxCount: 50,
+    processEntry: async entry => {
+        // Your retry logic here
+        try {
+            // Attempt to reprocess the data point
+            await ProcessDataPointAsync(entry.DataPoint);
+            return true; // Success
+        } catch {
+            return false; // Requeue for another attempt
+        }
+    }
+);
+
+Console.WriteLine($"Processed {result.TotalProcessed} entries: " +
+            $"{result.SuccessfullyProcessed} succeeded, " +
+            $"{result.FailedProcessing} failed");
+
+// Find entries by failure stage
+var failedStageEntries = await queue.FindByStageAsync("DataProcessingStage", maxCount: 100);
+
+// Find entries matching a custom predicate
+var recentFailures = await queue.FindAsync(
+    entry => entry.EnqueuedAt > DateTime.UtcNow.AddHours(-1),
+    maxCount: 50
+);
+
+// Generate a detailed report
+string report = await queue.GetReportAsync(includeDetails: true);
+Console.WriteLine(report);
+
+// Access processing result properties
+int totalProcessed = result.TotalProcessed;
+int successful = result.SuccessfullyProcessed;
+int failed = result.FailedProcessing;
+IReadOnlyList<DeadLetterEntry> processedEntries = result.EntriesProcessed;
+```
+
 ## WebhookHandlerExtensions
 The `WebhookHandlerExtensions` class provides convenient extension methods for `WebhookHandler` to simplify webhook subscription management, event dispatching, and subscription inspection. It includes methods for subscribing to specific event types, unsubscribing, checking subscription status, managing failed subscriptions, and retrieving subscription statistics.
 
