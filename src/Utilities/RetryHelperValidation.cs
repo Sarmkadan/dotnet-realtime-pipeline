@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Utilities;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="RetryHelper"/> and related classes.
@@ -24,13 +23,7 @@ public static class RetryHelperValidation
     public static IReadOnlyList<string> Validate(this RetryHelper value)
     {
         ArgumentNullException.ThrowIfNull(value);
-
-        var problems = new List<string>();
-
-        // Validate RetryAsync method parameters (these are the defaults used by RetryHelper)
-        // Note: RetryHelper itself doesn't store state, so we validate the builder pattern usage
-
-        return problems.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -52,7 +45,7 @@ public static class RetryHelperValidation
 
         if (maxAttemptsField != null)
         {
-            var maxAttempts = (int)maxAttemptsField.GetValue(builder);
+            var maxAttempts = (int)maxAttemptsField.GetValue(builder)!;
             if (maxAttempts <= 0)
             {
                 problems.Add($"MaxAttempts must be greater than 0, but was {maxAttempts}.");
@@ -61,7 +54,7 @@ public static class RetryHelperValidation
 
         if (initialDelayMsField != null)
         {
-            var initialDelayMs = (int)initialDelayMsField.GetValue(builder);
+            var initialDelayMs = (int)initialDelayMsField.GetValue(builder)!;
             if (initialDelayMs <= 0)
             {
                 problems.Add($"InitialDelayMs must be greater than 0, but was {initialDelayMs}.");
@@ -70,7 +63,7 @@ public static class RetryHelperValidation
 
         if (maxDelayMsField != null)
         {
-            var maxDelayMs = (int)maxDelayMsField.GetValue(builder);
+            var maxDelayMs = (int)maxDelayMsField.GetValue(builder)!;
             if (maxDelayMs <= 0)
             {
                 problems.Add($"MaxDelayMs must be greater than 0, but was {maxDelayMs}.");
@@ -78,7 +71,7 @@ public static class RetryHelperValidation
 
             if (initialDelayMsField != null)
             {
-                var initialDelayMs = (int)initialDelayMsField.GetValue(builder);
+                var initialDelayMs = (int)initialDelayMsField.GetValue(builder)!;
                 if (maxDelayMs < initialDelayMs)
                 {
                     problems.Add($"MaxDelayMs ({maxDelayMs}) cannot be less than InitialDelayMs ({initialDelayMs}).");
@@ -216,7 +209,6 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="policy">The retry policy to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
     public static bool IsValid(this RetryPolicy policy)
     {
         return Validate(policy).Count == 0;
@@ -227,7 +219,6 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="stats">The retry statistics to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stats"/> is null.</exception>
     public static bool IsValid(this RetryStatistics stats)
     {
         return Validate(stats).Count == 0;
@@ -238,7 +229,6 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="e">The retry event to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="e"/> is null.</exception>
     public static bool IsValid(this RetryEvent e)
     {
         return Validate(e).Count == 0;
