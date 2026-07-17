@@ -8,7 +8,6 @@
 namespace DotNetRealtimePipeline.Initialization;
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -78,11 +77,12 @@ public static class PipelineInitializerExtensions
             }
         }
 
-        return lastResult!;
+        return lastResult ?? new InitializationResult { Success = false, ErrorMessage = "All initialization attempts failed" };
     }
 
     /// <summary>
     /// Safely stops the pipeline if it's running, swallowing any exceptions.
+    /// <para>Note: This method intentionally swallows exceptions to ensure cleanup always succeeds.</para>
     /// </summary>
     /// <param name="initializer">The pipeline initializer instance.</param>
     /// <returns>True if the pipeline was stopped successfully or wasn't running; false if an error occurred.</returns>
