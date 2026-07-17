@@ -83,35 +83,25 @@ public static class PipelineOrchestratorValidation
             problems.Add("Throughput is negative.");
         }
 
-        // Validate IsRunning state - this is a private field but we can infer it from status
-        // The orchestrator doesn't expose IsRunning as a public property, so we rely on status
-        // No validation needed for IsRunning since it's derived from status
+        // IsRunning state is already validated via status.IsRunning property
 
-        // Validate BatchProcessingResult properties - it's a separate class in the same namespace
-        var batchResult = new global::DotNetRealtimePipeline.Services.BatchProcessingResult();
-        if (batchResult.SuccessfulCount < 0)
+        // Validate IsRunning state from status
+        if (!status.IsRunning && value.GetThroughput() > 0)
         {
-            problems.Add("BatchProcessingResult.SuccessfulCount is negative.");
-        }
-
-        if (batchResult.FailedCount < 0)
-        {
-            problems.Add("BatchProcessingResult.FailedCount is negative.");
+            problems.Add("Pipeline is not running but has non-zero throughput.");
         }
 
         return problems.AsReadOnly();
     }
 
-    /// <summary>
-    /// Determines whether the specified <see cref="PipelineOrchestrator"/> is valid.
-    /// </summary>
-    /// <param name="value">The orchestrator to check.</param>
-    /// <returns>True if valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this PipelineOrchestrator value)
-    {
-        return value.Validate().Count == 0;
-    }
+/// <summary>
+/// Determines whether the specified <see cref="PipelineOrchestrator"/> is valid.
+/// </summary>
+/// <param name="value">The orchestrator to check.</param>
+/// <returns>True if valid; otherwise, false.</returns>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+public static bool IsValid(this PipelineOrchestrator value)
+    => value is not null && value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="PipelineOrchestrator"/> is valid.
