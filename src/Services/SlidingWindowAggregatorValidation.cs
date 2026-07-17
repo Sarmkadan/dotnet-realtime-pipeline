@@ -16,6 +16,7 @@ public static class SlidingWindowAggregatorValidation
     /// </summary>
     /// <param name="value">The <see cref="SlidingWindowAggregator"/> to validate.</param>
     /// <returns>A list of human-readable problems.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this SlidingWindowAggregator value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -29,7 +30,7 @@ public static class SlidingWindowAggregatorValidation
         if (value.StepIntervalMs > value.WindowSizeMs)
             problems.Add("StepIntervalMs cannot exceed WindowSizeMs.");
 
-        return problems;
+        return problems.AsReadOnly();
     }
 
     /// <summary>
@@ -37,12 +38,9 @@ public static class SlidingWindowAggregatorValidation
     /// </summary>
     /// <param name="value">The <see cref="SlidingWindowAggregator"/> to check.</param>
     /// <returns>True if the <paramref name="value"/> is valid, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static bool IsValid(this SlidingWindowAggregator value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        return !Validate(value).Any();
-    }
+        => value is not null && !Validate(value).Any();
 
     /// <summary>
     /// Ensures that the given <paramref name="value"/> is valid.
@@ -54,8 +52,7 @@ public static class SlidingWindowAggregatorValidation
         ArgumentNullException.ThrowIfNull(value);
 
         var problems = Validate(value);
-
-        if (problems.Any())
+        if (problems.Count > 0)
             throw new ArgumentException($"The following problems were found: {string.Join(", ", problems)}");
     }
 }
