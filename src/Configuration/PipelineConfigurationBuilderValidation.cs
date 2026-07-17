@@ -116,13 +116,29 @@ public static class PipelineConfigurationBuilderValidation
             problems.Add("At least one stage must be configured, or default stages will be added during Build().");
         }
 
-        // Validate custom settings keys
-        foreach (var key in config.CustomSettings.Keys)
+        // Validate custom settings keys and values
+        if (config.CustomSettings is null)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            problems.Add("CustomSettings dictionary cannot be null.");
+        }
+        else
+        {
+            foreach (var key in config.CustomSettings.Keys)
             {
-                problems.Add("CustomSettings contains a null or whitespace key.");
-                break;
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    problems.Add("CustomSettings contains a null or whitespace key.");
+                    break;
+                }
+            }
+
+            foreach (var item in config.CustomSettings.Values)
+            {
+                if (item is null)
+                {
+                    problems.Add("CustomSettings contains a null value.");
+                    break;
+                }
             }
         }
 
@@ -157,7 +173,7 @@ public static class PipelineConfigurationBuilderValidation
         }
 
         throw new ArgumentException(
-            $"PipelineConfigurationBuilder validation failed with {problems.Count} problem(s):{Environment.NewLine}- ".Replace("- ", string.Empty) +
+            string.Format("PipelineConfigurationBuilder validation failed with {0} problem(s):{1}- ", problems.Count, Environment.NewLine).Replace("- ", string.Empty) +
             string.Join(Environment.NewLine + "- ", problems),
             nameof(value));
     }
@@ -166,6 +182,10 @@ public static class PipelineConfigurationBuilderValidation
     /// Gets the internal PipelineConfig from the builder for validation purposes.
     /// This is a private reflection helper to access the internal _config field.
     /// </summary>
+    /// <param name="builder">The builder instance to get the configuration from.</param>
+    /// <returns>The internal <see cref="PipelineConfig"/> instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="builder"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the internal _config field cannot be accessed.</exception>
     private static PipelineConfig GetInternalConfig(this PipelineConfigurationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
