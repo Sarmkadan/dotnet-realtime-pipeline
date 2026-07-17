@@ -1,47 +1,73 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace DotNetRealtimePipeline.Events;
 
 /// <summary>
-/// Provides validation helpers for <see cref="PipelineEventPublisher"/>.
+/// Provides validation helpers for <see cref="PipelineEventPublisher"/> instances.
 /// </summary>
+/// <remarks>
+/// The <see cref="PipelineEventPublisher"/> class is stateless with respect to validation criteria.
+/// All validation methods validate the input parameters rather than the publisher's internal state,
+/// as the publisher itself has no mutable state that requires validation.
+/// </remarks>
 public static class PipelineEventPublisherValidation
 {
     /// <summary>
-    /// Validates a <see cref="PipelineEventPublisher"/> instance and returns a read‑only list of human‑readable problems.
+    /// Validates a <see cref="PipelineEventPublisher"/> instance.
     /// </summary>
-    /// <param name="value">The publisher to validate.</param>
-    /// <returns>A read‑only list of validation problems; empty if the instance is considered valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c>.</exception>
+    /// <param name="value">The publisher instance to validate.</param>
+    /// <returns>
+    /// A read-only list of human-readable validation problems.
+    /// Returns an empty list if the instance is valid (always the case for current implementation).
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="value"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// This method currently returns an empty list because <see cref="PipelineEventPublisher"/>
+    /// has no validation criteria on its internal state. All members are methods that perform
+    /// actions or return counts rather than maintaining mutable state.
+    /// </remarks>
     public static IReadOnlyList<string> Validate(this PipelineEventPublisher value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        // The current public API of <see cref="PipelineEventPublisher"/> does not expose any state
-        // that can be validated. All members are methods that either perform actions or return
-        // counts. Therefore, there are no validation problems to report.
         return Array.Empty<string>();
     }
 
     /// <summary>
-    /// Determines whether a <see cref="PipelineEventPublisher"/> instance is valid.
+    /// Determines whether the specified <see cref="PipelineEventPublisher"/> instance is valid.
     /// </summary>
-    /// <param name="value">The publisher to check.</param>
-    /// <returns><c>true</c> if the instance has no validation problems; otherwise, <c>false</c>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c>.</exception>
+    /// <param name="value">The publisher instance to check.</param>
+    /// <returns>
+    /// <see langword="true"/> if the instance has no validation problems; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="value"/> is <see langword="null"/>.
+    /// </exception>
+    /// <remarks>
+    /// This method returns <see langword="true"/> because <see cref="PipelineEventPublisher"/>
+    /// has no validation criteria on its internal state.
+    /// </remarks>
     public static bool IsValid(this PipelineEventPublisher value) =>
         value.Validate().Count == 0;
 
     /// <summary>
-    /// Ensures that a <see cref="PipelineEventPublisher"/> instance is valid, throwing an <see cref="ArgumentException"/>
-    /// if any validation problems are found.
+    /// Ensures that the specified <see cref="PipelineEventPublisher"/> instance is valid.
     /// </summary>
-    /// <param name="value">The publisher to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when the instance is invalid; the message contains a list of problems.</exception>
+    /// <param name="value">The publisher instance to validate.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="value"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the instance is invalid; the message contains a list of validation problems.
+    /// </exception>
+    /// <remarks>
+    /// This method validates the publisher instance and throws if any validation problems are found.
+    /// Currently, no problems are ever found as <see cref="PipelineEventPublisher"/> has no validation criteria.
+    /// </remarks>
     public static void EnsureValid(this PipelineEventPublisher value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -51,8 +77,7 @@ public static class PipelineEventPublisherValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                string.Create(CultureInfo.InvariantCulture,
-                    $"PipelineEventPublisher is invalid. Problems:{Environment.NewLine}  - {string.Join($"{Environment.NewLine}  - ", problems)}"));
+                $"PipelineEventPublisher is invalid. Problems:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
         }
     }
 }
