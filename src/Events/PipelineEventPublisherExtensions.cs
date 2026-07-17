@@ -74,9 +74,14 @@ public static class PipelineEventPublisherExtensions
         ArgumentException.ThrowIfNullOrEmpty(resultId);
         ArgumentException.ThrowIfNullOrEmpty(stageName);
 
+        if (!long.TryParse(resultId, out var parsedResultId) || parsedResultId <= 0)
+        {
+            throw new ArgumentException("Result ID must be a positive integer", nameof(resultId));
+        }
+
         var result = new ProcessingResult
         {
-            ResultId = long.Parse(resultId),
+            ResultId = parsedResultId,
             Success = success,
             StageName = stageName,
             ErrorMessage = errorMessage,
@@ -94,7 +99,7 @@ public static class PipelineEventPublisherExtensions
     /// <param name="bufferSize">Current buffer size.</param>
     /// <param name="maxBufferCapacity">Maximum buffer capacity.</param>
     /// <param name="isBackpressured">Whether the stage is currently backpressured.</param>
-    /// <exception cref="ArgumentNullException">Thrown when publisher or stageName is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when publisher is null.</exception>
     /// <exception cref="ArgumentException">Thrown when stageName is null or empty.</exception>
     public static async Task PublishBackpressureDetectedAsync(
         this PipelineEventPublisher publisher,
@@ -134,11 +139,12 @@ public static class PipelineEventPublisherExtensions
         ArgumentNullException.ThrowIfNull(publisher);
         ArgumentException.ThrowIfNullOrEmpty(metricType);
 
+        var now = DateTimeOffset.UtcNow;
         var metrics = new MetricAggregation
         {
-            MetricId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            TimeWindowStartMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            TimeWindowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            MetricId = now.ToUnixTimeMilliseconds(),
+            TimeWindowStartMs = now.AddMinutes(-1).ToUnixTimeMilliseconds(),
+            TimeWindowEndMs = now.ToUnixTimeMilliseconds(),
             MetricType = metricType,
             TotalItemsProcessed = totalItemsProcessed,
             AverageProcessingTimeMs = averageProcessingTimeMs,
@@ -186,9 +192,6 @@ public static class PipelineEventPublisherExtensions
     {
         ArgumentNullException.ThrowIfNull(publisher);
 
-        var result = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        // These are the known event names based on the publisher's methods
         var eventNames = new[]
         {
             nameof(DataIngestedEvent),
@@ -198,6 +201,7 @@ public static class PipelineEventPublisherExtensions
             nameof(PipelineErrorEvent)
         };
 
+        var result = new Dictionary<string, int>(eventNames.Length);
         foreach (var eventName in eventNames)
         {
             result[eventName] = publisher.GetSubscriberCount(eventName);
