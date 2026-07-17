@@ -385,6 +385,47 @@ Console.WriteLine(statusSummary);
 // Output: "DataProcessing (Processor) | HEALTHY | Buffer: 45.2% | Throughput: 12.50K eps | Dropped: 23 | Backpressure: INACTIVE"
 ```
 
+## BackpressureEventExtensions
+The `BackpressureEventExtensions` class provides extension methods for `BackpressureEvent` that simplify backpressure event analysis and formatting. It includes methods for checking critical buffer states, determining severity levels, formatting events as readable strings, and identifying activation/release events.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+using System;
+
+// Assume event is a BackpressureEvent instance from pipeline monitoring
+var backpressureEvent = new BackpressureEvent
+{
+    Timestamp = DateTimeOffset.UtcNow,
+    StageName = "DataProcessing",
+    BufferFillPercent = 85.5,
+    IsActivation = true,
+    DroppedItems = 12
+};
+
+// Check if this event represents a critical situation
+bool isCritical = backpressureEvent.IsCritical(thresholdPercent: 80.0);
+Console.WriteLine($"Is critical: {isCritical}"); // Output: Is critical: True
+
+// Determine severity level based on buffer fill percentage
+var severity = backpressureEvent.GetSeverityLevel();
+Console.WriteLine($"Severity level: {severity}"); // Output: Severity level: High
+
+// Format the event as a human-readable string
+string formatted = backpressureEvent.ToFormattedString();
+Console.WriteLine(formatted);
+// Output: BackpressureEvent [Timestamp=2024-07-19T14:30:00.0000000Z, Stage=DataProcessing, BufferFill=85.50%, IsActivation=True, DroppedItems=12]
+
+// Check if this is a new activation event
+bool isNewActivation = backpressureEvent.IsNewActivation();
+Console.WriteLine($"Is new activation: {isNewActivation}"); // Output: Is new activation: True
+
+// Check if this is a release event (backpressure ended)
+bool isRelease = backpressureEvent.IsRelease();
+Console.WriteLine($"Is release: {isRelease}"); // Output: Is release: False
+```
+
 ## BackpressureContextExtensions
 The `BackpressureContextExtensions` class provides extension methods for `BackpressureContext` to simplify common operations and add domain-specific functionality for pipeline backpressure management. It includes methods for estimating time to capacity, checking critical buffer states, formatting metrics, and managing backpressure events.
 
