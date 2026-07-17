@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
+using DotNetRealtimePipeline.Data.Repositories;
+using DotNetRealtimePipeline.Metrics;
 
 namespace DotNetRealtimePipeline.Services
 {
@@ -21,7 +24,19 @@ namespace DotNetRealtimePipeline.Services
 
             var problems = new List<string>();
 
-            return problems;
+            // Validate repository is not null
+            if (value.GetRepository() is null)
+            {
+                problems.Add("MetricsService repository cannot be null.");
+            }
+
+            // Validate throughput counter is not null
+            if (value.GetThroughputCounter() is null)
+            {
+                problems.Add("MetricsService throughput counter cannot be null.");
+            }
+
+            return problems.AsReadOnly();
         }
 
         /// <summary>
@@ -32,7 +47,7 @@ namespace DotNetRealtimePipeline.Services
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static bool IsValid(this MetricsService value)
         {
-            return value.Validate().Count == 0;
+            return value is not null && Validate(value).Count == 0;
         }
 
         /// <summary>
@@ -45,12 +60,34 @@ namespace DotNetRealtimePipeline.Services
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            var problems = value.Validate();
+            var problems = Validate(value);
             if (problems.Count > 0)
             {
                 throw new ArgumentException(
-                    $"MetricsService is not valid. Problems:\n{string.Join("\n", problems)}");
+                    $"MetricsService is not valid. Problems:{Environment.NewLine}- ".Replace("- ", string.Empty) +
+                    string.Join(Environment.NewLine + "- ", problems),
+                    nameof(value));
             }
+        }
+
+        /// <summary>
+        /// Gets the repository instance from MetricsService for validation purposes.
+        /// </summary>
+        private static IMetricsRepository? GetRepository(this MetricsService service)
+        {
+            var field = typeof(MetricsService).GetField("_repository",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return field?.GetValue(service) as IMetricsRepository;
+        }
+
+        /// <summary>
+        /// Gets the throughput counter instance from MetricsService for validation purposes.
+        /// </summary>
+        private static IPipelineMetrics? GetThroughputCounter(this MetricsService service)
+        {
+            var field = typeof(MetricsService).GetField("_throughputCounter",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return field?.GetValue(service) as IPipelineMetrics;
         }
     }
 }
