@@ -1068,6 +1068,67 @@ BackpressureContext? nullContext = BackpressureContextJsonExtensions.FromJson(nu
 Console.WriteLine($"Null JSON result: {nullContext}"); // Output: Null JSON result:
 ```
 
+## BackpressureServiceTestsExtensions
+
+The `BackpressureServiceTestsExtensions` class provides extension methods for `BackpressureServiceTests` that simplify common test scenarios and operations for backpressure service testing. It includes factory methods for creating backpressure contexts with specific capacities, assertion methods for validating buffer states, and helper methods for managing buffer operations and backpressure application scenarios.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Domain.Enums;
+using Xunit;
+
+var tests = new BackpressureServiceTests();
+
+// Example 1: Create a context with specific capacity for testing
+var contextTests = tests.CreateContextWithCapacity("DataProcessing", maxCapacity: 10000);
+
+// Example 2: Add items to buffer and assert successful addition
+contextTests.AddToBuffer("DataProcessing", itemCount: 500);
+
+// Example 3: Assert buffer has reached capacity
+contextTests.AssertBufferAtCapacity("DataProcessing", expectedCapacity: 10000);
+
+// Example 4: Assert buffer has specific item count
+contextTests.AssertBufferCount("DataProcessing", expectedCount: 10000);
+
+// Example 5: Remove items from buffer and verify count
+contextTests.RemoveAndAssert("DataProcessing", itemsToRemove: 2000, expectedRemaining: 8000);
+
+// Example 6: Apply backpressure with block strategy and validate response
+await contextTests.AssertBackpressureAppliedAsync(
+    "DataProcessing", 
+    strategy: BackpressureStrategy.Block,
+    timeoutMs: 1000
+);
+
+// Example 7: Apply backpressure with throttle strategy
+await contextTests.AssertBackpressureAppliedAsync(
+    "DataProcessing", 
+    strategy: BackpressureStrategy.Throttle,
+    timeoutMs: 1000
+);
+
+// Example 8: Get buffer status as dictionary for custom assertions
+var bufferStatus = contextTests.GetBufferStatusDictionary();
+Assert.Equal(10000, bufferStatus["DataProcessing"]);
+
+// Example 9: Create multiple contexts with different capacities
+var multiContextTests = tests.CreateMultipleContexts(
+    ("Ingestion", 5000),
+    ("Transformation", 8000),
+    ("Aggregation", 3000)
+);
+
+// Example 10: Chain multiple operations for comprehensive testing
+contextTests
+    .CreateContextWithCapacity("DataProcessing", 10000)
+    .AddToBuffer("DataProcessing", 8000)
+    .AssertBufferCount("DataProcessing", 8000)
+    .RemoveAndAssert("DataProcessing", 2000, 6000);
+```
+
 ## BackpressureMetricsCollectorTests
 The `BackpressureMetricsCollectorTests` class provides unit tests for the `BackpressureMetricsCollector` class, verifying its ability to track and report backpressure metrics across pipeline stages. It includes tests for handling unknown stages, recording manual events, aggregating metrics, and resetting collected data.
 
