@@ -48,7 +48,7 @@ public static class PipelineExceptionJsonExtensions
     /// Deserializes a <see cref="PipelineException"/> from a JSON string.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized exception, or null if the JSON is null or empty.</returns>
+    /// <returns>The deserialized exception, or null if the JSON is null, empty, or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static PipelineException? FromJson(string json)
@@ -67,10 +67,10 @@ public static class PipelineExceptionJsonExtensions
     /// Attempts to deserialize a <see cref="PipelineException"/> from a JSON string.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">The deserialized exception, or null if deserialization fails.</param>
+    /// <param name="value">When this method returns, contains the deserialized exception if successful, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-    public static bool TryFromJson(string json, out PipelineException? value)
+    public static bool TryFromJson(string json, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out PipelineException? value)
     {
         ArgumentNullException.ThrowIfNull(json);
 
