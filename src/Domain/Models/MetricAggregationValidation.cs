@@ -13,13 +13,20 @@ using System.Globalization;
 /// <summary>
 /// Provides validation helpers for <see cref="MetricAggregation"/> instances.
 /// </summary>
+/// <remarks>
+/// This static class contains extension methods for validating <see cref="MetricAggregation"/> objects.
+/// It validates all properties including MetricId, time windows, MetricType, processing metrics,
+/// percentile relationships, backpressure metrics, ComputedAt timestamp, and dictionary values.
+/// All methods throw <see cref="ArgumentNullException"/> for null inputs and provide detailed error messages
+/// for validation failures.
+/// </remarks>
 public static class MetricAggregationValidation
 {
     /// <summary>
     /// Validates the specified <see cref="MetricAggregation"/> instance.
     /// </summary>
     /// <param name="value">The metric aggregation to validate.</param>
-    /// <returns>A list of validation errors; empty if valid.</returns>
+    /// <returns>A list of validation error messages; empty if the metric aggregation is valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this MetricAggregation value)
     {
@@ -195,7 +202,7 @@ public static class MetricAggregationValidation
     /// Determines whether the specified <see cref="MetricAggregation"/> is valid.
     /// </summary>
     /// <param name="value">The metric aggregation to check.</param>
-    /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the metric aggregation is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this MetricAggregation value)
     {
@@ -208,6 +215,11 @@ public static class MetricAggregationValidation
     /// <param name="value">The metric aggregation to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is invalid.</exception>
+ /// <remarks>
+ /// This method validates all properties including MetricId, time windows, MetricType, processing metrics,
+ /// percentile relationships, backpressure metrics, ComputedAt timestamp, and dictionary values.
+ /// If validation fails, an <see cref="ArgumentException"/> is thrown with detailed error messages.
+ /// </remarks>
     public static void EnsureValid(this MetricAggregation value)
     {
         ArgumentNullException.ThrowIfNull(value);
