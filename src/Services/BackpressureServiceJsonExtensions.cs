@@ -67,11 +67,5 @@ public static class BackpressureServiceJsonExtensions
     }
 
     private static JsonSerializerOptions GetIndentedOptions()
-    {
-        var options = new JsonSerializerOptions(_jsonOptions)
-        {
-            WriteIndented = true,
-        };
-        return options;
-    }
+        => new JsonSerializerOptions(_jsonOptions) { WriteIndented = true };
 }
