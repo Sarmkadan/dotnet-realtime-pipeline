@@ -79,7 +79,7 @@ public static class ApiEndpointHandlerExtensions
     /// <param name="message">Optional message to include in the response.</param>
     /// <returns>A paginated <see cref="ApiEndpointHandler.ApiResponse{PaginatedResponse{T}}"/> with the paginated data.</returns>
     /// <exception cref="ArgumentNullException">Thrown if handler or data is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown if page or pageSize are invalid.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if page, pageSize, or totalCount are invalid.</exception>
     public static ApiEndpointHandler.ApiResponse<PaginatedResponse<T>> ToPaginatedResponse<T>(
         this ApiEndpointHandler handler,
         IEnumerable<T> data,
@@ -101,8 +101,13 @@ public static class ApiEndpointHandlerExtensions
             throw new ArgumentOutOfRangeException(nameof(pageSize), "Page size must be 1 or greater.");
         }
 
+    if (totalCount < 0)
+    {
+        throw new ArgumentOutOfRangeException(nameof(totalCount), "Total count cannot be negative.");
+    }
+
         var items = data.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+    var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
         var responseData = new PaginatedResponse<T>
         {
@@ -178,25 +183,25 @@ public sealed class PaginatedResponse<T>
     /// <summary>
     /// The items on the current page.
     /// </summary>
-    public IReadOnlyList<T> Items { get; set; } = Array.Empty<T>();
+    public IReadOnlyList<T> Items { get; init; } = Array.Empty<T>();
 
     /// <summary>
     /// The current page number (1-based).
     /// </summary>
-    public int Page { get; set; }
+    public int Page { get; init; }
 
     /// <summary>
     /// The number of items per page.
     /// </summary>
-    public int PageSize { get; set; }
+    public int PageSize { get; init; }
 
     /// <summary>
     /// The total number of items available.
     /// </summary>
-    public int TotalCount { get; set; }
+    public int TotalCount { get; init; }
 
     /// <summary>
     /// The total number of pages available.
     /// </summary>
-    public int TotalPages { get; set; }
+    public int TotalPages { get; init; }
 }
