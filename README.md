@@ -274,6 +274,76 @@ var aggregateStages = config.GetStagesByType("aggregate");
 Console.WriteLine($"Aggregate stages count: {aggregateStages.Count()}"); // Output: Aggregate stages count: 1
 ```
 
+## WindowEventValidation
+The `WindowEventValidation` static class provides validation helpers for `WindowEvent` instances, ensuring window events meet business rules and data integrity constraints. It includes methods for comprehensive validation, duration checks, data point quality assessment, and timestamp validation.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Assume windowEvent is a WindowEvent instance
+var windowEvent = new WindowEvent
+{
+    WindowId = 1,
+    WindowStartMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    WindowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 300000, // 5 minutes later
+    AggregationType = "Average",
+    CreatedAt = DateTime.UtcNow,
+    CreatedAtTicks = DateTime.UtcNow.Ticks,
+    DataPoints = new List<DataPoint>
+    {
+        new DataPoint { Id = "1", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 42.5, Quality = 95 },
+        new DataPoint { Id = "2", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1000, Value = 43.1, Quality = 92 }
+    },
+    IsComplete = true
+};
+
+// Validate window event
+var validationErrors = windowEvent.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if valid
+bool isValid = windowEvent.IsValid();
+Console.WriteLine($"Is valid: {isValid}");
+
+// Ensure validity (throws if invalid)
+windowEvent.EnsureValid();
+
+// Check duration validity
+bool isDurationValid = windowEvent.IsDurationValid(maxDurationMs: 3600000); // 1 hour
+Console.WriteLine($"Duration valid: {isDurationValid}");
+
+// Check data point count
+bool hasSufficientData = windowEvent.HasSufficientDataPoints(minDataPoints: 2);
+Console.WriteLine($"Has sufficient data points: {hasSufficientData}");
+
+// Check supported aggregation type
+var supportedTypes = new List<string> { "Average", "Sum", "Count", "Min", "Max" };
+bool hasSupportedAggregation = windowEvent.HasSupportedAggregationType(supportedTypes);
+Console.WriteLine($"Has supported aggregation: {hasSupportedAggregation}");
+
+// Check data point quality
+bool hasQualityData = windowEvent.HasQualityDataPoints(qualityThreshold: 85);
+Console.WriteLine($"Has quality data points: {hasQualityData}");
+
+// Check if complete and valid
+bool isCompleteAndValid = windowEvent.IsCompleteAndValid();
+Console.WriteLine($"Is complete and valid: {isCompleteAndValid}");
+
+// Check timestamp reasonableness
+bool hasReasonableTimestamps = windowEvent.HasReasonableTimestamps(maxFutureMs: 7200000); // 2 hours
+Console.WriteLine($"Has reasonable timestamps: {hasReasonableTimestamps}");
+```
+
 ## PipelineBenchmarks
 The `PipelineBenchmarks` class provides performance benchmarks for the dotnet-realtime-pipeline library. It measures throughput and memory allocation for critical pipeline operations.
 
