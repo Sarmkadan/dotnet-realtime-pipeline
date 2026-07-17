@@ -1,4 +1,5 @@
 #nullable enable
+
 using DotNetRealtimePipeline.Data.Repositories;
 using DotNetRealtimePipeline.Domain.Models;
 using DotNetRealtimePipeline.Services;
@@ -6,6 +7,7 @@ using FluentAssertions;
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DotNetRealtimePipeline.Tests.Unit
@@ -16,6 +18,34 @@ namespace DotNetRealtimePipeline.Tests.Unit
     public static class MetricsServiceTestsExtensions
     {
         /// <summary>
+        /// Gets the <see cref="MetricsService"/> instance from the test class.
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <returns>The <see cref="MetricsService"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
+        public static MetricsService GetService(this MetricsServiceTests tests)
+        {
+            ArgumentNullException.ThrowIfNull(tests);
+
+            var serviceField = typeof(MetricsServiceTests).GetField("_service", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return (MetricsService)serviceField!.GetValue(tests)!;
+        }
+
+        /// <summary>
+        /// Gets the mock repository from the test class.
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <returns>The <see cref="Mock{IMetricsRepository}"/> instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
+        public static Mock<IMetricsRepository> GetMockRepository(this MetricsServiceTests tests)
+        {
+            ArgumentNullException.ThrowIfNull(tests);
+
+            var repoField = typeof(MetricsServiceTests).GetField("_repoMock", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return (Mock<IMetricsRepository>)repoField!.GetValue(tests)!;
+        }
+
+        /// <summary>
         /// Verifies that the <see cref="MetricsServiceTests"/> instance has a valid <see cref="MetricsService"/> instance.
         /// </summary>
         /// <param name="tests">The test instance.</param>
@@ -23,8 +53,7 @@ namespace DotNetRealtimePipeline.Tests.Unit
         public static void VerifyMetricsService(this MetricsServiceTests tests)
         {
             ArgumentNullException.ThrowIfNull(tests);
-            // Note: Since MetricsService is not a public member of MetricsServiceTests, 
-            // we cannot directly access it. This method is left as a placeholder.
+            tests.GetService().Should().NotBeNull("MetricsService should be initialized in test constructor");
         }
 
         /// <summary>
@@ -58,8 +87,9 @@ namespace DotNetRealtimePipeline.Tests.Unit
         {
             ArgumentNullException.ThrowIfNull(tests);
             ArgumentNullException.ThrowIfNull(setupAction);
-            // Note: Since _repoMock is not a public member of MetricsServiceTests, 
-            // we cannot directly access it. This method is left as a placeholder.
+
+            var mockRepo = tests.GetMockRepository();
+            setupAction(mockRepo);
         }
 
         /// <summary>
@@ -73,8 +103,42 @@ namespace DotNetRealtimePipeline.Tests.Unit
         {
             ArgumentNullException.ThrowIfNull(tests);
             ArgumentNullException.ThrowIfNull(result);
-            // Note: Since the actual test result is not accessible, 
-            // this method is left as a placeholder.
+
+            result.Should().NotBeNull("Test result should not be null");
+        }
+
+        /// <summary>
+        /// Verifies that the mock repository was called with the specified parameters.
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="predicate">Predicate to match the expected call.</param>
+        /// <param name="times">The expected number of times the method should have been called.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="predicate"/> is null.</exception>
+        public static void VerifyRepositoryCall(this MetricsServiceTests tests, Func<MetricAggregation, bool> predicate, Times times)
+        {
+            ArgumentNullException.ThrowIfNull(tests);
+            ArgumentNullException.ThrowIfNull(predicate);
+
+            var mockRepo = tests.GetMockRepository();
+            mockRepo.Verify(r => r.SaveAsync(It.Is<MetricAggregation>(x => predicate(x))), times);
+        }
+
+        /// <summary>
+        /// Sets up the mock repository to return a specific metric aggregation.
+        /// </summary>
+        /// <param name="tests">The test instance.</param>
+        /// <param name="metric">The metric aggregation to return.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="metric"/> is null.</exception>
+        public static void SetupRepositoryToReturn(this MetricsServiceTests tests, MetricAggregation metric)
+        {
+            ArgumentNullException.ThrowIfNull(tests);
+            ArgumentNullException.ThrowIfNull(metric);
+
+            var mockRepo = tests.GetMockRepository();
+            mockRepo.Setup(r => r.SaveAsync(metric)).ReturnsAsync(metric);
+            mockRepo.Setup(r => r.GetLatestAsync()).ReturnsAsync(metric);
         }
     }
 }
