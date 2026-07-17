@@ -10,6 +10,7 @@ namespace DotNetRealtimePipeline.Caching;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Extension methods for <see cref="CacheService{TKey, TValue}"/> providing additional functionality
@@ -37,14 +38,9 @@ public static class CacheServiceExtensions
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(valueFactory);
 
-        if (cache.TryGetValue(key, out var value))
-        {
-            return value;
-        }
-
-        value = valueFactory(key);
-        cache.Set(key, value);
-        return value;
+        return cache.TryGetValue(key, out var value)
+            ? value
+            : valueFactory(key).Also(v => cache.Set(key, v));
     }
 
     /// <summary>
@@ -69,14 +65,9 @@ public static class CacheServiceExtensions
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(valueFactory);
 
-        if (cache.TryGetValue(key, out var value))
-        {
-            return value;
-        }
-
-        value = valueFactory(key);
-        cache.Set(key, value, ttl);
-        return value;
+        return cache.TryGetValue(key, out var value)
+            ? value
+            : valueFactory(key).Also(v => cache.Set(key, v, ttl));
     }
 
     /// <summary>
@@ -234,5 +225,14 @@ public static class CacheServiceExtensions
 
         var stats = cache.GetStatistics();
         return stats.MaxCapacity > 0 ? stats.UtilizationPercent / 100.0 : 0.0;
+    }
+
+    /// <summary>
+    /// Invokes an action on the value and returns the value (for method chaining).
+    /// </summary>
+    private static T Also<T>(this T value, Action<T> action)
+    {
+        action(value);
+        return value;
     }
 }
