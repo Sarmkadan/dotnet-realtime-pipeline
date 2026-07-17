@@ -1375,6 +1375,72 @@ var lastNMetrics = await repository.GetLastNMetricsAsync(10);
 Console.WriteLine($"Last {lastNMetrics.Count} metrics: {string.Join(", ", lastNMetrics.Select(m => m.MetricId))}");
 ```
 
+## CacheServiceExtensions
+
+The `CacheServiceExtensions` class provides extension methods for `CacheService<TKey, TValue>` that enhance cache operations with batch operations, time-based caching, and convenient utility methods. It includes methods for getting/setting multiple values in a single operation, conditional value retrieval with factory methods, and cache statistics reporting.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Caching;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+// Initialize cache with a maximum capacity of 1000 items
+var cache = new CacheService<string, SensorData>(maxCapacity: 1000);
+
+// Get or add a value with automatic creation if missing
+var sensorData = cache.GetOrAdd("sensor-001", key => new SensorData(key, 23.5, DateTime.UtcNow));
+Console.WriteLine($"Retrieved sensor data: {sensorData.Temperature}°C");
+
+// Get or add with custom TTL (5 minutes)
+var cachedResult = cache.GetOrAdd("expensive-calculation", TimeSpan.FromMinutes(5), key => 
+    PerformExpensiveCalculation(key));
+Console.WriteLine($"Cached result: {cachedResult}");
+
+// Set multiple values at once
+var itemsToAdd = new Dictionary<string, SensorData>
+{
+    ["sensor-002"] = new SensorData("sensor-002", 24.1, DateTime.UtcNow),
+    ["sensor-003"] = new SensorData("sensor-003", 22.8, DateTime.UtcNow),
+    ["sensor-004"] = new SensorData("sensor-004", 25.3, DateTime.UtcNow)
+};
+cache.SetRange(itemsToAdd);
+Console.WriteLine($"Added {itemsToAdd.Count} items to cache");
+
+// Get multiple values in a single operation
+var requestedKeys = new[] { "sensor-001", "sensor-002", "sensor-005" };
+var retrievedData = cache.GetRange(requestedKeys);
+Console.WriteLine($"Retrieved {retrievedData.Count} items from cache");
+
+// Remove multiple keys in a single operation
+var keysToRemove = new[] { "sensor-002", "sensor-003" };
+int removedCount = cache.RemoveRange(keysToRemove);
+Console.WriteLine($"Removed {removedCount} items from cache");
+
+// Get cache statistics for monitoring
+string statsString = cache.ToPerformanceCounterString();
+Console.WriteLine($"Cache stats: {statsString}");
+
+// Get value or default (returns null instead of throwing if not found)
+var missingValue = cache.GetValueOrDefault("non-existent-key");
+Console.WriteLine($"Missing value: {missingValue}");
+
+// Get cache utilization ratio (0.0 to 1.0)
+double utilization = cache.GetUtilizationRatio();
+Console.WriteLine($"Cache utilization: {utilization:P0}");
+
+// Helper method for example
+static SensorData PerformExpensiveCalculation(string sensorId)
+{
+    // Simulate expensive operation
+    return new SensorData(sensorId, 42.0, DateTime.UtcNow);
+}
+
+public record SensorData(string SensorId, double Temperature, DateTime Timestamp);
+```
+
 ## MetricAggregationExtensions
 The `MetricAggregationExtensions` class provides extension methods for `MetricAggregation` to simplify common metric calculations, aggregations, and filtering operations. It includes methods for calculating success rates, error rates, time window durations, and source-specific aggregations.
 
