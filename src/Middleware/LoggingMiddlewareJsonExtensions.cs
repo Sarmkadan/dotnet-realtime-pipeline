@@ -10,7 +10,8 @@ using System;
 using System.Text.Json;
 
 /// <summary>
-/// Provides JSON serialization helpers for <see cref="LoggingMiddleware"/>.
+/// Provides JSON serialization helpers for logging-related models and data structures.
+/// <para><see cref="LoggingMiddleware"/> instances cannot be serialized due to their dependency on <see cref="Microsoft.Extensions.Logging.ILogger"/>.</para>
 /// </summary>
 public static class LoggingMiddlewareJsonExtensions
 {
@@ -27,13 +28,15 @@ public static class LoggingMiddlewareJsonExtensions
     /// <param name="indented">If true, formats the JSON with indentation.</param>
     /// <returns>A JSON string representation of the <see cref="LoggingMiddleware"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="NotSupportedException">Thrown because <see cref="LoggingMiddleware"/> instances cannot be serialized.
+    /// Middleware instances contain non-serializable dependencies such as <see cref="Microsoft.Extensions.Logging.ILogger"/>.</exception>
     public static string ToJson(this LoggingMiddleware value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = new JsonSerializerOptions(JsonSerializerOptions);
-        options.WriteIndented = indented;
-        return JsonSerializer.Serialize(value, options);
+        throw new NotSupportedException(
+            "LoggingMiddleware instances cannot be serialized due to their dependency on ILogger. " +
+            "Consider serializing logging-related data models instead (e.g., ProcessingResult, BackpressureContext).");
     }
 
     /// <summary>
@@ -42,11 +45,15 @@ public static class LoggingMiddlewareJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>A <see cref="LoggingMiddleware"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null or empty.</exception>
-    /// <exception cref="JsonException">Thrown when JSON parsing fails.</exception>
+    /// <exception cref="NotSupportedException">Thrown because <see cref="LoggingMiddleware"/> cannot be deserialized.
+    /// Middleware instances require runtime dependencies that cannot be reconstructed from serialized data.</exception>
     public static LoggingMiddleware? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNullOrEmpty(json);
-        return JsonSerializer.Deserialize<LoggingMiddleware>(json, JsonSerializerOptions);
+
+        throw new NotSupportedException(
+            "LoggingMiddleware instances cannot be deserialized. " +
+            "Middleware requires runtime dependencies like ILogger that cannot be reconstructed from serialized data.");
     }
 
     /// <summary>
@@ -54,18 +61,12 @@ public static class LoggingMiddlewareJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized <see cref="LoggingMiddleware"/> instance, or null.</param>
-    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <returns>False, since deserialization always fails for <see cref="LoggingMiddleware"/>.</returns>
     public static bool TryFromJson(string json, out LoggingMiddleware? value)
     {
-        try
-        {
-            value = FromJson(json);
-            return value is not null;
-        }
-        catch (JsonException)
-        {
-            value = null;
-            return false;
-        }
+        ArgumentNullException.ThrowIfNullOrEmpty(json);
+
+        value = null;
+        return false;
     }
 }
