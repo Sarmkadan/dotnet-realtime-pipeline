@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace DotNetRealtimePipeline.CLI;
@@ -14,7 +13,7 @@ public static class CommandLineParserValidation
     private const string CommandRegistryFieldName = "_commandRegistry";
 
     /// <summary>
-    /// Validates the state of a <see cref="CommandLineParser"/> and returns a collection of human‑readable problems.
+    /// Validates the state of a <see cref="CommandLineParser"/> and returns a collection of human-readable problems.
     /// </summary>
     /// <param name="value">The parser to validate.</param>
     /// <returns>An <see cref="IReadOnlyList{T}"/> containing validation error messages; empty if the parser is valid.</returns>
@@ -25,35 +24,44 @@ public static class CommandLineParserValidation
 
         var problems = new List<string>();
 
-        // Use reflection to inspect the private command registry.
-        var field = typeof(CommandLineParser).GetField(CommandRegistryFieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-        if (field is null)
+        try
         {
-            problems.Add("Unable to locate internal command registry.");
-            return problems;
-        }
+            // Use reflection to inspect the private command registry.
+            var field = typeof(CommandLineParser).GetField(
+                CommandRegistryFieldName,
+                BindingFlags.NonPublic | BindingFlags.Instance);
 
-        var registry = field.GetValue(value) as IDictionary<string, Func<ParsedCommand>>;
-        if (registry is null)
-        {
-            problems.Add("Internal command registry is null.");
-            return problems;
-        }
-
-        if (registry.Count == 0)
-        {
-            problems.Add("No commands are registered with the parser.");
-        }
-        else
-        {
-            // Ensure each factory delegate is non‑null.
-            foreach (var kvp in registry)
+            if (field is null)
             {
-                if (kvp.Value is null)
+                problems.Add("Unable to locate internal command registry.");
+                return problems;
+            }
+
+            if (field.GetValue(value) is not IDictionary<string, Func<ParsedCommand>> registry)
+            {
+                problems.Add("Internal command registry is null or of incorrect type.");
+                return problems;
+            }
+
+            if (registry.Count == 0)
+            {
+                problems.Add("No commands are registered with the parser.");
+            }
+            else
+            {
+                // Ensure each factory delegate is non-null.
+                foreach (var (verb, factory) in registry)
                 {
-                    problems.Add($"Command factory for verb '{kvp.Key}' is null.");
+                    if (factory is null)
+                    {
+                        problems.Add($"Command factory for verb '{verb}' is null.");
+                    }
                 }
             }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or TargetInvocationException)
+        {
+            problems.Add($"Reflection failed while accessing command registry: {ex.Message}");
         }
 
         return problems;
