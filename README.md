@@ -24,6 +24,103 @@ concurrency model, extension points, and known limitations.
 The sections below are generated per-class API notes; more per-class docs live in
 [docs/](docs/).
 
+## BatchProcessorExtensions
+
+The `BatchProcessorExtensions` class provides extension methods for `BatchProcessor<TInput, TOutput>` and `DataPointBatchProcessor` that simplify batch processing operations. It includes methods for processing collections in batches, creating batches from collections, batch transformations, parallel processing with aggregation, estimating processing time, and analyzing batch statistics.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+// Create a batch processor with default settings (batch size: 1000, parallelism: 4)
+var processor = new BatchProcessor<string, string>(batchSize: 1000, maxDegreeOfParallelism: 4);
+
+// Example 1: Process a collection in batches
+var items = Enumerable.Range(1, 5000).Select(i => $"Item {i}").ToList();
+
+var results = await processor.ProcessAsync(
+    items,
+    async batch => {
+        // Process each batch (simulating async work)
+        await Task.Delay(10);
+        return batch.Select(item => $"Processed: {item}").ToList();
+    },
+    progress => Console.WriteLine($"Progress: {progress.Current}/{progress.Total}")
+);
+
+Console.WriteLine($"Processed {results.Count} batches");
+
+// Example 2: Batch transformation with selector
+var transformed = processor.BatchSelect(
+    items,
+    batch => batch.Count
+);
+
+Console.WriteLine($"Batch sizes: {string.Join(", ", transformed)}");
+
+// Example 3: Parallel processing with aggregation
+var totalLength = await processor.ProcessAsync(
+    items,
+    async batch => {
+        await Task.Delay(5);
+        return batch.Select(item => item.Length).ToList();
+    },
+    seed: 0,
+    (aggregate, result) => aggregate + result,
+    progress => Console.WriteLine($"Aggregating: {progress.Current}/{progress.Total}")
+);
+
+Console.WriteLine($"Total length of all processed items: {totalLength}");
+
+// Example 4: Estimate processing time
+var estimatedTime = processor.GetEstimatedProcessingTime<string, string>(
+    itemCount: 10000,
+    estimatedBatchProcessingTimeMs: 50.0
+);
+
+Console.WriteLine($"Estimated processing time: {estimatedTime.TotalSeconds:F2}s");
+
+// Example 5: Get batch statistics
+var stats = processor.GetBatchStatistics<string, string>(items);
+Console.WriteLine(stats);
+Console.WriteLine($"Total items: {stats.TotalItems}, Batches: {stats.TotalBatches}, Batch size: {stats.BatchSize}");
+
+// Example 6: Process DataPoints in batches
+var dataPointProcessor = new DataPointBatchProcessor(batchSize: 500);
+var dataPoints = new List<DataPoint>();
+for (int i = 0; i < 2500; i++)
+{
+    dataPoints.Add(new DataPoint {
+        Id = i,
+        Source = $"Sensor{i % 10}",
+        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        Value = i * 0.5,
+        Quality = 95
+    });
+}
+
+var processingResults = await dataPointProcessor.ProcessBatchAsync(
+    dataPoints,
+    async batch => {
+        await Task.Delay(20);
+        return batch.Select(dp => new ProcessingResult(
+            stageName: "DataProcessing",
+            success: true,
+            outputData: new Dictionary<string, object> { { "count", batch.Count } },
+            processingTimeMs: 25
+        )).ToList();
+    }
+);
+
+Console.WriteLine($"Processed {processingResults.Count} batches of DataPoints");
+```
+
 ## CommandExecutorExtensions
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
