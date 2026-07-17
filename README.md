@@ -479,6 +479,84 @@ await publisher.PublishPipelineErrorAsync("IngestionOperation", new Exception("S
 await publisher.PublishDataIngestedBatchAsync(new[] { dataPoint });
 ```
 
+## MetricAggregationExtensions
+The `MetricAggregationExtensions` class provides extension methods for `MetricAggregation` to simplify common metric calculations, aggregations, and filtering operations. It includes methods for calculating success rates, error rates, time window durations, and source-specific aggregations.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Linq;
+
+// Assume aggregation is a MetricAggregation from pipeline metrics collection
+var aggregation = new MetricAggregation
+{
+    MetricId = "pipeline-metrics-20240719",
+    MetricType = "PipelinePerformance",
+    TimeWindowStartMs = DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeMilliseconds(),
+    TimeWindowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    TotalItemsProcessed = 10000,
+    TotalItemsFailed = 250,
+    TotalItemsSkipped = 120,
+    BackpressureEvents = 8,
+    TotalBackpressureMs = 1500,
+    AverageProcessingTimeMs = 45.2,
+    MinProcessingTimeMs = 5,
+    MaxProcessingTimeMs = 250,
+    P95ProcessingTimeMs = 120,
+    P99ProcessingTimeMs = 180,
+    CountBySource = new Dictionary<string, long>
+    {
+        ["sensor-ingest"] = 4500,
+        ["api-ingest"] = 3200,
+        ["batch-ingest"] = 2300
+    },
+    ErrorRateByStage = new Dictionary<string, double>
+    {
+        ["validation"] = 0.02,
+        ["transformation"] = 0.01,
+        ["aggregation"] = 0.005
+    },
+    ComputedAt = DateTime.UtcNow
+};
+
+// Calculate success rate (0.0 to 1.0)
+double successRate = aggregation.CalculateSuccessRate();
+Console.WriteLine($"Success rate: {successRate:P2}"); // Output: Success rate: 97.50%
+
+// Calculate combined error rate across all stages
+double errorRate = aggregation.CalculateCombinedErrorRate();
+Console.WriteLine($"Combined error rate: {errorRate:P2}"); // Output: Combined error rate: 1.17%
+
+// Get time window duration in milliseconds and TimeSpan
+long durationMs = aggregation.GetTimeWindowDurationMs();
+TimeSpan duration = aggregation.GetTimeWindowDuration();
+Console.WriteLine($"Duration: {durationMs}ms ({duration.TotalSeconds:F1}s)");
+
+// Get source names and total items across all sources
+var sourceNames = aggregation.GetSourceNames().ToList();
+long totalItems = aggregation.GetTotalItemsFromSources();
+Console.WriteLine($"Sources: {string.Join(", ", sourceNames)} | Total items: {totalItems}");
+
+// Get stages with errors and backpressure percentage
+var errorStages = aggregation.GetStagesWithErrors().ToList();
+double backpressurePercent = aggregation.GetBackpressurePercentage();
+Console.WriteLine($"Stages with errors: {string.Join(", ", errorStages)}");
+Console.WriteLine($"Backpressure time: {backpressurePercent:F1}% of window");
+
+// Get average percentile and combine multiple aggregations
+var percentileAvg = aggregation.GetAveragePercentile();
+Console.WriteLine($"Average percentile (P95/P99): {percentileAvg:F0}ms");
+
+// Combine multiple aggregations
+var combined = new[] { aggregation, aggregation }.Combine();
+Console.WriteLine($"Combined total items: {combined.TotalItemsProcessed}");
+
+// Filter by specific sources
+var filtered = aggregation.FilterBySource(source => source.StartsWith("sensor"));
+Console.WriteLine($"Filtered total items (sensor only): {filtered.TotalItemsProcessed}");
+```
+
 ## ApiEndpointHandlerExtensions
 The `ApiEndpointHandlerExtensions` class provides helper methods to streamline the creation of structured API responses, including standard successful and error results. It also simplifies the construction of paginated responses and allows for the seamless inclusion of batch processing statistics in the API output.
 
