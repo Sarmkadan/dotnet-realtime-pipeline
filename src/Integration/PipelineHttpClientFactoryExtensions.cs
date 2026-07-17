@@ -26,7 +26,7 @@ public static class PipelineHttpClientFactoryExtensions
     /// <param name="factory">The factory instance.</param>
     /// <param name="baseAddress">The base address for the HTTP client.</param>
     /// <returns>A configured HTTP client with the specified base address.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="baseAddress"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/> or <paramref name="baseAddress"/> is null.</exception>
     public static HttpClient CreateClientWithBaseAddress(this PipelineHttpClientFactory factory, string baseAddress)
     {
         ArgumentNullException.ThrowIfNull(factory);
@@ -47,8 +47,8 @@ public static class PipelineHttpClientFactoryExtensions
     /// <param name="retryDelay">The delay between retry attempts.</param>
     /// <param name="useCompression">Whether to enable compression.</param>
     /// <returns>A configured HTTP client for the specified service.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="serviceName"/> is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeout"/> or <paramref name="retryDelay"/> is negative.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/> or <paramref name="serviceName"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeout"/> is negative or zero, or when <paramref name="maxRetries"/> is negative.</exception>
     public static HttpClient CreateConfiguredServiceClient(
         this PipelineHttpClientFactory factory,
         string serviceName,
@@ -70,28 +70,13 @@ public static class PipelineHttpClientFactoryExtensions
             throw new ArgumentOutOfRangeException(nameof(maxRetries), "Max retries cannot be negative.");
         }
 
-        var client = factory.CreateServiceClient(serviceName, timeout, useCompression);
+        var builder = new HttpClientBuilder(new NullLogger<HttpClientBuilder>())
+            .WithTimeout(timeout)
+            .WithRetry(maxRetries, retryDelay ?? factory.RetryDelay)
+            .WithCompression(useCompression)
+            .WithHeader("User-Agent", $"{factory.UserAgent} ({serviceName})");
 
-        // Apply custom retry configuration via builder pattern
-        var builder = new HttpClientBuilder(new NullLogger<HttpClientBuilder>());
-        builder.WithTimeout(timeout);
-        builder.WithRetry(maxRetries, retryDelay ?? factory.RetryDelay);
-        builder.WithCompression(useCompression);
-
-        // Copy configuration to the client
-        var config = new HttpClientConfiguration
-        {
-            Timeout = timeout,
-            MaxRetries = maxRetries,
-            RetryDelay = retryDelay ?? factory.RetryDelay,
-            UseCompression = useCompression,
-            UserAgent = $"{factory.UserAgent} ({serviceName})"
-        };
-
-        client.Timeout = config.Timeout;
-        client.DefaultRequestHeaders.Add("User-Agent", config.UserAgent);
-
-        return client;
+        return builder.Build();
     }
 
     /// <summary>
@@ -103,7 +88,7 @@ public static class PipelineHttpClientFactoryExtensions
     /// <param name="configureClient">Optional action to configure the HTTP client before use.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The response body as a string.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestUri"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/> or <paramref name="requestUri"/> is null.</exception>
     /// <exception cref="HttpRequestException">Thrown when the HTTP request fails.</exception>
     public static async Task<string> GetStringAsync(
         this PipelineHttpClientFactory factory,
@@ -141,7 +126,7 @@ public static class PipelineHttpClientFactoryExtensions
     /// <param name="configureClient">Optional action to configure the HTTP client before use.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The response body as a string.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="requestUri"/> or <paramref name="content"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="factory"/>, <paramref name="requestUri"/>, or <paramref name="content"/> is null.</exception>
     /// <exception cref="HttpRequestException">Thrown when the HTTP request fails.</exception>
     public static async Task<string> PostJsonAsync(
         this PipelineHttpClientFactory factory,
