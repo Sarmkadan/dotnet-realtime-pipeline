@@ -14,7 +14,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Provides System.Text.Json serialization helpers for <see cref="DataPoint"/> instances.
 /// </summary>
-public static class DataPointJsonExtensions
+internal static class DataPointJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
