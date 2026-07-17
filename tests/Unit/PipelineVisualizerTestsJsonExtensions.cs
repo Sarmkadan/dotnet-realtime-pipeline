@@ -8,14 +8,14 @@ using System.Text.Json;
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
-/// Extension methods that enable JSON (de)serialization of <see cref="PipelineVisualizerTests"/> instances.
+/// Provides JSON serialization and deserialization extensions for <see cref="PipelineVisualizerTests"/> instances.
 /// </summary>
 public static class PipelineVisualizerTestsJsonExtensions
 {
     /// <summary>
-    /// Cached <see cref="JsonSerializerOptions"/> that uses camel‑case property naming.
+    /// Cached <see cref="JsonSerializerOptions"/> that uses camel-case property naming and no indentation.
     /// </summary>
-    private static readonly JsonSerializerOptions Options = new()
+    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false
@@ -58,6 +58,7 @@ public static class PipelineVisualizerTestsJsonExtensions
     /// </param>
     /// <returns><c>true</c> if deserialization succeeded; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <c>null</c> or an empty string.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be mapped to <see cref="PipelineVisualizerTests"/>.</exception>
     public static bool TryFromJson(string json, out PipelineVisualizerTests? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
