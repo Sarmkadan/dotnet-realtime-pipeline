@@ -21,11 +21,8 @@ public static class DateTimeExtensionsValidation
     /// </summary>
     /// <param name="dateTime">The DateTime value to validate.</param>
     /// <returns>A list of validation problems; empty if valid.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="dateTime"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this DateTime dateTime)
     {
-        ArgumentNullException.ThrowIfNull(dateTime);
-
         var problems = new List<string>();
 
         if (dateTime < DateTime.UnixEpoch)
@@ -76,6 +73,7 @@ public static class DateTimeExtensionsValidation
     /// </summary>
     /// <param name="timestampMs">The timestamp in milliseconds to validate.</param>
     /// <param name="windowSizeMs">The size of the time window in milliseconds to validate.</param>
+    /// <param name="paramName">The name of the parameter being validated.</param>
     /// <returns>A list of validation problems; empty if valid.</returns>
     public static IReadOnlyList<string> Validate(this long timestampMs, long windowSizeMs, string paramName)
     {
@@ -96,10 +94,7 @@ public static class DateTimeExtensionsValidation
     /// </summary>
     /// <param name="dateTime">The DateTime value to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    public static bool IsValid(this DateTime dateTime)
-    {
-        return Validate(dateTime).Count == 0;
-    }
+    public static bool IsValid(this DateTime dateTime) => Validate(dateTime).Count == 0;
 
     /// <summary>
     /// Determines whether a long milliseconds value is valid for time window operations.
@@ -107,32 +102,24 @@ public static class DateTimeExtensionsValidation
     /// <param name="timestampMs">The timestamp in milliseconds to check.</param>
     /// <param name="windowSizeMs">The window size in milliseconds to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    public static bool IsValid(this long timestampMs, long windowSizeMs)
-    {
-        return Validate(timestampMs, windowSizeMs).Count == 0;
-    }
+    public static bool IsValid(this long timestampMs, long windowSizeMs) => Validate(timestampMs, windowSizeMs).Count == 0;
 
     /// <summary>
     /// Determines whether a long milliseconds value is valid for window boundary rounding.
     /// </summary>
     /// <param name="timestampMs">The timestamp in milliseconds to check.</param>
     /// <param name="windowSizeMs">The window size in milliseconds to check.</param>
+    /// <param name="paramName">The name of the parameter being validated.</param>
     /// <returns>True if valid; otherwise, false.</returns>
-    public static bool IsValid(this long timestampMs, long windowSizeMs, string paramName)
-    {
-        return Validate(timestampMs, windowSizeMs, paramName).Count == 0;
-    }
+    public static bool IsValid(this long timestampMs, long windowSizeMs, string paramName) => Validate(timestampMs, windowSizeMs, paramName).Count == 0;
 
     /// <summary>
     /// Ensures that a DateTime value is valid for <see cref="DateTimeExtensions.ToUnixMilliseconds"/> method.
     /// </summary>
     /// <param name="dateTime">The DateTime value to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="dateTime"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if the value is not valid.</exception>
     public static void EnsureValid(this DateTime dateTime)
     {
-        ArgumentNullException.ThrowIfNull(dateTime);
-
         var problems = Validate(dateTime);
         if (problems.Count > 0)
         {
