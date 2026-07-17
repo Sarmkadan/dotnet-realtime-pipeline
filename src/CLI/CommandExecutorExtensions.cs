@@ -91,7 +91,7 @@ public static class CommandExecutorExtensions
         ArgumentNullException.ThrowIfNull(executor);
 
         var status = await executor.GetStatusAsync();
-        return status;
+        return status ?? new Dictionary<string, object>();
     }
 
     /// <summary>
@@ -180,13 +180,13 @@ public static class CommandExecutorExtensions
 
         var sb = new StringBuilder();
         sb.AppendLine("Pipeline Status:");
-        sb.AppendLine($"  Name: {status.GetValueOrDefault("pipeline_name", "Unknown")}");
-        sb.AppendLine($"  Version: {status.GetValueOrDefault("version", "Unknown")}");
-        sb.AppendLine($"  Running: {status.GetValueOrDefault("is_running", false)}");
-        sb.AppendLine($"  Processed: {status.GetValueOrDefault("total_processed", 0)}");
-        sb.AppendLine($"  Success Rate: {status.GetValueOrDefault("success_rate_percent", 0.0):F2}%");
-        sb.AppendLine($"  Throughput: {status.GetValueOrDefault("throughput_items_per_sec", 0):F2} items/sec");
-        sb.AppendLine($"  Health: {status.GetValueOrDefault("health_status", "Unknown")}");
+        sb.AppendLine($" Name: {status.GetValueOrDefault("pipeline_name", "Unknown")}");
+        sb.AppendLine($" Version: {status.GetValueOrDefault("version", "Unknown")}");
+        sb.AppendLine($" Running: {status.GetValueOrDefault("is_running", false)}");
+        sb.AppendLine($" Processed: {status.GetValueOrDefault("total_processed", 0)}");
+        sb.AppendLine($" Success Rate: {status.GetValueOrDefault("success_rate_percent", 0.0):F2}%");
+        sb.AppendLine($" Throughput: {status.GetValueOrDefault("throughput_items_per_sec", 0):F2} items/sec");
+        sb.AppendLine($" Health: {status.GetValueOrDefault("health_status", "Unknown")}");
 
         return sb.ToString();
     }
