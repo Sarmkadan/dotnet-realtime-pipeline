@@ -1245,6 +1245,92 @@ await publisher.PublishPipelineErrorAsync("IngestionOperation", new Exception("S
 await publisher.PublishDataIngestedBatchAsync(new[] { dataPoint });
 ```
 
+## InMemoryMetricsRepositoryExtensions
+
+The `InMemoryMetricsRepositoryExtensions` class provides extension methods for `InMemoryMetricsRepository` that enhance metric querying capabilities with additional convenience methods for working with metric data. It includes methods for retrieving metrics by type and time range, calculating processing time statistics, and filtering metrics by various criteria.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Data.Repositories;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+// Assume repository is an initialized instance of InMemoryMetricsRepository
+var repository = new InMemoryMetricsRepository();
+
+// Add some sample metrics for demonstration
+await repository.AddOrUpdateAsync(new MetricAggregation
+{
+    MetricId = "metrics-001",
+    MetricType = "PipelinePerformance",
+    TimeWindowStartMs = DateTimeOffset.UtcNow.AddMinutes(-10).ToUnixTimeMilliseconds(),
+    TimeWindowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    TotalItemsProcessed = 5000,
+    TotalItemsFailed = 50,
+    AverageProcessingTimeMs = 45.2,
+    MaxProcessingTimeMs = 250,
+    MinProcessingTimeMs = 5,
+    P95ProcessingTimeMs = 120,
+    P99ProcessingTimeMs = 180,
+    ComputedAt = DateTime.UtcNow
+});
+
+// Get the latest metric of a specific type
+var latestMetric = await repository.GetLatestByTypeAsync("PipelinePerformance");
+Console.WriteLine($"Latest metric: {latestMetric?.MetricId}");
+
+// Get metrics filtered by type and time range
+var metricsInRange = await repository.GetByTypeAndTimeRangeAsync(
+    "PipelinePerformance",
+    DateTimeOffset.UtcNow.AddMinutes(-30).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Metrics in range: {metricsInRange.Count}");
+
+// Calculate processing time statistics
+var avgProcessingTime = await repository.GetAverageProcessingTimeAsync(
+    "PipelinePerformance",
+    DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Average processing time: {avgProcessingTime}ms");
+
+var maxProcessingTime = await repository.GetMaxProcessingTimeAsync(
+    "PipelinePerformance",
+    DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Max processing time: {maxProcessingTime}ms");
+
+var minProcessingTime = await repository.GetMinProcessingTimeAsync(
+    "PipelinePerformance",
+    DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+);
+Console.WriteLine($"Min processing time: {minProcessingTime}ms");
+
+// Get metrics filtered by multiple types
+var metricsByTypes = await repository.GetByTypesAsync(new[] { "PipelinePerformance", "SystemHealth" });
+Console.WriteLine($"Metrics across multiple types: {metricsByTypes.Count}");
+
+// Get metrics with processing time filtering
+var filteredMetrics = await repository.GetByTypeAndTimeRangeWithProcessingTimeFilterAsync(
+    "PipelinePerformance",
+    DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    10,    // min processing time
+    100    // max processing time
+);
+Console.WriteLine($"Filtered metrics: {filteredMetrics.Count}");
+
+// Get the last N metrics across all types
+var lastNMetrics = await repository.GetLastNMetricsAsync(10);
+Console.WriteLine($"Last {lastNMetrics.Count} metrics: {string.Join(", ", lastNMetrics.Select(m => m.MetricId))}");
+```
+
 ## MetricAggregationExtensions
 The `MetricAggregationExtensions` class provides extension methods for `MetricAggregation` to simplify common metric calculations, aggregations, and filtering operations. It includes methods for calculating success rates, error rates, time window durations, and source-specific aggregations.
 
