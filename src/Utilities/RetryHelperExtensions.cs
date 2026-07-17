@@ -75,11 +75,8 @@ public static class RetryHelperExtensions
 	/// </summary>
 	/// <param name="statistics">The retry statistics.</param>
 	/// <returns>A list of tuples containing timestamp and delay.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="statistics"/> is null.</exception>
 	public static IReadOnlyList<(DateTime timestamp, int delayMs)> GetRetryEvents(
 		this RetryStatistics statistics)
-	{
-		ArgumentNullException.ThrowIfNull(statistics);
-
-		return statistics.Events.Select(e => (e.Timestamp, e.DelayMs)).ToList();
-	}
+		=> statistics.Events.Select(e => (e.Timestamp, e.DelayMs)).ToList();
 }
