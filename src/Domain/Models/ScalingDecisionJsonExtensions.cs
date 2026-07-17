@@ -2,10 +2,11 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DotNetRealtimePipeline.Domain.Models;
 
@@ -15,12 +16,12 @@ namespace DotNetRealtimePipeline.Domain.Models;
 public static class ScalingDecisionJsonExtensions
 {
     /// <summary>
-    /// Cached <see cref="JsonSerializerOptions"/> that uses camel‑case property naming.
+    /// Cached <see cref="JsonSerializerOptions"/> that uses camel-case property naming and treats properties with null values as non-existent.
     /// </summary>
     private static readonly JsonSerializerOptions _options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        // WriteIndented is set per call.
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     /// <summary>
