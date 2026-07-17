@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.Workers;
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 /// <summary>
 /// Provides validation helpers for <see cref="BackgroundProcessingWorker"/> and related worker types.
@@ -24,12 +25,7 @@ public static class BackgroundProcessingWorkerValidation
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var errors = new List<string>();
-
-        // BackgroundProcessingWorker has no additional properties to validate
-        // All validation is handled by constructor parameter validation
-
-        return errors.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -66,6 +62,7 @@ public static class BackgroundProcessingWorkerValidation
     /// <param name="value">The worker instance to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access private field.</exception>
     public static IReadOnlyList<string> Validate(this MetricsAggregationWorker value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -115,6 +112,7 @@ public static class BackgroundProcessingWorkerValidation
     /// <param name="value">The worker instance to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access private field.</exception>
     public static IReadOnlyList<string> Validate(this HealthCheckWorker value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -168,12 +166,7 @@ public static class BackgroundProcessingWorkerValidation
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var errors = new List<string>();
-
-        // WorkerCoordinator validates its dependencies in constructor
-        // No additional properties to validate
-
-        return errors.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -207,19 +200,23 @@ public static class BackgroundProcessingWorkerValidation
     // Helper methods to access private fields for validation
     private static int GetIntervalMs(this MetricsAggregationWorker worker)
     {
-        // Use reflection to access the private field
+        const string fieldName = "_intervalMs";
         var field = typeof(MetricsAggregationWorker).GetField(
-            "_intervalMs",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        return (int)field.GetValue(worker);
+            fieldName,
+            BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {typeof(MetricsAggregationWorker).Name}.");
+
+        return (int)field.GetValue(worker)!;
     }
 
     private static int GetIntervalMs(this HealthCheckWorker worker)
     {
-        // Use reflection to access the private field
+        const string fieldName = "_intervalMs";
         var field = typeof(HealthCheckWorker).GetField(
-            "_intervalMs",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        return (int)field.GetValue(worker);
+            fieldName,
+            BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {typeof(HealthCheckWorker).Name}.");
+
+        return (int)field.GetValue(worker)!;
     }
 }
