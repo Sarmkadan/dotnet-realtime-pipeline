@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ====================================================================
 
 namespace DotNetRealtimePipeline.Middleware;
 
@@ -13,6 +13,10 @@ using System.Text.Json.Serialization;
 
 /// <summary>
 /// Provides JSON serialization extensions for <see cref="ErrorHandlingMiddleware"/>.
+/// Note: ErrorHandlingMiddleware contains private state (ILogger, error mappers) and requires
+/// dependency injection, so it cannot be meaningfully serialized or deserialized.
+/// These extension methods are provided for API consistency but will throw <see cref="NotSupportedException"/>
+/// if actually invoked.
 /// </summary>
 public static class ErrorHandlingMiddlewareJsonExtensions
 {
@@ -30,15 +34,14 @@ public static class ErrorHandlingMiddlewareJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation.</param>
     /// <returns>A JSON string representation of the middleware.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="NotSupportedException">Thrown when attempting to serialize middleware state.</exception>
     public static string ToJson(this ErrorHandlingMiddleware value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
+        throw new NotSupportedException(
+            "ErrorHandlingMiddleware contains private state that cannot be serialized. " +
+            "This method exists for API consistency only.");
     }
 
     /// <summary>
@@ -47,18 +50,14 @@ public static class ErrorHandlingMiddlewareJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized middleware instance, or null if parsing fails.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="NotSupportedException">Thrown when attempting to deserialize middleware state.</exception>
     public static ErrorHandlingMiddleware? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        try
-        {
-            return JsonSerializer.Deserialize<ErrorHandlingMiddleware>(json, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        throw new NotSupportedException(
+            "ErrorHandlingMiddleware cannot be deserialized due to dependency injection requirements. " +
+            "This method exists for API consistency only.");
     }
 
     /// <summary>
@@ -66,21 +65,13 @@ public static class ErrorHandlingMiddlewareJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized middleware instance, or null if parsing fails.</param>
-    /// <returns>True if deserialization succeeds; otherwise, false.</returns>
+    /// <returns>False; deserialization is not supported.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out ErrorHandlingMiddleware? value)
     {
         ArgumentNullException.ThrowIfNull(json);
 
-        try
-        {
-            value = JsonSerializer.Deserialize<ErrorHandlingMiddleware>(json, _jsonOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            value = null;
-            return false;
-        }
+        value = null;
+        return false;
     }
 }
