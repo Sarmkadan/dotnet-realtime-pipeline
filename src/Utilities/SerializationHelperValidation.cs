@@ -2,14 +2,13 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
 
 using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 /// <summary>
@@ -23,17 +22,12 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="value">The SerializationHelper instance to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
-    public static IReadOnlyList<string> ValidateSerialization(this SerializationHelper value)
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
+    public static IReadOnlyList<string> ValidateSerialization(this SerializationHelper? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var problems = new List<string>();
-
-        // SerializationHelper itself has no state to validate
-        // Validate the types it works with
-
-        return problems.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -41,7 +35,7 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="dataPoint">The DataPoint to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if dataPoint is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="dataPoint"/> is null</exception>
     public static IReadOnlyList<string> ValidateDataPoint(this DataPoint dataPoint)
     {
         ArgumentNullException.ThrowIfNull(dataPoint);
@@ -63,12 +57,12 @@ public static class SerializationHelperValidation
             problems.Add("DataPoint.Source cannot be null or whitespace");
         }
 
-        if (dataPoint.Quality < 0 || dataPoint.Quality > 100)
+        if (dataPoint.Quality is < 0 or > 100)
         {
             problems.Add($"DataPoint.Quality must be between 0 and 100, got {dataPoint.Quality}");
         }
 
-        if (dataPoint.Value is double.NaN or double.NegativeInfinity or double.PositiveInfinity)
+        if (double.IsNaN(dataPoint.Value) || double.IsInfinity(dataPoint.Value))
         {
             problems.Add($"DataPoint.Value must be a valid finite number, got {dataPoint.Value}");
         }
@@ -86,7 +80,7 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="result">The ProcessingResult to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if result is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="result"/> is null</exception>
     public static IReadOnlyList<string> ValidateProcessingResult(this ProcessingResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -131,7 +125,7 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="metrics">The MetricAggregation to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if metrics is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="metrics"/> is null</exception>
     public static IReadOnlyList<string> ValidateMetricAggregation(this MetricAggregation metrics)
     {
         ArgumentNullException.ThrowIfNull(metrics);
@@ -226,7 +220,7 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="dataPoints">The list of DataPoint to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if dataPoints is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="dataPoints"/> is null</exception>
     public static IReadOnlyList<string> ValidateDataPoints(this List<DataPoint> dataPoints)
     {
         ArgumentNullException.ThrowIfNull(dataPoints);
@@ -255,7 +249,7 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="results">The list of ProcessingResult to validate</param>
     /// <returns>A list of human-readable validation problems, or empty list if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if results is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="results"/> is null</exception>
     public static IReadOnlyList<string> ValidateProcessingResults(this List<ProcessingResult> results)
     {
         ArgumentNullException.ThrowIfNull(results);
@@ -284,47 +278,35 @@ public static class SerializationHelperValidation
     /// </summary>
     /// <param name="value">The SerializationHelper instance to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this SerializationHelper value)
-    {
-        return value.ValidateSerialization().Count == 0;
-    }
+    public static bool IsValid(this SerializationHelper? value) => value?.ValidateSerialization().Count == 0;
 
     /// <summary>
     /// Checks if a DataPoint instance is valid.
     /// </summary>
     /// <param name="dataPoint">The DataPoint to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this DataPoint dataPoint)
-    {
-        return dataPoint.ValidateDataPoint().Count == 0;
-    }
+    public static bool IsValid(this DataPoint dataPoint) => dataPoint.ValidateDataPoint().Count == 0;
 
     /// <summary>
     /// Checks if a ProcessingResult instance is valid.
     /// </summary>
     /// <param name="result">The ProcessingResult to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this ProcessingResult result)
-    {
-        return result.ValidateProcessingResult().Count == 0;
-    }
+    public static bool IsValid(this ProcessingResult result) => result.ValidateProcessingResult().Count == 0;
 
     /// <summary>
     /// Checks if a MetricAggregation instance is valid.
     /// </summary>
     /// <param name="metrics">The MetricAggregation to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this MetricAggregation metrics)
-    {
-        return metrics.ValidateMetricAggregation().Count == 0;
-    }
+    public static bool IsValid(this MetricAggregation metrics) => metrics.ValidateMetricAggregation().Count == 0;
 
     /// <summary>
     /// Ensures that a SerializationHelper instance is valid, throwing an exception if not.
     /// </summary>
     /// <param name="value">The SerializationHelper instance to validate</param>
-    /// <exception cref="ArgumentException">Thrown if value is not valid</exception>
-    public static void EnsureValid(this SerializationHelper value)
+    /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid</exception>
+    public static void EnsureValid(this SerializationHelper? value)
     {
         var problems = value.ValidateSerialization();
         if (problems.Count > 0)
@@ -337,7 +319,7 @@ public static class SerializationHelperValidation
     /// Ensures that a DataPoint instance is valid, throwing an exception if not.
     /// </summary>
     /// <param name="dataPoint">The DataPoint to validate</param>
-    /// <exception cref="ArgumentException">Thrown if dataPoint is not valid</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="dataPoint"/> is not valid</exception>
     public static void EnsureValid(this DataPoint dataPoint)
     {
         var problems = dataPoint.ValidateDataPoint();
@@ -351,7 +333,7 @@ public static class SerializationHelperValidation
     /// Ensures that a ProcessingResult instance is valid, throwing an exception if not.
     /// </summary>
     /// <param name="result">The ProcessingResult to validate</param>
-    /// <exception cref="ArgumentException">Thrown if result is not valid</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="result"/> is not valid</exception>
     public static void EnsureValid(this ProcessingResult result)
     {
         var problems = result.ValidateProcessingResult();
@@ -365,7 +347,7 @@ public static class SerializationHelperValidation
     /// Ensures that a MetricAggregation instance is valid, throwing an exception if not.
     /// </summary>
     /// <param name="metrics">The MetricAggregation to validate</param>
-    /// <exception cref="ArgumentException">Thrown if metrics is not valid</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="metrics"/> is not valid</exception>
     public static void EnsureValid(this MetricAggregation metrics)
     {
         var problems = metrics.ValidateMetricAggregation();
