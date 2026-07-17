@@ -252,6 +252,132 @@ if (listErrors.Count > 0)
 }
 ```
 
+## RetryHelperValidation
+
+The `RetryHelperValidation` static class provides validation helpers for retry-related types (`RetryHelper`, `RetryPolicyBuilder`, `RetryPolicy`, `RetryStatistics`, `RetryEvent`). It includes extension methods for validating retry configurations and statistics, checking validity status, and throwing exceptions when invalid states are detected. This ensures retry policies are properly configured before use in pipeline operations.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using Polly;
+using System;
+using System.Threading.Tasks;
+
+// Create a retry policy builder with valid configuration
+var retryPolicyBuilder = Policy
+  .Handle<Exception>()
+  .WaitAndRetryAsync(
+    retryCount: 3,
+    sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+    onRetry: (exception, delay, retryCount, context) =>
+    {
+      Console.WriteLine($"Retry {retryCount} of 3. Waiting {delay.TotalSeconds}s. Error: {exception.Message}");
+    }
+  );
+
+// Validate the retry policy builder
+var builderValidationErrors = retryPolicyBuilder.Validate();
+if (builderValidationErrors.Count > 0)
+{
+  Console.WriteLine("RetryPolicyBuilder validation failed:");
+  foreach (var error in builderValidationErrors)
+  {
+    Console.WriteLine($"- {error}");
+  }
+}
+
+// Check if retry policy builder is valid using IsValid extension method
+bool builderIsValid = retryPolicyBuilder.IsValid();
+Console.WriteLine($"RetryPolicyBuilder is valid: {builderIsValid}");
+
+// Ensure builder validity (throws ArgumentException if invalid)
+retryPolicyBuilder.EnsureValid();
+
+// Create a RetryPolicy instance for validation
+var retryPolicy = new RetryPolicy
+{
+  MaxAttempts = 5,
+  InitialDelayMs = 100,
+  MaxDelayMs = 10000,
+  RetryableExceptions = new List<Type> { typeof(Exception), typeof(TimeoutException) },
+  CreatedAt = DateTime.UtcNow
+};
+
+// Validate the retry policy
+var policyValidationErrors = retryPolicy.Validate();
+if (policyValidationErrors.Count > 0)
+{
+  Console.WriteLine("RetryPolicy validation failed:");
+  foreach (var error in policyValidationErrors)
+  {
+    Console.WriteLine($"- {error}");
+  }
+}
+
+// Check if retry policy is valid
+bool policyIsValid = retryPolicy.IsValid();
+Console.WriteLine($"RetryPolicy is valid: {policyIsValid}");
+
+// Ensure policy validity
+retryPolicy.EnsureValid();
+
+// Create retry statistics for validation
+var retryStatistics = new RetryStatistics
+{
+  TotalAttempts = 15,
+  SuccessfulAttempts = 12,
+  FailedAttempts = 3,
+  AverageRetryDelayMs = 1500,
+  LastRetryAt = DateTime.UtcNow.AddMinutes(-2)
+};
+
+// Validate retry statistics
+var statsValidationErrors = retryStatistics.Validate();
+if (statsValidationErrors.Count > 0)
+{
+  Console.WriteLine("RetryStatistics validation failed:");
+  foreach (var error in statsValidationErrors)
+  {
+    Console.WriteLine($"- {error}");
+  }
+}
+
+// Check if statistics are valid
+bool statsIsValid = retryStatistics.IsValid();
+Console.WriteLine($"RetryStatistics is valid: {statsIsValid}");
+
+// Ensure statistics validity
+retryStatistics.EnsureValid();
+
+// Create a retry event for validation
+var retryEvent = new RetryEvent
+{
+  Timestamp = DateTime.UtcNow,
+  DelayMs = 2000,
+  AttemptNumber = 2,
+  ExceptionType = typeof(TimeoutException)
+};
+
+// Validate retry event
+var eventValidationErrors = retryEvent.Validate();
+if (eventValidationErrors.Count > 0)
+{
+  Console.WriteLine("RetryEvent validation failed:");
+  foreach (var error in eventValidationErrors)
+  {
+    Console.WriteLine($"- {error}");
+  }
+}
+
+// Check if event is valid
+bool eventIsValid = retryEvent.IsValid();
+Console.WriteLine($"RetryEvent is valid: {eventIsValid}");
+
+// Ensure event validity
+retryEvent.EnsureValid();
+```
+
 ## PipelineInitializerExtensions
 
 The `PipelineInitializerExtensions` class provides extension methods for `PipelineInitializer` that enhance pipeline lifecycle management with additional functionality. It includes methods for initializing and starting pipelines in a single operation, retrying initialization on transient failures, safely stopping pipelines, and checking pipeline initialization state.
