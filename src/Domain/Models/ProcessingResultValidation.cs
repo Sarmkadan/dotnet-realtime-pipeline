@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Domain.Models;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="ProcessingResult"/> instances.
@@ -58,6 +57,10 @@ public static class ProcessingResultValidation
         {
             errors.Add("ProcessedAt cannot be in the future.");
         }
+        else if (value.ProcessedAt < DateTime.UtcNow.AddMinutes(-5))
+        {
+            errors.Add("ProcessedAt cannot be more than 5 minutes in the past.");
+        }
 
         // Validate RetryCount
         if (value.RetryCount < 0)
@@ -81,6 +84,10 @@ public static class ProcessingResultValidation
         if (value.Exception is null && !string.IsNullOrEmpty(value.ErrorMessage))
         {
             errors.Add("Exception should be provided when ErrorMessage is set.");
+        }
+        else if (value.Exception is not null && string.IsNullOrEmpty(value.ErrorMessage))
+        {
+            errors.Add("ErrorMessage should be provided when Exception is set.");
         }
 
         // Validate OutputData
