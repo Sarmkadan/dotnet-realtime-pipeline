@@ -168,6 +168,55 @@ Console.WriteLine(statusSummary);
 // Output: "DataProcessing (Processor) | HEALTHY | Buffer: 45.2% | Throughput: 12.50K eps | Dropped: 23 | Backpressure: INACTIVE"
 ```
 
+## BackpressureContextExtensions
+The `BackpressureContextExtensions` class provides extension methods for `BackpressureContext` to simplify common operations and add domain-specific functionality for pipeline backpressure management. It includes methods for estimating time to capacity, checking critical buffer states, formatting metrics, and managing backpressure events.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Assume context is a BackpressureContext instance from a pipeline stage
+var context = new BackpressureContext(
+    pipelineStageName: "DataProcessing",
+    maxBufferCapacity: 10000,
+    maxConcurrentConsumers: 4
+);
+
+// Estimate time until buffer reaches capacity based on consumption rate
+long timeToCapacityMs = context.EstimateTimeToCapacity(consumptionRatePerSecond: 500);
+Console.WriteLine($"Time to capacity: {timeToCapacityMs}ms");
+
+// Check if buffer is critically full (90% threshold by default)
+bool isCritical = context.IsCriticallyFull(percentageThreshold: 90);
+Console.WriteLine($"Critical state: {isCritical}");
+
+// Get formatted backpressure duration
+string duration = context.GetBackpressureDurationFormatted();
+Console.WriteLine($"Backpressure duration: {duration}");
+
+// Record a backpressure event with metadata
+var metadata = new Dictionary<string, string> {
+    ["Source"] = "HighThroughputDetector",
+    ["ItemsInBuffer"] = "9500",
+    ["Threshold"] = "9000"
+};
+context.RecordBackpressureEvent("HighBuffer", metadata);
+
+// Get comprehensive buffer metrics summary
+string metricsSummary = context.GetBufferMetricsSummary();
+Console.WriteLine(metricsSummary);
+
+// Safely remove items from buffer
+long removed = context.SafeRemoveFromBuffer(200);
+Console.WriteLine($"Removed {removed} items from buffer");
+
+// Check if sufficient capacity exists for a batch
+bool hasCapacity = context.HasSufficientCapacityForBatch(batchSize: 1000, requiredCapacityPercent: 20);
+Console.WriteLine($"Has capacity for batch: {hasCapacity}");
+```
+
 ## PipelineConfigExtensions
 The `PipelineConfigExtensions` class provides convenient extension methods for `PipelineConfig` to simplify common operations on pipeline configurations and their stages. It includes methods for querying stage counts, checking stage existence, retrieving stage definitions, and filtering stages by various criteria.
 
