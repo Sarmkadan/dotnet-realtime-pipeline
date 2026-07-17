@@ -1662,6 +1662,68 @@ if (comparisonValidationErrors.Count > 0)
 Console.WriteLine("All compression validations completed successfully!");
 ```
 
+## BatchProcessorValidation
+
+The `BatchProcessorValidation` static class provides validation helpers for `BatchProcessingProgress` and `DataPointBatchProcessor` instances. It includes methods for comprehensive validation of batch processing progress, checking validity status, and throwing exceptions when invalid states are detected. This ensures batch processor configurations and progress tracking are properly validated before use.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+using System.Collections.Generic;
+
+// Create a batch processing progress instance
+var progress = new BatchProcessingProgress
+{
+    TotalBatches = 10,
+    ProcessedBatches = 3,
+    TotalItems = 10000,
+    ProcessedItems = 3500,
+    StartTime = DateTime.UtcNow.AddMinutes(-5),
+    LastUpdateTime = DateTime.UtcNow
+};
+
+// Validate batch processing progress
+var validationErrors = progress.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Batch processing progress validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if progress is valid using IsValid extension method
+bool isValid = progress.IsValid();
+Console.WriteLine($"Batch processing progress is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+progress.EnsureValid();
+
+// Create a DataPointBatchProcessor instance (default batchSize=1000, maxDegreeOfParallelism=4)
+var batchProcessor = new DataPointBatchProcessor();
+
+// Validate the batch processor instance
+var processorErrors = batchProcessor.Validate();
+if (processorErrors.Count > 0)
+{
+    Console.WriteLine("Batch processor validation failed:");
+    foreach (var error in processorErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if batch processor is valid
+bool processorIsValid = batchProcessor.IsValid();
+Console.WriteLine($"DataPointBatchProcessor is valid: {processorIsValid}");
+
+// Ensure batch processor validity (throws if invalid)
+batchProcessor.EnsureValid();
+```
+
 ## CacheServiceExtensions
 
 The `CacheServiceExtensions` class provides extension methods for `CacheService<TKey, TValue>` that enhance cache operations with batch operations, time-based caching, and convenient utility methods. It includes methods for getting/setting multiple values in a single operation, conditional value retrieval with factory methods, and cache statistics reporting.
