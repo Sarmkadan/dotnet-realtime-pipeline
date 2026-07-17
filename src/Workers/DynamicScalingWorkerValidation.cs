@@ -4,15 +4,19 @@ namespace DotNetRealtimePipeline.Workers;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
-
 
 /// <summary>
 /// Validation helpers for <see cref="DynamicScalingWorker"/> instances.
 /// </summary>
 public static class DynamicScalingWorkerValidation
 {
+    private static readonly BindingFlags PrivateInstanceFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+    private static readonly FieldInfo ScalingServiceField = typeof(DynamicScalingWorker).GetField("_scalingService", PrivateInstanceFlags) ?? throw new InvalidOperationException("Could not find _scalingService field in DynamicScalingWorker");
+    private static readonly FieldInfo LoggerField = typeof(DynamicScalingWorker).GetField("_logger", PrivateInstanceFlags) ?? throw new InvalidOperationException("Could not find _logger field in DynamicScalingWorker");
+    private static readonly FieldInfo IntervalMsField = typeof(DynamicScalingWorker).GetField("_intervalMs", PrivateInstanceFlags) ?? throw new InvalidOperationException("Could not find _intervalMs field in DynamicScalingWorker");
+    private static readonly FieldInfo IsRunningField = typeof(DynamicScalingWorker).GetField("_isRunning", PrivateInstanceFlags) ?? throw new InvalidOperationException("Could not find _isRunning field in DynamicScalingWorker");
+
     /// <summary>
     /// Validates the specified <see cref="DynamicScalingWorker"/> instance.
     /// </summary>
@@ -26,52 +30,27 @@ public static class DynamicScalingWorkerValidation
         var errors = new List<string>();
 
         // Validate required dependencies using reflection to access private fields
-        var scalingServiceField = typeof(DynamicScalingWorker).GetField(
-            "_scalingService", BindingFlags.NonPublic | BindingFlags.Instance);
-        var loggerField = typeof(DynamicScalingWorker).GetField(
-            "_logger", BindingFlags.NonPublic | BindingFlags.Instance);
-        var intervalMsField = typeof(DynamicScalingWorker).GetField(
-            "_intervalMs", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        if (scalingServiceField == null || loggerField == null || intervalMsField == null)
-        {
-            errors.Add("Could not access internal fields of DynamicScalingWorker for validation.");
-            return errors.AsReadOnly();
-        }
-
-        var scalingService = scalingServiceField.GetValue(value);
-        var logger = loggerField.GetValue(value);
-        var intervalMs = intervalMsField.GetValue(value) as int?;
-
-        if (scalingService == null)
+        var scalingService = ScalingServiceField.GetValue(value);
+        if (scalingService is null)
         {
             errors.Add("DynamicScalingWorker._scalingService cannot be null.");
         }
 
-        if (logger == null)
+        var logger = LoggerField.GetValue(value);
+        if (logger is null)
         {
             errors.Add("DynamicScalingWorker._logger cannot be null.");
         }
 
-        if (intervalMs.HasValue)
+        var intervalMs = (int)IntervalMsField.GetValue(value)!;
+        if (intervalMs < 500)
         {
-            if (intervalMs.Value < 500)
-            {
-                errors.Add(
-                    $"DynamicScalingWorker._intervalMs must be at least 500 (got {intervalMs.Value.ToString(CultureInfo.InvariantCulture)}).");
-            }
-        }
-        else
-        {
-            errors.Add("DynamicScalingWorker._intervalMs cannot be null.");
+            errors.Add($"DynamicScalingWorker._intervalMs must be at least 500 (got {intervalMs}).");
         }
 
-        // Validate worker state
-        var isRunningField = typeof(DynamicScalingWorker).GetField(
-            "_isRunning", BindingFlags.NonPublic | BindingFlags.Instance);
-        var isRunning = isRunningField?.GetValue(value) as bool?;
-
-        if (isRunning.HasValue && isRunning.Value && value.IsRunning != true)
+        // Validate worker state consistency
+        var isRunning = (bool)IsRunningField.GetValue(value)!;
+        if (isRunning && !value.IsRunning)
         {
             errors.Add("DynamicScalingWorker state inconsistency: _isRunning field does not match IsRunning property.");
         }
@@ -85,10 +64,7 @@ public static class DynamicScalingWorkerValidation
     /// <param name="value">The worker instance to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
-    public static bool IsValid(this DynamicScalingWorker value)
-    {
-        return value?.Validate().Count == 0;
-    }
+    public static bool IsValid(this DynamicScalingWorker value) => value?.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="DynamicScalingWorker"/> instance is valid.
