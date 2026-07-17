@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public static class DataProcessingServiceTestsJsonExtensions
+public static sealed class DataProcessingServiceTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
