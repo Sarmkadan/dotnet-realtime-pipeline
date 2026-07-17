@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -8,7 +9,6 @@ namespace DotNetRealtimePipeline.Configuration;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="WorkerOptions"/> instances.
@@ -31,17 +31,14 @@ public static class EventServiceConfigurationValidation
         if (value.MetricsAggregationIntervalMs <= 0)
         {
             problems.Add(
-                $"MetricsAggregationIntervalMs must be a positive integer (got {value.MetricsAggregationIntervalMs.ToString(CultureInfo.InvariantCulture)}).");
+                $"MetricsAggregationIntervalMs must be a positive integer (got {value.MetricsAggregationIntervalMs}).");
         }
 
         if (value.HealthCheckIntervalMs <= 0)
         {
             problems.Add(
-                $"HealthCheckIntervalMs must be a positive integer (got {value.HealthCheckIntervalMs.ToString(CultureInfo.InvariantCulture)}).");
+                $"HealthCheckIntervalMs must be a positive integer (got {value.HealthCheckIntervalMs}).");
         }
-
-        // Validate boolean flags (no specific validation needed beyond null check)
-        // These are simple boolean properties, so no additional validation required
 
         return problems.AsReadOnly();
     }
@@ -54,6 +51,7 @@ public static class EventServiceConfigurationValidation
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this WorkerOptions value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
