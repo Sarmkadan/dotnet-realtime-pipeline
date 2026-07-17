@@ -10,7 +10,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace DotNetRealtimePipeline.Tests.Integration;
 
-public static class PipelineIntegrationTestsJsonExtensions
+public static sealed class PipelineIntegrationTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -39,26 +39,28 @@ public static class PipelineIntegrationTestsJsonExtensions
     /// Deserializes a JSON string to a <see cref="PipelineIntegrationTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized <see cref="PipelineIntegrationTests"/> instance, or null if the JSON is empty.</returns>
+    /// <returns>The deserialized <see cref="PipelineIntegrationTests"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown if the JSON is invalid or cannot be deserialized.</exception>
-    public static PipelineIntegrationTests? FromJson(string json)
+    public static PipelineIntegrationTests FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            return null;
+            throw new ArgumentException("JSON string cannot be empty or whitespace.", nameof(json));
         }
 
-        return JsonSerializer.Deserialize<PipelineIntegrationTests>(json, _jsonOptions);
+        return JsonSerializer.Deserialize<PipelineIntegrationTests>(json, _jsonOptions)
+            ?? throw new JsonException("Deserialization returned null, which indicates invalid JSON.");
     }
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="PipelineIntegrationTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">The deserialized value, or null if deserialization fails.</param>
+    /// <param name="value">The deserialized value.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out PipelineIntegrationTests? value)
