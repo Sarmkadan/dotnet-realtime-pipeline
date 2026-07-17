@@ -1,6 +1,7 @@
 #nullable enable
 // =============================================================================
-// Author: [Your Name]
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
 // =============================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
@@ -45,7 +46,7 @@ public static class CompressionHelperExtensions
     /// </summary>
     /// <param name="compressionHelper">The <see cref="CompressionHelper"/> instance.</param>
     /// <param name="data">The byte array to calculate the compression ratio for.</param>
-    /// <returns>The compression ratio.</returns>
+    /// <returns>The compression ratio as a value between 0 and 1, where lower values indicate better compression.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="compressionHelper"/> is null.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
     public static double CalculateCompressionRatio(this CompressionHelper compressionHelper, byte[] data)
@@ -53,7 +54,12 @@ public static class CompressionHelperExtensions
         ArgumentNullException.ThrowIfNull(compressionHelper);
         ArgumentNullException.ThrowIfNull(data);
 
-        var compressed = CompressionHelper.CompressGzip(Encoding.UTF8.GetString(data));
+        if (data.Length == 0)
+        {
+            return 0;
+        }
+
+        var compressed = CompressionHelper.CompressGzip(Convert.ToBase64String(data));
         return (double)compressed.Length / data.Length;
     }
 
@@ -66,19 +72,20 @@ public static class CompressionHelperExtensions
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="compressionHelper"/> is null.</exception>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="inputStream"/> is null.</exception>
     public static MemoryStream CompressStream(this CompressionHelper compressionHelper, Stream inputStream)
+        => CompressStreamCore(compressionHelper, inputStream);
+
+    private static MemoryStream CompressStreamCore(CompressionHelper compressionHelper, Stream inputStream)
     {
         ArgumentNullException.ThrowIfNull(compressionHelper);
         ArgumentNullException.ThrowIfNull(inputStream);
 
-        using (var outputStream = new MemoryStream())
+        var outputStream = new MemoryStream();
+        using (var gzipStream = new GZipStream(outputStream, CompressionLevel.Optimal, leaveOpen: true))
         {
-            using (var gzipStream = new GZipStream(outputStream, CompressionLevel.Optimal))
-            {
-                inputStream.CopyTo(gzipStream);
-            }
-
-            outputStream.Position = 0;
-            return outputStream;
+            inputStream.CopyTo(gzipStream);
         }
+
+        outputStream.Position = 0;
+        return outputStream;
     }
 }
