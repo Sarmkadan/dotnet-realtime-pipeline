@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace DotNetRealtimePipeline.Data.Repositories
@@ -11,7 +10,7 @@ namespace DotNetRealtimePipeline.Data.Repositories
     public static class InMemoryMetricsRepositoryValidation
     {
         /// <summary>
-        /// Validates the specified <see cref="InMemoryMetricsRepository"/> instance.
+        /// Validates the internal state of the specified <see cref="InMemoryMetricsRepository"/> instance.
         /// </summary>
         /// <param name="value">The repository to validate.</param>
         /// <returns>A list of validation problems; empty if valid.</returns>
@@ -22,45 +21,51 @@ namespace DotNetRealtimePipeline.Data.Repositories
 
             var problems = new List<string>();
 
-            // Validate public members
-            if (value.GetByIdAsync == null)
+            // Validate internal state consistency
+            try
             {
-                problems.Add("GetByIdAsync cannot be null.");
-            }
+                var metrics = value.GetInternalMetrics();
 
-            if (value.GetByTimeRangeAsync == null)
-            {
-                problems.Add("GetByTimeRangeAsync cannot be null.");
-            }
+                if (metrics == null)
+                {
+                    problems.Add("GetInternalMetrics() returned null.");
+                }
+                else
+                {
+                    // Check for null metrics in the list
+                    var nullMetrics = metrics.Where(m => m is null).ToList();
+                    if (nullMetrics.Count > 0)
+                    {
+                        problems.Add($"Internal metrics list contains {nullMetrics.Count} null entries.");
+                    }
 
-            if (value.GetByTypeAsync == null)
-            {
-                problems.Add("GetByTypeAsync cannot be null.");
-            }
+                    // Check for duplicate MetricIds
+                    var duplicateMetricIds = metrics
+                        .GroupBy(m => m?.MetricId ?? -1)
+                        .Where(g => g.Count() > 1 && g.Key != -1)
+                        .Select(g => g.Key)
+                        .ToList();
 
-            if (value.SaveAsync == null)
-            {
-                problems.Add("SaveAsync cannot be null.");
-            }
+                    if (duplicateMetricIds.Count > 0)
+                    {
+                        problems.Add($"Internal metrics list contains duplicate MetricIds: {string.Join(", ", duplicateMetricIds)}.");
+                    }
 
-            if (value.DeleteAsync == null)
-            {
-                problems.Add("DeleteAsync cannot be null.");
-            }
+                    // Check for metrics with invalid time windows
+                    var invalidTimeMetrics = metrics.Where(m => m != null &&
+                        (m.TimeWindowStartMs > m.TimeWindowEndMs ||
+                         m.TimeWindowStartMs < 0 ||
+                         m.TimeWindowEndMs < 0)).ToList();
 
-            if (value.GetLatestAsync == null)
-            {
-                problems.Add("GetLatestAsync cannot be null.");
+                    if (invalidTimeMetrics.Count > 0)
+                    {
+                        problems.Add($"Internal metrics list contains {invalidTimeMetrics.Count} metrics with invalid time windows.");
+                    }
+                }
             }
-
-            if (value.GetHistoryAsync == null)
+            catch (Exception ex)
             {
-                problems.Add("GetHistoryAsync cannot be null.");
-            }
-
-            if (value.Clear == null)
-            {
-                problems.Add("Clear cannot be null.");
+                problems.Add($"Exception thrown during internal state validation: {ex.GetType().Name}: {ex.Message}");
             }
 
             return problems.AsReadOnly();
@@ -90,7 +95,7 @@ namespace DotNetRealtimePipeline.Data.Repositories
             if (problems.Count > 0)
             {
                 throw new ArgumentException(
-                    $"InMemoryMetricsRepository is invalid. Problems:\n{string.Join("\n", problems)}");
+                    $"InMemoryMetricsRepository internal state is invalid. Problems:\n{string.Join("\n", problems)}");
             }
         }
     }
