@@ -22,17 +22,10 @@ public static class WebhookHandlerValidation
     /// <param name="value">The webhook handler to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this WebhookHandler value)
+    public static IReadOnlyList<string> Validate(this WebhookHandler? value)
     {
         ArgumentNullException.ThrowIfNull(value);
-
-        var errors = new List<string>();
-
-        // WebhookHandler itself has no public properties to validate
-        // The class manages subscriptions internally, which are validated separately
-        // We only validate the constructor dependencies were provided
-
-        return errors.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
@@ -41,8 +34,9 @@ public static class WebhookHandlerValidation
     /// <param name="value">The webhook handler to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this WebhookHandler value)
+    public static bool IsValid(this WebhookHandler? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
@@ -52,7 +46,7 @@ public static class WebhookHandlerValidation
     /// <param name="value">The webhook handler to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
-    public static void EnsureValid(this WebhookHandler value)
+    public static void EnsureValid(this WebhookHandler? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -60,12 +54,12 @@ public static class WebhookHandlerValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"WebhookHandler validation failed:{Environment.NewLine}- {
+                FormattableString.Invariant($"""WebhookHandler validation failed:{Environment.NewLine}- {
                     string.Join(
-                        $"\n- ",
+                        "\n- ",
                         errors
                     )
-                }",
+                }"""),
                 nameof(value)
             );
         }
@@ -77,28 +71,20 @@ public static class WebhookHandlerValidation
     /// <param name="subscription">The webhook subscription to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscription"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this WebhookSubscription subscription)
+    public static IReadOnlyList<string> Validate(this WebhookSubscription? subscription)
     {
         ArgumentNullException.ThrowIfNull(subscription);
 
         var errors = new List<string>();
 
-        // Validate Id
-        if (string.IsNullOrWhiteSpace(subscription.Id))
-        {
-            errors.Add("WebhookSubscription.Id must not be null, empty, or whitespace.");
-        }
-        else if (!Guid.TryParse(subscription.Id, out _))
+        // Validate Id using pattern matching
+        if (string.IsNullOrWhiteSpace(subscription.Id) || !Guid.TryParse(subscription.Id, out _))
         {
             errors.Add("WebhookSubscription.Id must be a valid GUID.");
         }
 
-        // Validate Url
-        if (string.IsNullOrWhiteSpace(subscription.Url))
-        {
-            errors.Add("WebhookSubscription.Url must not be null, empty, or whitespace.");
-        }
-        else if (!Uri.IsWellFormedUriString(subscription.Url, UriKind.Absolute))
+        // Validate Url using pattern matching
+        if (string.IsNullOrWhiteSpace(subscription.Url) || !Uri.IsWellFormedUriString(subscription.Url, UriKind.Absolute))
         {
             errors.Add("WebhookSubscription.Url must be a well-formed absolute URI.");
         }
@@ -116,11 +102,12 @@ public static class WebhookHandlerValidation
         }
 
         // Validate CreatedAt
+        var now = DateTime.UtcNow;
         if (subscription.CreatedAt == default)
         {
             errors.Add("WebhookSubscription.CreatedAt must be a valid DateTime, not the default value.");
         }
-        else if (subscription.CreatedAt > DateTime.UtcNow.AddMinutes(5))
+        else if (subscription.CreatedAt > now.AddMinutes(5))
         {
             errors.Add("WebhookSubscription.CreatedAt cannot be in the future.");
         }
@@ -128,18 +115,16 @@ public static class WebhookHandlerValidation
         // Validate LastDeliveredAt (if set)
         if (subscription.LastDeliveredAt.HasValue)
         {
-            if (subscription.LastDeliveredAt.Value > DateTime.UtcNow.AddMinutes(5))
+            var lastDelivered = subscription.LastDeliveredAt.Value;
+            if (lastDelivered > now.AddMinutes(5))
             {
                 errors.Add("WebhookSubscription.LastDeliveredAt cannot be in the future.");
             }
-            else if (subscription.LastDeliveredAt.Value < subscription.CreatedAt)
+            else if (lastDelivered < subscription.CreatedAt)
             {
                 errors.Add("WebhookSubscription.LastDeliveredAt cannot be earlier than CreatedAt.");
             }
         }
-
-        // Validate IsActive
-        // No specific validation needed - boolean can always be true or false
 
         // Validate FailureCount
         if (subscription.FailureCount < 0)
@@ -156,8 +141,9 @@ public static class WebhookHandlerValidation
     /// <param name="subscription">The webhook subscription to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscription"/> is null.</exception>
-    public static bool IsValid(this WebhookSubscription subscription)
+    public static bool IsValid(this WebhookSubscription? subscription)
     {
+        ArgumentNullException.ThrowIfNull(subscription);
         return subscription.Validate().Count == 0;
     }
 
@@ -167,7 +153,7 @@ public static class WebhookHandlerValidation
     /// <param name="subscription">The webhook subscription to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscription"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="subscription"/> is not valid.</exception>
-    public static void EnsureValid(this WebhookSubscription subscription)
+    public static void EnsureValid(this WebhookSubscription? subscription)
     {
         ArgumentNullException.ThrowIfNull(subscription);
 
@@ -175,12 +161,12 @@ public static class WebhookHandlerValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"WebhookSubscription validation failed:{Environment.NewLine}- {
+                FormattableString.Invariant($"""WebhookSubscription validation failed:{Environment.NewLine}- {
                     string.Join(
-                        $"\n- ",
+                        "\n- ",
                         errors
                     )
-                }",
+                }"""),
                 nameof(subscription)
             );
         }
@@ -192,13 +178,14 @@ public static class WebhookHandlerValidation
     /// <param name="payload">The webhook payload to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="payload"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this WebhookPayload payload)
+    public static IReadOnlyList<string> Validate(this WebhookPayload? payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
 
         var errors = new List<string>();
+        var now = DateTime.UtcNow;
 
-        // Validate EventType
+        // Validate EventType using pattern matching
         if (string.IsNullOrWhiteSpace(payload.EventType))
         {
             errors.Add("WebhookPayload.EventType must not be null, empty, or whitespace.");
@@ -216,17 +203,13 @@ public static class WebhookHandlerValidation
         {
             errors.Add("WebhookPayload.Timestamp must be a valid DateTime, not the default value.");
         }
-        else if (payload.Timestamp > DateTime.UtcNow.AddMinutes(5))
+        else if (payload.Timestamp > now.AddMinutes(5))
         {
             errors.Add("WebhookPayload.Timestamp cannot be in the future.");
         }
 
-        // Validate SubscriptionId
-        if (string.IsNullOrWhiteSpace(payload.SubscriptionId))
-        {
-            errors.Add("WebhookPayload.SubscriptionId must not be null, empty, or whitespace.");
-        }
-        else if (!Guid.TryParse(payload.SubscriptionId, out _))
+        // Validate SubscriptionId using pattern matching
+        if (string.IsNullOrWhiteSpace(payload.SubscriptionId) || !Guid.TryParse(payload.SubscriptionId, out _))
         {
             errors.Add("WebhookPayload.SubscriptionId must be a valid GUID.");
         }
@@ -240,8 +223,9 @@ public static class WebhookHandlerValidation
     /// <param name="payload">The webhook payload to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="payload"/> is null.</exception>
-    public static bool IsValid(this WebhookPayload payload)
+    public static bool IsValid(this WebhookPayload? payload)
     {
+        ArgumentNullException.ThrowIfNull(payload);
         return payload.Validate().Count == 0;
     }
 
@@ -251,7 +235,7 @@ public static class WebhookHandlerValidation
     /// <param name="payload">The webhook payload to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="payload"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="payload"/> is not valid.</exception>
-    public static void EnsureValid(this WebhookPayload payload)
+    public static void EnsureValid(this WebhookPayload? payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
 
@@ -259,12 +243,12 @@ public static class WebhookHandlerValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"WebhookPayload validation failed:{Environment.NewLine}- {
+                FormattableString.Invariant($"""WebhookPayload validation failed:{Environment.NewLine}- {
                     string.Join(
-                        $"\n- ",
+                        "\n- ",
                         errors
                     )
-                }",
+                }"""),
                 nameof(payload)
             );
         }
@@ -277,41 +261,36 @@ public static class WebhookHandlerValidation
 public static class InboundWebhookHandlerValidation
 {
     /// <summary>
-    /// Validates a <see cref="InboundWebhookHandler"/> instance.
+    /// Validates an <see cref="InboundWebhookHandler"/> instance.
     /// </summary>
     /// <param name="value">The inbound webhook handler to validate.</param>
     /// <returns>A list of validation errors; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this InboundWebhookHandler value)
+    public static IReadOnlyList<string> Validate(this InboundWebhookHandler? value)
     {
         ArgumentNullException.ThrowIfNull(value);
-
-        // InboundWebhookHandler has no public properties to validate
-        // The only state is the list of handlers, which is managed internally
         return Array.Empty<string>();
     }
 
     /// <summary>
-    /// Determines whether a <see cref="InboundWebhookHandler"/> instance is valid.
+    /// Determines whether an <see cref="InboundWebhookHandler"/> instance is valid.
     /// </summary>
     /// <param name="value">The inbound webhook handler to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this InboundWebhookHandler value)
+    public static bool IsValid(this InboundWebhookHandler? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
     /// <summary>
-    /// Ensures that a <see cref="InboundWebhookHandler"/> instance is valid.
+    /// Ensures that an <see cref="InboundWebhookHandler"/> instance is valid.
     /// </summary>
     /// <param name="value">The inbound webhook handler to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
-    public static void EnsureValid(this InboundWebhookHandler value)
+    public static void EnsureValid(this InboundWebhookHandler? value)
     {
         ArgumentNullException.ThrowIfNull(value);
-
-        // No validation needed beyond null check
     }
 }
