@@ -59,12 +59,18 @@ public static class PipelineHttpClientFactoryValidation
         }
 
         // Validate DefaultHeaders
-        if (value.DefaultHeaders == null)
+        if (value.DefaultHeaders is null)
         {
             errors.Add("PipelineHttpClientFactory.DefaultHeaders must not be null.");
         }
         else
         {
+            // Check if the dictionary itself is empty (not an error, but worth noting)
+            if (value.DefaultHeaders.Count == 0)
+            {
+                errors.Add("PipelineHttpClientFactory.DefaultHeaders collection is empty.");
+            }
+
             // Check if any header values are null or whitespace
             foreach (var header in value.DefaultHeaders)
             {
@@ -84,10 +90,7 @@ public static class PipelineHttpClientFactoryValidation
     /// <param name="value">The <see cref="PipelineHttpClientFactory"/> to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
-    public static bool IsValid(this PipelineHttpClientFactory value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this PipelineHttpClientFactory value) => value?.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="PipelineHttpClientFactory"/> instance is valid.
