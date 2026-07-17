@@ -20,22 +20,22 @@ public sealed class WindowEvent
     /// <summary>
     /// Gets or sets the unique identifier for this window.
     /// </summary>
-    public long WindowId { get; set; }
+    public long WindowId { get; private set; }
 
     /// <summary>
     /// Gets or sets the start time of the window in milliseconds (Unix timestamp).
     /// </summary>
-    public long WindowStartMs { get; set; }
+    public long WindowStartMs { get; private set; }
 
     /// <summary>
     /// Gets or sets the end time of the window in milliseconds (Unix timestamp).
     /// </summary>
-    public long WindowEndMs { get; set; }
+    public long WindowEndMs { get; private set; }
 
     /// <summary>
     /// Gets or sets the type of aggregation performed (e.g., "tumbling", "sliding").
     /// </summary>
-    public string AggregationType { get; set; } = "";
+    public string AggregationType { get; private set; } = "";
 
     /// <summary>
     /// Gets or sets the list of data points in this window.
