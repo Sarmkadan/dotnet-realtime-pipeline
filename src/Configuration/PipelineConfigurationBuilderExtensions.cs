@@ -1,7 +1,8 @@
 #nullable enable
 // =============================================================================
-// Author: 
-// =============================================================================
+// Author: Vladyslav Zaiets | https://sarmkadan.com
+// CTO & Software Architect
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Configuration;
 
@@ -30,8 +31,11 @@ public static class PipelineConfigurationBuilderExtensions
 
         foreach (var (stageName, stageType) in stages)
         {
+            ArgumentException.ThrowIfNullOrEmpty(stageName, nameof(stages));
+            ArgumentException.ThrowIfNullOrEmpty(stageType, nameof(stages));
             builder.WithStage(stageName, stageType);
         }
+
         return builder;
     }
 
@@ -47,8 +51,8 @@ public static class PipelineConfigurationBuilderExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         return builder.WithBufferConfiguration(
-            maxBufferSize: 500000,
-            flushIntervalMs: 100,
+            maxBufferSize: Constants.PipelineConstants.DefaultMaxBufferSize * 50,
+            flushIntervalMs: Constants.PipelineConstants.DefaultBufferFlushIntervalMs / 10,
             maxConcurrentConsumers: 32);
     }
 
@@ -59,7 +63,8 @@ public static class PipelineConfigurationBuilderExtensions
     /// <param name="dlqStageName">The name of the dead-letter queue stage.</param>
     /// <param name="dlqStageType">The type of the dead-letter queue stage.</param>
     /// <returns>The pipeline configuration builder.</returns>
-    /// <exception cref="ArgumentNullException">Thrown if builder, dlqStageName or dlqStageType is null or empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if builder is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if dlqStageName or dlqStageType is null or empty.</exception>
     public static PipelineConfigurationBuilder WithDeadLetterQueueStage(
         this PipelineConfigurationBuilder builder,
         string dlqStageName,
