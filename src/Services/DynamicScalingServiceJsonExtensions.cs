@@ -38,27 +38,31 @@ public static class DynamicScalingServiceJsonExtensions
     /// Deserializes a JSON string to a <see cref="DynamicScalingService"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized service instance, or null if the JSON is empty.</returns>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static DynamicScalingService? FromJson(string json)
+    /// <returns>The deserialized service instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <exception cref="JsonException">Thrown when the JSON is invalid, empty, whitespace, or cannot be deserialized.</exception>
+    public static DynamicScalingService FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
-            return null;
+            throw new JsonException("JSON string cannot be empty or whitespace.");
         }
 
-        return JsonSerializer.Deserialize<DynamicScalingService>(json, _jsonOptions);
+        return JsonSerializer.Deserialize<DynamicScalingService>(json, _jsonOptions)
+            ?? throw new JsonException("Deserialization returned null for valid JSON.");
     }
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="DynamicScalingService"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized service instance, or null on failure.</param>
+    /// <param name="value">Receives the deserialized service instance.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out DynamicScalingService? value)
+    public static bool TryFromJson(string json, out DynamicScalingService value)
     {
-        value = null;
+        value = null!;
 
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -67,7 +71,8 @@ public static class DynamicScalingServiceJsonExtensions
 
         try
         {
-            value = JsonSerializer.Deserialize<DynamicScalingService>(json, _jsonOptions);
+            value = JsonSerializer.Deserialize<DynamicScalingService>(json, _jsonOptions)
+                ?? throw new JsonException();
             return true;
         }
         catch (JsonException)
