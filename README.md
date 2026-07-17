@@ -129,6 +129,129 @@ Console.WriteLine($"SystemHealthReport is valid: {reportIsValid}");
 healthReport.EnsureValid();
 ```
 
+## SerializationHelperValidation
+
+The `SerializationHelperValidation` static class provides validation helpers for `SerializationHelper` operations and related types (`DataPoint`, `ProcessingResult`, `MetricAggregation`). It includes extension methods for validating serialization-related objects before serialization, checking validity status, and throwing exceptions when invalid states are detected. This ensures data integrity when working with pipeline serialization operations.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a valid DataPoint instance for serialization
+var dataPoint = new DataPoint
+{
+    Id = 1,
+    Source = "TemperatureSensor",
+    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    Value = 23.5,
+    Quality = 95,
+    CreatedAt = DateTime.UtcNow
+};
+
+// Validate the DataPoint before serialization
+var validationErrors = dataPoint.ValidateDataPoint();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("DataPoint validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if DataPoint is valid using IsValid extension method
+bool isValid = dataPoint.IsValid();
+Console.WriteLine($"DataPoint is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+dataPoint.EnsureValid();
+
+// Create a ProcessingResult instance for validation
+var processingResult = new ProcessingResult(
+    stageName: "DataProcessing",
+    success: true,
+    outputData: new Dictionary<string, object> { { "processedItems", 100 } },
+    processingTimeMs: 125
+);
+
+// Validate ProcessingResult before serialization
+var resultErrors = processingResult.ValidateProcessingResult();
+if (resultErrors.Count > 0)
+{
+    Console.WriteLine("ProcessingResult validation failed:");
+    foreach (var error in resultErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if ProcessingResult is valid
+bool resultIsValid = processingResult.IsValid();
+Console.WriteLine($"ProcessingResult is valid: {resultIsValid}");
+
+// Ensure ProcessingResult validity
+processingResult.EnsureValid();
+
+// Create a MetricAggregation instance for validation
+var metrics = new MetricAggregation
+{
+    MetricId = 1,
+    MetricType = "PipelinePerformance",
+    TimeWindowStartMs = DateTimeOffset.UtcNow.AddMinutes(-5).ToUnixTimeMilliseconds(),
+    TimeWindowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    TotalItemsProcessed = 10000,
+    TotalItemsFailed = 250,
+    TotalItemsSkipped = 120,
+    AverageProcessingTimeMs = 45.2,
+    MinProcessingTimeMs = 5,
+    MaxProcessingTimeMs = 250,
+    P95ProcessingTimeMs = 120,
+    P99ProcessingTimeMs = 180,
+    BackpressureEvents = 8,
+    TotalBackpressureMs = 1500,
+    ComputedAt = DateTime.UtcNow
+};
+
+// Validate MetricAggregation before serialization
+var metricsErrors = metrics.ValidateMetricAggregation();
+if (metricsErrors.Count > 0)
+{
+    Console.WriteLine("MetricAggregation validation failed:");
+    foreach (var error in metricsErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if MetricAggregation is valid
+bool metricsIsValid = metrics.IsValid();
+Console.WriteLine($"MetricAggregation is valid: {metricsIsValid}");
+
+// Ensure MetricAggregation validity
+metrics.EnsureValid();
+
+// Validate a list of DataPoints
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint { Id = 1, Source = "Sensor1", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 23.5, Quality = 95 },
+    new DataPoint { Id = 2, Source = "Sensor2", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 24.1, Quality = 92 }
+};
+
+var listErrors = dataPoints.ValidateDataPoints();
+if (listErrors.Count > 0)
+{
+    Console.WriteLine("DataPoint list validation failed:");
+    foreach (var error in listErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+```
+
 ## PipelineInitializerExtensions
 
 The `PipelineInitializerExtensions` class provides extension methods for `PipelineInitializer` that enhance pipeline lifecycle management with additional functionality. It includes methods for initializing and starting pipelines in a single operation, retrying initialization on transient failures, safely stopping pipelines, and checking pipeline initialization state.
