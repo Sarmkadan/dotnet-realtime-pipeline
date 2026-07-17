@@ -129,6 +129,45 @@ visualizer.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning();
 visualizer.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy();
 ```
 
+## PipelineVisualizationNodeExtensions
+The `PipelineVisualizationNodeExtensions` class provides convenient extension methods for `PipelineVisualizationNode` to simplify common visualization and analysis operations. It includes methods for checking node health states, formatting metrics, and retrieving downstream stage information.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Visualization;
+using System;
+
+// Assume node is a PipelineVisualizationNode from a pipeline visualization
+var node = new PipelineVisualizationNode(
+    stageName: "DataProcessing",
+    stageType: "Processor",
+    healthLabel: "HEALTHY",
+    throughputEps: 12500,
+    bufferFillPercent: 45.2,
+    droppedItems: 23,
+    isBackpressured: false
+);
+
+// Check health states
+bool isHealthy = node.IsHealthy();
+bool isWarning = node.IsWarning();
+bool isCritical = node.IsCritical();
+
+// Get downstream stage information
+IReadOnlyList<string> downstream = node.GetDownstreamStages();
+bool hasDownstream = node.HasDownstream();
+
+// Format metrics for display
+string throughput = node.FormatThroughput(); // "12.50K eps"
+string bufferFill = node.FormatBufferFill(); // "45.2%"
+string healthColor = node.GetHealthColor(); // "#008000" for HEALTHY
+
+// Get a comprehensive status summary for tooltips
+string statusSummary = node.GetStatusSummary();
+Console.WriteLine(statusSummary);
+// Output: "DataProcessing (Processor) | HEALTHY | Buffer: 45.2% | Throughput: 12.50K eps | Dropped: 23 | Backpressure: INACTIVE"
+```
+
 ## PipelineBenchmarks
 The `PipelineBenchmarks` class provides performance benchmarks for the dotnet-realtime-pipeline library. It measures throughput and memory allocation for critical pipeline operations.
 
