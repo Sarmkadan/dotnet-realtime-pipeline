@@ -13,12 +13,31 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Unit tests for the <see cref="QueryService"/> class.
+/// Tests various scenarios for data point querying, aggregation, trend analysis, and time series decomposition.
+/// </summary>
 public sealed class QueryServiceTests
 {
+    /// <summary>
+    /// Mock repository for data points used in testing.
+    /// </summary>
     private readonly Mock<IDataPointRepository> _mockDataPointRepository;
+
+    /// <summary>
+    /// Mock repository for metrics used in testing.
+    /// </summary>
     private readonly Mock<IMetricsRepository> _mockMetricsRepository;
+
+    /// <summary>
+    /// Instance of the QueryService being tested.
+    /// </summary>
     private readonly QueryService _service;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryServiceTests"/> class.
+    /// Sets up mock repositories and creates the QueryService instance for testing.
+    /// </summary>
     public QueryServiceTests()
     {
         _mockDataPointRepository = new Mock<IDataPointRepository>();
@@ -26,6 +45,9 @@ public sealed class QueryServiceTests
         _service = new QueryService(_mockDataPointRepository.Object, _mockMetricsRepository.Object);
     }
 
+    /// <summary>
+    /// Tests that the QueryService constructor throws an exception when null data point repository is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullDataPointRepository_ShouldThrow()
     {
@@ -33,6 +55,9 @@ public sealed class QueryServiceTests
         Assert.Throws<ArgumentNullException>(() => new QueryService(null!, _mockMetricsRepository.Object));
     }
 
+    /// <summary>
+    /// Tests that the QueryService constructor throws an exception when null metrics repository is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullMetricsRepository_ShouldThrow()
     {
@@ -40,6 +65,11 @@ public sealed class QueryServiceTests
         Assert.Throws<ArgumentNullException>(() => new QueryService(_mockDataPointRepository.Object, null!));
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync calls GetBySourceAsync when source parameter is specified.
+    /// Verifies that the repository method is called once with the correct source parameter.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithSourceSpecified_ShouldCallGetBySourceAsync()
     {
@@ -59,6 +89,11 @@ public sealed class QueryServiceTests
         _mockDataPointRepository.Verify(r => r.GetBySourceAsync("Sensor1"), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync calls GetByTimeRangeAsync when time range parameters are specified.
+    /// Verifies that the repository method is called once with the correct start and end time parameters.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithTimeRangeSpecified_ShouldCallGetByTimeRangeAsync()
     {
@@ -78,6 +113,11 @@ public sealed class QueryServiceTests
         _mockDataPointRepository.Verify(r => r.GetByTimeRangeAsync(10000000L, 20000000L), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync calls GetByQualityThresholdAsync when quality threshold parameter is specified.
+    /// Verifies that the repository method is called once with the correct minimum quality parameter.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithQualityThresholdSpecified_ShouldCallGetByQualityThresholdAsync()
     {
@@ -97,6 +137,11 @@ public sealed class QueryServiceTests
         _mockDataPointRepository.Verify(r => r.GetByQualityThresholdAsync(50), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync calls GetPagedAsync when no parameters are specified.
+    /// Verifies that the repository method is called once with default page number (1) and page size (1000).
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithNoParameters_ShouldCallGetPagedAsync()
     {
@@ -116,6 +161,11 @@ public sealed class QueryServiceTests
         _mockDataPointRepository.Verify(r => r.GetPagedAsync(1, 1000), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync applies both source and quality filters when both parameters are specified.
+    /// Verifies that only data points matching both criteria are returned.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithSourceAndQuality_ShouldApplyBothFilters()
     {
@@ -136,6 +186,11 @@ public sealed class QueryServiceTests
         result.First().Quality.Should().BeGreaterOrEqualTo(50);
     }
 
+    /// <summary>
+    /// Tests that SearchDataPointsAsync applies both time range and quality filters when both parameters are specified.
+    /// Verifies that only data points within the time range and matching the quality threshold are returned.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task SearchDataPointsAsync_WithTimeRangeAndQuality_ShouldApplyBothFilters()
     {
@@ -157,6 +212,11 @@ public sealed class QueryServiceTests
         result.First().Quality.Should().BeGreaterOrEqualTo(50);
     }
 
+    /// <summary>
+    /// Tests that GetAggregateStatisticsAsync returns empty statistics when no data points are available.
+    /// Verifies that the result object is not null and contains the correct time range with zero count.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetAggregateStatisticsAsync_WithNoDataPoints_ShouldReturnEmptyStatistics()
     {
@@ -174,6 +234,11 @@ public sealed class QueryServiceTests
         result.EndMs.Should().Be(20000000L);
     }
 
+    /// <summary>
+    /// Tests that GetAggregateStatisticsAsync calculates correct statistics from data points.
+    /// Verifies that sum, average, min, max, and unique source count are calculated correctly.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetAggregateStatisticsAsync_WithDataPoints_ShouldCalculateCorrectStatistics()
     {
@@ -200,6 +265,11 @@ public sealed class QueryServiceTests
         result.UniqueSourceCount.Should().Be(2); // Sensor1 and Sensor2
     }
 
+    /// <summary>
+    /// Tests that GetAggregateStatisticsAsync calculates standard deviation and median correctly.
+    /// Verifies that median is calculated as the average of middle values for even count, and standard deviation is positive.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetAggregateStatisticsAsync_ShouldCalculateStandardDeviationAndMedian()
     {
@@ -228,6 +298,11 @@ public sealed class QueryServiceTests
         result.StdDev.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Tests that GetAggregateStatisticsAsync calculates percentiles (P95 and P99) correctly.
+    /// Verifies that P95 is greater than the 9.5th value and P99 is greater than the 9.9th value in the sorted dataset.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetAggregateStatisticsAsync_ShouldCalculatePercentiles()
     {
@@ -249,6 +324,11 @@ public sealed class QueryServiceTests
         result.P99.Should().BeGreaterThan(90.0); // 9.9th value in sorted list
     }
 
+    /// <summary>
+    /// Tests that GetAggregateStatisticsAsync calculates average quality correctly.
+    /// Verifies that the average quality is calculated as the arithmetic mean of all data point quality values.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetAggregateStatisticsAsync_ShouldCalculateAverageQuality()
     {
@@ -270,6 +350,11 @@ public sealed class QueryServiceTests
         result.AverageQuality.Should().Be(80.0); // (80 + 60 + 100) / 3
     }
 
+    /// <summary>
+    /// Tests that AnalyzeTrendsAsync returns INSUFFICIENT_DATA status when insufficient data points are available.
+    /// Verifies that trend analysis cannot be performed with fewer than required data points.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task AnalyzeTrendsAsync_WithInsufficientData_ShouldReturnInsufficientDataStatus()
     {
@@ -289,6 +374,11 @@ public sealed class QueryServiceTests
         result.Status.Should().Be("INSUFFICIENT_DATA");
     }
 
+    /// <summary>
+    /// Tests that AnalyzeTrendsAsync returns INSUFFICIENT_INTERVALS status when insufficient time intervals are available.
+    /// Verifies that trend analysis requires multiple time intervals to calculate meaningful trends.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task AnalyzeTrendsAsync_WithInsufficientIntervals_ShouldReturnInsufficientIntervalsStatus()
     {
@@ -309,6 +399,11 @@ public sealed class QueryServiceTests
         result.Status.Should().Be("INSUFFICIENT_INTERVALS");
     }
 
+    /// <summary>
+    /// Tests that AnalyzeTrendsAsync returns INCREASING direction for a dataset with increasing values.
+    /// Verifies that the trend direction is correctly identified and change percentage is positive.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task AnalyzeTrendsAsync_WithIncreasingTrend_ShouldReturnIncreasingDirection()
     {
@@ -334,6 +429,11 @@ public sealed class QueryServiceTests
         result.ChangePercent.Should().BePositive();
     }
 
+    /// <summary>
+    /// Tests that AnalyzeTrendsAsync returns DECREASING direction for a dataset with decreasing values.
+    /// Verifies that the trend direction is correctly identified and change percentage is negative.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task AnalyzeTrendsAsync_WithDecreasingTrend_ShouldReturnDecreasingDirection()
     {
@@ -359,6 +459,11 @@ public sealed class QueryServiceTests
         result.ChangePercent.Should().BeNegative();
     }
 
+    /// <summary>
+    /// Tests that AnalyzeTrendsAsync returns STABLE direction for a dataset with stable values.
+    /// Verifies that the trend direction is correctly identified as STABLE when values fluctuate around a constant value.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task AnalyzeTrendsAsync_WithStableTrend_ShouldReturnStableDirection()
     {
@@ -384,6 +489,11 @@ public sealed class QueryServiceTests
         result.ChangePercent.Should().BeCloseTo(0, 1); // Close to zero
     }
 
+    /// <summary>
+    /// Tests that DecomposeTimeSeriesAsync returns INSUFFICIENT_DATA status when insufficient data points are available.
+    /// Verifies that time series decomposition requires a minimum number of data points to perform analysis.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task DecomposeTimeSeriesAsync_WithInsufficientData_ShouldReturnInsufficientDataStatus()
     {
@@ -404,6 +514,11 @@ public sealed class QueryServiceTests
         result.Status.Should().Be("INSUFFICIENT_DATA");
     }
 
+    /// <summary>
+    /// Tests that DecomposeTimeSeriesAsync returns SUCCESS status when sufficient data points are available.
+    /// Verifies that time series decomposition can be performed with enough data points and returns valid results.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task DecomposeTimeSeriesAsync_WithSufficientData_ShouldReturnSuccessStatus()
     {
@@ -426,6 +541,11 @@ public sealed class QueryServiceTests
         result.TrendPoints.Should().BeGreaterThan(0);
     }
 
+    /// <summary>
+    /// Tests that GetRecentMetricsAsync delegates to the MetricsRepository.
+    /// Verifies that the service method correctly calls the repository method with the specified limit parameter.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetRecentMetricsAsync_ShouldDelegateToMetricsRepository()
     {
@@ -445,6 +565,11 @@ public sealed class QueryServiceTests
         _mockMetricsRepository.Verify(r => r.GetHistoryAsync(10), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that GetDataPointCountAsync delegates to the DataPointRepository.
+    /// Verifies that the service method correctly calls the repository CountAsync method and returns the count.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [Fact]
     public async Task GetDataPointCountAsync_ShouldDelegateToDataPointRepository()
     {
@@ -460,6 +585,10 @@ public sealed class QueryServiceTests
         _mockDataPointRepository.Verify(r => r.CountAsync(), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that DataAggregateStatistics object has all properties set correctly.
+    /// Verifies that the aggregate statistics structure contains all expected fields with appropriate values.
+    /// </summary>
     [Fact]
     public void DataAggregateStatistics_ShouldHaveCorrectProperties()
     {
@@ -497,6 +626,10 @@ public sealed class QueryServiceTests
         stats.AverageQuality.Should().Be(85.0);
     }
 
+    /// <summary>
+    /// Tests that TrendAnalysis object has all properties set correctly.
+    /// Verifies that the trend analysis structure contains all expected fields with appropriate values.
+    /// </summary>
     [Fact]
     public void TrendAnalysis_ShouldHaveCorrectProperties()
     {
@@ -520,6 +653,10 @@ public sealed class QueryServiceTests
         trend.Volatility.Should().Be(5.2);
     }
 
+    /// <summary>
+    /// Tests that TimeSeriesDecomposition object has all properties set correctly.
+    /// Verifies that the time series decomposition structure contains all expected fields with appropriate values.
+    /// </summary>
     [Fact]
     public void TimeSeriesDecomposition_ShouldHaveCorrectProperties()
     {
