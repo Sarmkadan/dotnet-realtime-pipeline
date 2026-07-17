@@ -10,6 +10,10 @@ using System.Globalization;
 /// Provides extension methods for <see cref="BackpressureContext"/> to simplify common operations
 /// and add domain-specific functionality for pipeline backpressure management.
 /// </summary>
+/// <remarks>
+/// All extension methods validate their inputs and throw appropriate exceptions for null or invalid values.
+/// Methods are designed to be thread-safe when called on the same <see cref="BackpressureContext"/> instance.
+/// </remarks>
 public static class BackpressureContextExtensions
 {
     /// <summary>
@@ -20,6 +24,7 @@ public static class BackpressureContextExtensions
     /// <param name="consumptionRatePerSecond">Items consumed per second.</param>
     /// <returns>Estimated milliseconds until capacity, or -1 if buffer is empty or consumption is zero.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="consumptionRatePerSecond"/> is not positive.</exception>
     public static long EstimateTimeToCapacity(
         this BackpressureContext context,
         double consumptionRatePerSecond)
@@ -27,7 +32,7 @@ public static class BackpressureContextExtensions
         ArgumentNullException.ThrowIfNull(context);
 
         if (consumptionRatePerSecond <= 0)
-            throw new ArgumentException("Consumption rate must be positive", nameof(consumptionRatePerSecond));
+            throw new ArgumentOutOfRangeException(nameof(consumptionRatePerSecond), consumptionRatePerSecond, "Must be positive");
 
         if (context.MaxBufferCapacity <= 0)
             return -1;
@@ -49,12 +54,16 @@ public static class BackpressureContextExtensions
     /// <param name="absoluteThreshold">Absolute item threshold.</param>
     /// <returns>True if buffer is critically full; otherwise false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="percentageThreshold"/> is not in range [0, 100].</exception>
     public static bool IsCriticallyFull(
         this BackpressureContext context,
         double percentageThreshold = 90,
         long absoluteThreshold = 0)
     {
         ArgumentNullException.ThrowIfNull(context);
+
+        if (percentageThreshold is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(percentageThreshold), percentageThreshold, "Must be between 0 and 100");
 
         double fillPercent = context.GetBufferFillPercentage();
         bool isPercentageCritical = fillPercent >= percentageThreshold;
@@ -88,6 +97,7 @@ public static class BackpressureContextExtensions
     /// <param name="eventType">Type of backpressure event.</param>
     /// <param name="metadata">Optional metadata dictionary.</param>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="eventType"/> is null or empty.</exception>
     public static void RecordBackpressureEvent(
         this BackpressureContext context,
         string eventType,
@@ -99,12 +109,11 @@ public static class BackpressureContextExtensions
         context.ActivateBackpressure();
         context.RecordMetric($"BackpressureEvent_{eventType}", 1);
 
-        if (metadata != null && metadata.Count > 0)
+        if (metadata is { Count: > 0 })
         {
             foreach (var kvp in metadata)
             {
-                context.RecordMetric($"EventMeta_{eventType}_{kvp.Key}",
-                    long.Parse(kvp.Value, CultureInfo.InvariantCulture));
+                context.RecordMetric($"EventMeta_{eventType}_{kvp.Key}", long.Parse(kvp.Value, CultureInfo.InvariantCulture));
             }
         }
     }
@@ -171,9 +180,10 @@ public static class BackpressureContextExtensions
     /// </summary>
     /// <param name="context">The backpressure context.</param>
     /// <param name="batchSize">Size of the batch to add.</param>
-    /// <param name="requiredCapacityPercent">Minimum required capacity percentage (0-100).</param>
+    /// <param name="requiredCapacityPercent">Minimum required capacity percentage (0-100). Defaults to 20%.</param>
     /// <returns>True if sufficient capacity exists; otherwise false.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="requiredCapacityPercent"/> is not in range [0, 100].</exception>
     public static bool HasSufficientCapacityForBatch(
         this BackpressureContext context,
         long batchSize,
@@ -181,10 +191,9 @@ public static class BackpressureContextExtensions
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (batchSize <= 0)
-            return true; // Zero-sized batch always fits
+        if (requiredCapacityPercent is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(requiredCapacityPercent), requiredCapacityPercent, "Must be between 0 and 100");
 
-        double requiredCapacity = context.MaxBufferCapacity * (requiredCapacityPercent / 100d);
-        return context.BufferSize + batchSize <= requiredCapacity;
+        return batchSize <= 0 || context.BufferSize + batchSize <= context.MaxBufferCapacity * (requiredCapacityPercent / 100d);
     }
 }
