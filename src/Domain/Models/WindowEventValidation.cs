@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Domain.Models;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="WindowEvent"/> instances.
@@ -68,7 +67,7 @@ public static class WindowEventValidation
         // Validate CreatedAt
         if (value.CreatedAt == default)
         {
-            errors.Add("CreatedAt must be set to a valid DateTime.");
+            errors.Add("CreatedAt must be set to a non-default DateTime value.");
         }
 
         // Validate CreatedAtTicks
@@ -82,6 +81,10 @@ public static class WindowEventValidation
         if (value.DataPoints is null)
         {
             errors.Add("DataPoints collection cannot be null.");
+        }
+        else if (value.DataPoints.Count == 0)
+        {
+            errors.Add("DataPoints collection cannot be empty.");
         }
         else
         {
@@ -104,14 +107,13 @@ public static class WindowEventValidation
         }
 
         // Validate Description if not null
-        if (value.Description is not null && value.Description.Length > 500)
+        if (value.Description?.Length > 500)
         {
             errors.Add(
                 $"Description length must be 500 characters or less, but was {value.Description.Length}.");
         }
 
-        // Validate IsComplete flag
-        // Note: IsComplete can be false during processing, so we don't enforce it must be true
+        // IsComplete can be false during processing, so we don't enforce it must be true
 
         return errors.AsReadOnly();
     }
@@ -122,10 +124,7 @@ public static class WindowEventValidation
     /// <param name="value">The window event to check.</param>
     /// <returns>True if the window event is valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this WindowEvent value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this WindowEvent value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures a window event is valid, throwing an exception if it is not.
@@ -246,7 +245,7 @@ public static class WindowEventValidation
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (qualityThreshold < 0 || qualityThreshold > 100)
+        if (qualityThreshold is < 0 or > 100)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(qualityThreshold),
