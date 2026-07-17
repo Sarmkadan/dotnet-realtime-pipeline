@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.API;
 
@@ -14,6 +14,10 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="ApiEndpointHandler"/> types.
 /// </summary>
+/// <remarks>
+/// This static class provides JSON serialization/deserialization utilities for
+/// <see cref="ApiEndpointHandler"/> and its derived types.
+/// </remarks>
 public static class ApiEndpointHandlerJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -33,25 +37,18 @@ public static class ApiEndpointHandlerJsonExtensions
     /// <returns>A JSON string representation of the handler.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static string ToJson(this ApiEndpointHandler value, bool indented = false)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
-    }
+        => JsonSerializer.Serialize(value, indented ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true } : _jsonOptions);
 
     /// <summary>
     /// Deserializes a JSON string to an <see cref="ApiEndpointHandler"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized handler instance, or null if the JSON is empty.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static ApiEndpointHandler? FromJson(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentException.ThrowIfNullOrEmpty(json, nameof(json));
 
         return JsonSerializer.Deserialize<ApiEndpointHandler>(json, _jsonOptions);
     }
@@ -62,9 +59,10 @@ public static class ApiEndpointHandlerJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized handler instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out ApiEndpointHandler? value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentException.ThrowIfNullOrEmpty(json, nameof(json));
 
         try
         {
