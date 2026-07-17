@@ -23,8 +23,8 @@ public static class PipelineStateManagerExtensions
         ArgumentNullException.ThrowIfNull(manager);
         // The underlying GetStateHistory returns a List<StateTransition>; we project to an array for IReadOnlyList.
         return manager.GetStateHistory()
-                      .Where(t => t.ToState == targetState)
-                      .ToArray();
+            .Where(t => t.ToState == targetState)
+            .ToArray();
     }
 
     /// <summary>
@@ -36,8 +36,7 @@ public static class PipelineStateManagerExtensions
     public static StateTransition? GetLastTransition(this PipelineStateManager manager)
     {
         ArgumentNullException.ThrowIfNull(manager);
-        var history = manager.GetStateHistory();
-        return history.Count > 0 ? history[^1] : null;
+        return manager.GetStateHistory() is var history && history.Count > 0 ? history[^1] : null;
     }
 
     /// <summary>
@@ -48,9 +47,12 @@ public static class PipelineStateManagerExtensions
     /// <param name="state">The state for which to calculate total elapsed time.</param>
     /// <returns>A <see cref="TimeSpan"/> representing the cumulative duration.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="manager"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="state"/> is <c>null</c>.</exception>
     public static TimeSpan GetTotalTimeInState(this PipelineStateManager manager, PipelineState state)
     {
         ArgumentNullException.ThrowIfNull(manager);
+        ArgumentNullException.ThrowIfNull(state);
+
         var history = manager.GetStateHistory();
 
         if (history.Count == 0)
@@ -95,15 +97,15 @@ public static class PipelineStateManagerExtensions
     {
         ArgumentNullException.ThrowIfNull(manager);
         var history = manager.GetStateHistory()
-                             .OrderBy(t => t.Timestamp)
-                             .Select(t =>
-                                 string.Format(
-                                     CultureInfo.InvariantCulture,
-                                     "{0:O} | {1} → {2} | {3}",
-                                     t.Timestamp,
-                                     t.FromState,
-                                     t.ToState,
-                                     string.IsNullOrEmpty(t.Reason) ? "<no reason>" : t.Reason));
+            .OrderBy(t => t.Timestamp)
+            .Select(t =>
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0:O} | {1} → {2} | {3}",
+                    t.Timestamp,
+                    t.FromState,
+                    t.ToState,
+                    string.IsNullOrEmpty(t.Reason) ? "<no reason>" : t.Reason));
 
         return string.Join(Environment.NewLine, history);
     }
