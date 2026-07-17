@@ -351,6 +351,127 @@ IReadOnlyList<long> measurements = benchmarkResult.GetMeasurements();
 Console.WriteLine($"Raw measurements count: {measurements.Count}");
 ```
 
+## PerformanceHelperValidation
+
+The `PerformanceHelperValidation` static class provides validation helpers for `BenchmarkResult` and `MemoryStats` instances, as well as execution results from `PerformanceHelper.MeasureExecution` and `PerformanceHelper.MeasureExecutionAsync` methods. It includes extension methods for comprehensive validation, checking validity status, and throwing exceptions when invalid states are detected. This ensures performance measurements meet business rules and data integrity constraints before use in pipeline operations.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+using System.Threading.Tasks;
+
+// Create benchmark results for validation
+var benchmarkResult = new BenchmarkResult
+{
+    Iterations = 1000,
+    Measurements = new long[] { 15, 18, 16, 17, 19 },
+    AverageMs = 17.0,
+    MinMs = 15,
+    MaxMs = 19,
+    MedianMs = 17.0,
+    P95Ms = 19.0,
+    P99Ms = 19.0
+};
+
+// Validate benchmark result
+var validationErrors = benchmarkResult.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Benchmark validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if benchmark is valid
+bool isValid = benchmarkResult.IsValid();
+Console.WriteLine($"Benchmark is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+benchmarkResult.EnsureValid();
+
+// Create memory statistics for validation
+var memoryStats = new MemoryStats
+{
+    WorkingSetMb = 125.5,
+    PrivateMemoryMb = 85.2,
+    PeakWorkingSetMb = 150.0,
+    GC0Collections = 2,
+    GC1Collections = 0,
+    GC2Collections = 0,
+    TotalMemoryMb = 210.7
+};
+
+// Validate memory statistics
+var statsErrors = memoryStats.Validate();
+if (statsErrors.Count > 0)
+{
+    Console.WriteLine("Memory stats validation failed:");
+    foreach (var error in statsErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if memory stats are valid
+bool statsValid = memoryStats.IsValid();
+Console.WriteLine($"Memory stats are valid: {statsValid}");
+
+// Ensure memory stats validity
+memoryStats.EnsureValid();
+
+// Validate execution results from PerformanceHelper.MeasureExecution
+var executionResult = new PerformanceHelper().MeasureExecution(() => {
+    // Operation to measure
+    return 42;
+});
+
+// Validate execution result
+var executionErrors = executionResult.Validate();
+if (executionErrors.Count > 0)
+{
+    Console.WriteLine("Execution result validation failed:");
+    foreach (var error in executionErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check execution result validity
+bool executionValid = executionResult.IsValid();
+Console.WriteLine($"Execution result is valid: {executionValid}");
+
+// Ensure execution result validity
+(executionResult.Result, executionResult.ElapsedMs).EnsureValid();
+
+// Validate async execution results from PerformanceHelper.MeasureExecutionAsync
+var asyncExecutionResult = await new PerformanceHelper().MeasureExecutionAsync(async () => {
+    await Task.Delay(10);
+    return "success";
+});
+
+// Validate async execution result
+var asyncErrors = asyncExecutionResult.Validate("expected-result");
+if (asyncErrors.Count > 0)
+{
+    Console.WriteLine("Async execution result validation failed:");
+    foreach (var error in asyncErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check async execution result validity
+bool asyncValid = asyncExecutionResult.IsValid("expected-result");
+Console.WriteLine($"Async execution result is valid: {asyncValid}");
+
+// Ensure async execution result validity
+asyncExecutionResult.EnsureValid("expected-result");
+```
+
 ## CommandLineParserExtensions
 
 The `CommandLineParserExtensions` class provides extension methods for `CommandLineParser` to simplify command registration and parsing scenarios. It includes methods for registering individual commands, bulk registering commands from dictionaries or sequences, parsing command line arguments into structured commands, and executing parsed commands with proper error handling.
