@@ -4,7 +4,6 @@ namespace DotNetRealtimePipeline.State;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="PipelineStateManager"/> instances.
@@ -17,7 +16,7 @@ public static class PipelineStateManagerValidation
     /// <param name="value">The pipeline state manager to validate.</param>
     /// <returns>A list of validation errors; empty if the instance is valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this PipelineStateManager value)
+    public static IReadOnlyList<string> Validate(this PipelineStateManager? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -31,14 +30,9 @@ public static class PipelineStateManagerValidation
 
         // Validate state history
         var stateHistory = value.GetStateHistory();
-        if (stateHistory is null)
-        {
-            errors.Add("GetStateHistory() returned null.");
-        }
-        else
-        {
-            ValidateStateHistory(stateHistory, errors);
-        }
+        ArgumentNullException.ThrowIfNull(stateHistory);
+
+        ValidateStateHistory(stateHistory, errors);
 
         // Validate current state duration
         var currentDuration = value.GetCurrentStateDuration();
@@ -46,9 +40,6 @@ public static class PipelineStateManagerValidation
         {
             errors.Add("GetCurrentStateDuration() returned a negative time span.");
         }
-
-        // ConfigurationStateManager and OperationMetricsTracker are nested classes,
-        // not properties of PipelineStateManager, so no validation needed here
 
         return errors.AsReadOnly();
     }
@@ -58,6 +49,7 @@ public static class PipelineStateManagerValidation
     /// </summary>
     /// <param name="value">The pipeline state manager to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this PipelineStateManager value)
     {
         return value.Validate().Count == 0;
