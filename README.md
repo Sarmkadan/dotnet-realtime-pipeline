@@ -385,6 +385,96 @@ Console.WriteLine(statusSummary);
 // Output: "DataProcessing (Processor) | HEALTHY | Buffer: 45.2% | Throughput: 12.50K eps | Dropped: 23 | Backpressure: INACTIVE"
 ```
 
+## BackpressureMetricsCollectorValidation
+The `BackpressureMetricsCollectorValidation` static class provides validation helpers for backpressure metrics types (`StageBackpressureMetrics` and `BackpressureMetricsSnapshot`). It includes methods for comprehensive validation, validity checks, and throwing exceptions on invalid states.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+using System;
+using System.Collections.Generic;
+
+// Create stage backpressure metrics with valid values
+var stageMetrics = new StageBackpressureMetrics
+{
+    StageName = "DataProcessing",
+    ActivationCount = 5,
+    TotalActiveDurationMs = 1250,
+    PeakBufferFillPercent = 85.5,
+    CurrentBufferFillPercent = 72.3,
+    TotalDroppedItems = 12,
+    LastActivationAt = DateTime.UtcNow.AddMinutes(-2)
+};
+
+// Validate and check if metrics are valid
+var validationErrors = stageMetrics.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check validity using IsValid extension method
+bool isValid = stageMetrics.IsValid();
+Console.WriteLine($"Stage metrics are valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+stageMetrics.EnsureValid();
+
+// Create a metrics snapshot with multiple stage metrics
+var snapshot = new BackpressureMetricsSnapshot
+{
+    StageMetrics = new List<StageBackpressureMetrics>
+    {
+        new StageBackpressureMetrics
+        {
+            StageName = "Ingestion",
+            ActivationCount = 3,
+            TotalActiveDurationMs = 800,
+            PeakBufferFillPercent = 65.2,
+            CurrentBufferFillPercent = 58.7,
+            TotalDroppedItems = 0
+        },
+        new StageBackpressureMetrics
+        {
+            StageName = "Transformation",
+            ActivationCount = 8,
+            TotalActiveDurationMs = 2100,
+            PeakBufferFillPercent = 92.1,
+            CurrentBufferFillPercent = 88.4,
+            TotalDroppedItems = 8,
+            LastActivationAt = DateTime.UtcNow.AddMinutes(-1)
+        }
+    },
+    TotalActivations = 16,
+    TotalDroppedItems = 20,
+    ActiveBackpressureStages = 2,
+    SnapshotAt = DateTime.UtcNow
+};
+
+// Validate snapshot
+var snapshotErrors = snapshot.Validate();
+if (snapshotErrors.Count > 0)
+{
+    Console.WriteLine("Snapshot validation failed:");
+    foreach (var error in snapshotErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check snapshot validity
+bool snapshotIsValid = snapshot.IsValid();
+Console.WriteLine($"Snapshot is valid: {snapshotIsValid}");
+
+// Ensure snapshot validity
+snapshot.EnsureValid();
+```
+
 ## BackpressureEventExtensions
 The `BackpressureEventExtensions` class provides extension methods for `BackpressureEvent` that simplify backpressure event analysis and formatting. It includes methods for checking critical buffer states, determining severity levels, formatting events as readable strings, and identifying activation/release events.
 
