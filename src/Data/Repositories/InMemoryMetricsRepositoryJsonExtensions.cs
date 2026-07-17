@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Data.Repositories;
 
@@ -37,13 +37,9 @@ public static class InMemoryMetricsRepositoryJsonExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions)
-            {
-                WriteIndented = true
-            }
+            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
             : _jsonSerializerOptions;
 
-        // Access the internal metrics list via reflection to serialize
         var metrics = value.GetInternalMetrics();
         return JsonSerializer.Serialize(metrics, options);
     }
@@ -53,9 +49,12 @@ public static class InMemoryMetricsRepositoryJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized repository, or null if the JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
     public static InMemoryMetricsRepository? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
@@ -80,8 +79,11 @@ public static class InMemoryMetricsRepositoryJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized repository, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
     public static bool TryFromJson(string json, out InMemoryMetricsRepository? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
         if (string.IsNullOrWhiteSpace(json))
         {
