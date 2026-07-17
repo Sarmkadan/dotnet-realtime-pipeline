@@ -121,6 +121,71 @@ var processingResults = await dataPointProcessor.ProcessBatchAsync(
 Console.WriteLine($"Processed {processingResults.Count} batches of DataPoints");
 ```
 
+## MetricAggregationTestsExtensions
+
+The `MetricAggregationTestsExtensions` class provides extension methods for `MetricAggregationTests` that simplify common test scenarios and operations for metric aggregation testing. It includes factory methods for creating various metric aggregation scenarios and assertion methods for validating metric calculations.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Domain.Models;
+using Xunit;
+
+var tests = new MetricAggregationTests();
+
+// Example 1: Create a throughput metric for testing
+var throughputMetric = tests.CreateThroughputMetric(itemsPerSecond: 100.0);
+// 500 items over a 5-second window → 100 items/s
+
+// Example 2: Create a metric with zero duration for edge case testing
+var zeroDurationMetric = tests.CreateZeroDurationMetric();
+
+// Example 3: Create a metric with error rate for testing error handling
+var errorRateMetric = tests.CreateErrorRateMetric(processedCount: 1000, failedCount: 50);
+// 5% error rate
+
+// Example 4: Create an empty metric for success rate testing
+var emptyMetric = tests.CreateEmptyMetric();
+
+// Example 5: Create an unhealthy metric for threshold testing
+var unhealthyMetric = tests.CreateUnhealthyMetric();
+// 10% error rate (exceeds 5% unhealthy threshold)
+
+// Example 6: Create a processing time metric with specific samples
+var processingTimeMetric = tests.CreateProcessingTimeMetric(25.5, 30.2, 28.1, 27.8);
+// Average should be ~27.9ms
+
+// Example 7: Create a backpressure metric for testing backpressure scenarios
+var backpressureMetric = tests.CreateBackpressureMetric(backpressureMs: 2000);
+// 2000ms backpressure out of a 10000ms window → 20% backpressure ratio
+
+// Example 8: Use assertion methods to validate metric calculations
+var metric = tests.CreateThroughputMetric(itemsPerSecond: 125.0);
+metric.ShouldCalculateThroughput(expectedItemsPerSecond: 125.0);
+
+// Example 9: Validate error rate calculation
+var errorMetric = tests.CreateErrorRateMetric(processedCount: 200, failedCount: 10);
+errorMetric.ShouldCalculateErrorRate(expectedErrorRate: 5.0);
+
+// Example 10: Check unhealthy detection
+var unhealthyMetric = tests.CreateUnhealthyMetric();
+unhealthyMetric.ShouldDetectUnhealthyWhenErrorRateExceedsFivePercent();
+
+// Example 11: Validate average processing time
+var processingMetric = tests.CreateProcessingTimeMetric(45.2, 38.7, 52.1);
+processingMetric.ShouldCalculateCorrectAverageProcessingTime(expectedAverage: 45.333);
+
+// Example 12: Validate backpressure ratio
+var backpressureMetric = tests.CreateBackpressureMetric(backpressureMs: 1500);
+backpressureMetric.ShouldCalculateCorrectBackpressureRatio(expectedRatio: 0.15);
+
+// Example 13: Validate range constraints
+metric.ShouldBeWithinRange(value: 125.0, minimum: 100.0, maximum: 150.0);
+metric.ShouldBeAtLeast(value: 125.0, minimum: 100.0);
+metric.ShouldBeAtMost(value: 125.0, maximum: 150.0);
+```
+
 ## CommandExecutorExtensions
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
