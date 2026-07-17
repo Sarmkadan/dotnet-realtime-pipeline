@@ -11,7 +11,7 @@ using DotNetRealtimePipeline.Domain.Models;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
-public static class DeadLetterQueueTestsJsonExtensions
+public sealed static class DeadLetterQueueTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -23,9 +23,9 @@ public static class DeadLetterQueueTestsJsonExtensions
     /// <summary>
     /// Serializes a <see cref="DeadLetterQueueTests"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The dead letter queue instance to serialize.</param>
+    /// <param name="value">The dead letter queue tests instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
-    /// <returns>A JSON string representation of the dead letter queue.</returns>
+    /// <returns>A JSON string representation of the dead letter queue tests instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this DeadLetterQueueTests value, bool indented = false)
     {
@@ -40,7 +40,7 @@ public static class DeadLetterQueueTestsJsonExtensions
     /// Deserializes a JSON string into a <see cref="DeadLetterQueueTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized dead letter queue instance, or <see langword="null"/> if the JSON is empty or whitespace.</returns>
+    /// <returns>The deserialized dead letter queue tests instance, or <see langword="null"/> if the JSON is empty or whitespace.</returns>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static DeadLetterQueueTests? FromJson(string json)
     {
