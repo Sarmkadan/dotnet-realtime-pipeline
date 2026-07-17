@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
 
@@ -27,10 +27,21 @@ public static class PathHelperValidation
 
         var problems = new List<string>();
 
-        // PathHelper is a static class with only static methods, so there's no instance state to validate
-        // However, we can validate the behavior of its methods by testing with sample inputs
-        // Since these are static methods without internal state, they're always valid
-        // But we'll include this for consistency with the validation pattern
+        // Validate that the OriginalPath is not null or empty
+        if (string.IsNullOrWhiteSpace(value.OriginalPath))
+        {
+            problems.Add("OriginalPath cannot be null or whitespace.");
+        }
+
+        // Validate that the NormalizedPath is a valid absolute path
+        if (string.IsNullOrWhiteSpace(value.NormalizedPath))
+        {
+            problems.Add("NormalizedPath cannot be null or whitespace.");
+        }
+        else if (!Path.IsPathFullyQualified(value.NormalizedPath))
+        {
+            problems.Add("NormalizedPath must be an absolute path.");
+        }
 
         return problems.AsReadOnly();
     }
@@ -60,7 +71,7 @@ public static class PathHelperValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"PathHelper instance is not valid. Problems: {string.Join(" ", problems)}",
+                $"PathHelper instance is not valid. Problems:\n  - {string.Join("\n  - ", problems)}",
                 nameof(value));
         }
     }
