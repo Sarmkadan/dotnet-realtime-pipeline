@@ -277,6 +277,57 @@ else
 status.EnsureValid();
 ```
 
+## WebhookHandlerExtensions
+The `WebhookHandlerExtensions` class provides convenient extension methods for `WebhookHandler` to simplify webhook subscription management, event dispatching, and subscription inspection. It includes methods for subscribing to specific event types, unsubscribing, checking subscription status, managing failed subscriptions, and retrieving subscription statistics.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Integration;
+using System;
+using System.Threading.Tasks;
+
+// Assume handler is an initialized instance of WebhookHandler
+var handler = new WebhookHandler();
+
+// Subscribe to a single event type
+var webhookUrl = "https://api.example.com/webhooks/events";
+handler.SubscribeTo(webhookUrl, WebhookEventType.DataIngested);
+
+// Subscribe to multiple event types with a secret for verification
+var eventTypes = new[] { WebhookEventType.DataIngested, WebhookEventType.ProcessingCompleted };
+handler.SubscribeTo(webhookUrl, eventTypes, "my-secret-key");
+
+// Check if there are active subscriptions for an event type
+bool hasSubscribers = handler.HasSubscriptions(WebhookEventType.DataIngested);
+Console.WriteLine($"Active subscriptions: {hasSubscribers}");
+
+// Get subscription count for an event type
+int subscriptionCount = handler.GetSubscriptionCount(WebhookEventType.DataIngested);
+Console.WriteLine($"Subscription count: {subscriptionCount}");
+
+// Get all subscriptions for a specific event type
+var subscriptions = handler.GetSubscriptionsFor(WebhookEventType.DataIngested);
+foreach (var subscription in subscriptions)
+{
+    Console.WriteLine($"Subscription: {subscription.Url}, Active: {subscription.IsActive}");
+}
+
+// Send a webhook event to all subscribers
+await handler.SendWebhookEventAsync(WebhookEventType.DataIngested, new { Message = "Data ingestion completed", Timestamp = DateTime.UtcNow });
+
+// Unsubscribe from all subscriptions matching a URL
+bool unsubscribed = handler.UnsubscribeFrom(webhookUrl);
+Console.WriteLine($"Unsubscribed: {unsubscribed}");
+
+// Disable subscriptions that have failed too many times
+int disabledCount = handler.DisableFailedSubscriptions(failureThreshold: 3);
+Console.WriteLine($"Disabled {disabledCount} failed subscriptions");
+
+// Get statistics about subscriptions
+var oldestActive = handler.GetOldestActiveSubscription();
+var mostRecentDelivery = handler.GetMostRecentDelivery();
+```
+
 ## WebhookHandlerValidation
 The `WebhookHandlerValidation` static class provides validation extension methods for webhook-related components, including `WebhookHandler`, `WebhookSubscription`, and `WebhookPayload`. It allows for concise validation of these components using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
 
