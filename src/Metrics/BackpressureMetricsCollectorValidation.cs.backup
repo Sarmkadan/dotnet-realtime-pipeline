@@ -14,7 +14,7 @@ using System.Globalization;
 /// <summary>
 /// Provides validation helpers for backpressure metrics types.
 /// </summary>
-public static class BackpressureMetricsCollectorValidation
+public static sealed class BackpressureMetricsCollectorValidation
 {
     /// <summary>
     /// Validates the specified <see cref="StageBackpressureMetrics"/> instance.
@@ -142,10 +142,8 @@ public static class BackpressureMetricsCollectorValidation
     /// </summary>
     /// <param name="value">The stage metrics to check.</param>
     /// <returns><c>true</c> if the instance is valid; otherwise, <c>false</c>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     public static bool IsValid(this StageBackpressureMetrics value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
@@ -154,10 +152,8 @@ public static class BackpressureMetricsCollectorValidation
     /// </summary>
     /// <param name="value">The snapshot to check.</param>
     /// <returns><c>true</c> if the instance is valid; otherwise, <c>false</c>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     public static bool IsValid(this BackpressureMetricsSnapshot value)
     {
-        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 
