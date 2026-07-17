@@ -724,6 +724,59 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## WindowingServiceExtensions
+
+The `WindowingServiceExtensions` class provides extension methods for `WindowingService` that enhance windowing operations with additional functionality. It includes methods for creating custom duration windows, processing data points with state tracking, calculating combined window statistics, and accessing window information.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using System;
+using System.Collections.Generic;
+
+// Assume service is an initialized instance of WindowingService
+var service = new WindowingService(windowSizeMs: 300000); // 5-minute windows
+
+// Create a custom duration window (e.g., for special processing or debugging)
+var customWindow = service.CreateCustomDurationWindow(
+    windowStartMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    customDurationMs: 600000 // 10-minute custom window
+);
+Console.WriteLine($"Created custom window with duration: {customWindow.GetDurationMs()}ms");
+
+// Process data points and get both emitted results and remaining active windows
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint { Id = "1", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 23.5, Quality = 95 },
+    new DataPoint { Id = "2", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1000, Value = 24.1, Quality = 92 }
+};
+
+var (emitted, activeWindows) = service.ProcessDataPointsWithState(dataPoints);
+Console.WriteLine($"Processed {dataPoints.Count} data points");
+Console.WriteLine($"Emitted {emitted.Count} window results");
+Console.WriteLine($"Active windows remaining: {activeWindows.Count}");
+
+// Get all active windows
+var allActiveWindows = service.GetActiveWindows();
+Console.WriteLine($"Total active windows: {allActiveWindows.Count}");
+
+// Get complete windows (windows that have finished collecting data)
+var completeWindows = service.GetCompleteWindows();
+Console.WriteLine($"Complete windows: {completeWindows.Count()}");
+
+// Calculate combined statistics across multiple windows
+var windows = service.GetActiveWindows();
+var combinedStats = service.CalculateCombinedWindowStatistics(windows);
+Console.WriteLine($"Combined stats - Data points: {combinedStats.DataPointCount}, " +
+                $"Avg: {combinedStats.Average:F2}, Min: {combinedStats.Min:F2}, Max: {combinedStats.Max:F2}");
+
+// Get the next window ID that would be assigned
+long nextWindowId = service.GetNextWindowId();
+Console.WriteLine($"Next window ID: {nextWindowId}");
+```
+
 ## DynamicScalingServiceExtensions
 
 The `DynamicScalingServiceExtensions` class provides convenient extension methods for `DynamicScalingService` to simplify common scaling operations, state queries, and configuration management. It includes methods for scaling pipeline stages up or down, retrieving scaling configuration, and accessing scaling state information.
