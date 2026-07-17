@@ -1,4 +1,5 @@
 #nullable enable
+
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -54,10 +55,9 @@ public static class QueryServiceValidation
     /// </summary>
     /// <param name="value">The QueryService instance to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this QueryService value)
-    {
-        return value.Validate().Count == 0;
-    }
+        => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="QueryService"/> instance is valid.
