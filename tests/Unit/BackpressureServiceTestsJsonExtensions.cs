@@ -12,7 +12,7 @@ namespace DotNetRealtimePipeline.Tests.Unit;
 /// <summary>
 /// Provides JSON serialization extensions for <see cref="BackpressureServiceTests"/>.
 /// </summary>
-public static class BackpressureServiceTestsJsonExtensions
+public sealed class BackpressureServiceTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -45,6 +45,7 @@ public static class BackpressureServiceTestsJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized instance, or null if the JSON is null or empty.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static BackpressureServiceTests? FromJson(string json)
     {
@@ -59,6 +60,7 @@ public static class BackpressureServiceTestsJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is null or empty.</exception>
     public static bool TryFromJson(string json, out BackpressureServiceTests? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
