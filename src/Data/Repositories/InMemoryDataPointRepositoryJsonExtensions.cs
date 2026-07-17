@@ -51,28 +51,21 @@ public static class InMemoryDataPointRepositoryJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized repository, or null if the JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid.</exception>
     public static InMemoryDataPointRepository? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
         }
 
         var store = JsonSerializer.Deserialize<Dictionary<long, DataPoint>>(json, _jsonSerializerOptions);
-        if (store is null)
-        {
-            return null;
-        }
-
-        var repository = new InMemoryDataPointRepository();
-        var internalStore = repository.GetInternalStore();
-        foreach (var kvp in store)
-        {
-            internalStore[kvp.Key] = kvp.Value;
-        }
-
-        return repository;
+        return store is null
+            ? null
+            : DeserializeStore(store);
     }
 
     /// <summary>
@@ -98,5 +91,17 @@ public static class InMemoryDataPointRepositoryJsonExtensions
         {
             return false;
         }
+    }
+
+    private static InMemoryDataPointRepository DeserializeStore(Dictionary<long, DataPoint> store)
+    {
+        var repository = new InMemoryDataPointRepository();
+        var internalStore = repository.GetInternalStore();
+        foreach (var kvp in store)
+        {
+            internalStore[kvp.Key] = kvp.Value;
+        }
+
+        return repository;
     }
 }
