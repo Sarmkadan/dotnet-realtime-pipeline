@@ -329,6 +329,77 @@ bool isTimeout = updatedResult.IsTimeout(timeoutThresholdMs: 100);
 Console.WriteLine($"Timeout detected: {isTimeout}");
 ```
 
+## StreamEventExtensions
+The `StreamEventExtensions` class provides extension methods for `StreamEvent` to simplify common stream processing operations. It includes methods for filtering payloads, type-safe payload extraction, stage tracking, event copying, staleness detection, priority formatting, JSON serialization, failure detection, and progress calculation.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// Create a sample stream event with payload
+var streamEvent = new StreamEvent
+{
+    EventId = Guid.NewGuid().ToString(),
+    DataPointId = 123,
+    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    EventType = "SensorReading",
+    Priority = 2, // High priority
+    SourceSystem = "TemperatureMonitor",
+    Payload = new Dictionary<string, object>
+    {
+        ["sensorId"] = "temp-001",
+        ["temperature"] = 23.5,
+        ["unit"] = "Celsius",
+        ["location"] = "Room A101",
+        ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+    },
+    ProcessedByStages = new List<string> { "validation", "normalization" }
+};
+
+// Filter payload to only include specific keys
+var filteredPayload = streamEvent.FilterPayload(new[] { "sensorId", "temperature", "unit" });
+Console.WriteLine($"Filtered payload count: {filteredPayload.Count}");
+
+// Get payload value with type safety
+var temperature = streamEvent.GetPayload<double>("temperature", defaultValue: 0.0);
+Console.WriteLine($"Temperature: {temperature}°C");
+
+// Check if event has been processed by specific stages
+bool processedByValidation = streamEvent.HasBeenProcessedByAnyStage(new[] { "validation", "transformation" });
+Console.WriteLine($"Processed by validation or transformation: {processedByValidation}");
+
+// Get remaining stages count
+int remainingStages = streamEvent.GetRemainingStagesCount(new[] { "validation", "normalization", "transformation", "aggregation" });
+Console.WriteLine($"Remaining stages: {remainingStages}");
+
+// Create a deep copy of the event
+var eventCopy = streamEvent.DeepCopy();
+Console.WriteLine($"Original and copy have same EventId: {streamEvent.EventId == eventCopy.EventId}");
+
+// Check if event is stale (older than 5 minutes)
+bool isStale = streamEvent.IsStale(maxAgeMs: 300000);
+Console.WriteLine($"Is stale: {isStale}");
+
+// Get priority as formatted string
+string priorityString = streamEvent.GetPriorityString();
+Console.WriteLine($"Priority: {priorityString}");
+
+// Get payload value as JSON string
+string temperatureJson = streamEvent.GetPayloadAsJson("temperature");
+Console.WriteLine($"Temperature as JSON: {temperatureJson}");
+
+// Check if event has failed
+bool hasFailed = streamEvent.HasFailed();
+Console.WriteLine($"Has failed: {hasFailed}");
+
+// Calculate processing completion percentage
+int completionPercentage = streamEvent.GetProcessingCompletionPercentage(totalStages: 4);
+Console.WriteLine($"Completion: {completionPercentage}%");
+```
+
 ## DataPointExtensions
 The `DataPointExtensions` class provides convenient extension methods for `DataPoint` to enhance data processing capabilities. It includes methods for creating new data point instances with updated properties, working with metadata, formatting for logging, checking staleness, and managing IDs.
 
