@@ -121,6 +121,48 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## EventSubscriberBaseExtensions
+The `EventSubscriberBaseExtensions` class provides utility extension methods for working with event subscribers in the real-time pipeline. It offers safe unsubscription handling, subscriber identification, metrics collection, and status monitoring capabilities. These methods enable consistent management of different subscriber types while providing type-specific metrics and health indicators.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Events;
+using DotNetRealtimePipeline.Domain.Models;
+
+// Create a processing completion subscriber
+var processingSubscriber = new ProcessingCompletionSubscriber("DataProcessingStage");
+
+// Safe unsubscription (handles already unsubscribed subscribers gracefully)
+processingSubscriber.SafeUnsubscribe();
+
+// Get subscriber type name for logging
+string subscriberType = processingSubscriber.GetSubscriberTypeName();
+Console.WriteLine($"Subscriber type: {subscriberType}");
+
+// Access metrics from different subscriber types
+var backpressureSubscriber = new BackpressureAlertSubscriber("BufferMonitor");
+int backpressureEvents = backpressureSubscriber.GetBackpressureEventCount();
+
+var metricsSubscriber = new MetricsAggregationSubscriber("PerformanceTracker");
+double avgProcessingTime = metricsSubscriber.GetAverageProcessingTime();
+int metricsCount = metricsSubscriber.GetMetricsCount();
+
+var errorSubscriber = new ErrorAlertSubscriber("ErrorHandler");
+int errorCount = errorSubscriber.GetErrorCount();
+
+// Check if subscriber is in critical state
+double successRate = processingSubscriber.GetSuccessRatePercent();
+bool isCritical = processingSubscriber.IsInCriticalState();
+
+// Get formatted status string for monitoring
+string statusString = processingSubscriber.GetStatusString();
+Console.WriteLine($"Status: {statusString}");
+
+// Convert collection to read-only
+var subscribers = new List<EventSubscriberBase> { processingSubscriber, backpressureSubscriber };
+IReadOnlyList<EventSubscriberBase> readOnlySubscribers = subscribers.AsReadOnly();
+```
+
 ## PipelineEventPublisherExtensions
 The `PipelineEventPublisherExtensions` class provides a set of extension methods for pipeline event publishers, simplifying the process of publishing various pipeline events such as data ingestion, processing completion, and error notifications. It also includes utility methods to monitor subscriber status and inspect active subscription counts across the pipeline.
 
