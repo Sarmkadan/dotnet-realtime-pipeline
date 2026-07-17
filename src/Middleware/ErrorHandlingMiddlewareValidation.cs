@@ -8,6 +8,8 @@ namespace DotNetRealtimePipeline.Middleware;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 /// <summary>
 /// Provides validation extensions for <see cref="ErrorHandlingMiddleware"/> instances.
@@ -26,10 +28,59 @@ public static class ErrorHandlingMiddlewareValidation
 
         var errors = new List<string>();
 
-        // ErrorHandlingMiddleware has no public properties to validate
-        // The validation is primarily for the ErrorResponse objects returned by its methods
+        // Validate error mappers dictionary
+        var errorMappers = value.GetErrorMappers();
+        if (errorMappers == null)
+        {
+            errors.Add("Error mappers dictionary cannot be null.");
+            return errors.AsReadOnly();
+        }
+
+        if (errorMappers.Count == 0)
+        {
+            errors.Add("Error mappers dictionary must contain at least one mapper.");
+        }
+
+        // Validate default mappers are registered correctly
+        var requiredMappers = new[]
+        {
+            typeof(DotNetRealtimePipeline.Domain.Exceptions.PipelineException),
+            typeof(TimeoutException),
+            typeof(InvalidOperationException),
+            typeof(ArgumentException)
+        };
+
+        foreach (var requiredType in requiredMappers)
+        {
+            if (!errorMappers.ContainsKey(requiredType))
+            {
+                errors.Add($"Required error mapper for type '{requiredType.Name}' is missing.");
+            }
+        }
 
         return errors.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Gets the error mappers dictionary from the middleware instance using reflection.
+    /// </summary>
+    /// <param name="middleware">The middleware instance.</param>
+    /// <returns>The error mappers dictionary or null if not accessible.</returns>
+    private static Dictionary<Type, Func<Exception, ErrorResponse>>? GetErrorMappers(this ErrorHandlingMiddleware middleware)
+    {
+        ArgumentNullException.ThrowIfNull(middleware);
+
+        try
+        {
+            var field = typeof(ErrorHandlingMiddleware).GetField(
+                "_errorMappers",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            return field?.GetValue(middleware) as Dictionary<Type, Func<Exception, ErrorResponse>>;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -40,7 +91,7 @@ public static class ErrorHandlingMiddlewareValidation
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static bool IsValid(this ErrorHandlingMiddleware value)
     {
-        return value.Validate().Count == 0;
+        return !value.Validate().Any();
     }
 
     /// <summary>
@@ -54,7 +105,7 @@ public static class ErrorHandlingMiddlewareValidation
         ArgumentNullException.ThrowIfNull(value);
 
         var errors = value.Validate();
-        if (errors.Count > 0)
+        if (errors.Count is not 0)
         {
             throw new ArgumentException(
                 $"ErrorHandlingMiddleware is not valid. Errors:{Environment.NewLine}- {
