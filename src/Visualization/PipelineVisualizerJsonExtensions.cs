@@ -8,13 +8,15 @@
 namespace DotNetRealtimePipeline.Visualization;
 
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
 /// Provides JSON serialization and deserialization extensions for <see cref="PipelineVisualizer"/>.
 /// </summary>
+/// <remarks>
+/// Uses camelCase property naming policy and ignores null values during serialization.
+/// </remarks>
 public static class PipelineVisualizerJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -35,14 +37,10 @@ public static class PipelineVisualizerJsonExtensions
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions)
-            {
-                WriteIndented = true
-            }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
+        return JsonSerializer.Serialize(value, new JsonSerializerOptions(_jsonOptions)
+        {
+            WriteIndented = indented
+        });
     }
 
     /// <summary>
@@ -51,6 +49,9 @@ public static class PipelineVisualizerJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized visualizer, or null if the JSON is invalid.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <remarks>
+    /// Returns null if the JSON is invalid or cannot be deserialized to a <see cref="PipelineVisualizer"/>.
+    /// </remarks>
     public static PipelineVisualizer? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
