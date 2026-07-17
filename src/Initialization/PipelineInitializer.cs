@@ -313,6 +313,24 @@ public sealed class PipelineInitializer
     }
 
     public bool IsInitialized => _isInitialized;
+
+    /// <summary>
+    /// Gets the service provider.
+    /// </summary>
+    /// <returns>The service provider instance.</returns>
+    internal IServiceProvider GetServiceProvider() => _serviceProvider;
+
+    /// <summary>
+    /// Gets the logger.
+    /// </summary>
+    /// <returns>The logger instance.</returns>
+    internal ILogger<PipelineInitializer> GetLogger() => _logger;
+
+    /// <summary>
+    /// Gets the state manager.
+    /// </summary>
+    /// <returns>The state manager instance.</returns>
+    internal PipelineStateManager GetStateManager() => _stateManager;
 }
 
 /// <summary>

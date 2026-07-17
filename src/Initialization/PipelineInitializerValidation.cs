@@ -4,7 +4,8 @@ namespace DotNetRealtimePipeline.Initialization;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
+using DotNetRealtimePipeline.State;
 
 /// <summary>
 /// Provides validation helpers for <see cref="PipelineInitializer"/> instances.
@@ -23,9 +24,33 @@ public static class PipelineInitializerValidation
 
         var errors = new List<string>();
 
-        // Validate IsInitialized state
-        // IsInitialized is a computed property based on _isInitialized field
-        // No validation needed beyond null check since it's always a valid boolean
+        // Validate service provider
+        if (value.GetServiceProvider() is null)
+        {
+            errors.Add("ServiceProvider is null.");
+        }
+
+        // Validate logger
+        if (value.GetLogger() is null)
+        {
+            errors.Add("Logger is null.");
+        }
+
+        // Validate state manager
+        var stateManager = value.GetStateManager();
+        if (stateManager is null)
+        {
+            errors.Add("StateManager is null.");
+        }
+        else
+        {
+            // Validate state manager itself
+            var stateManagerErrors = stateManager.Validate();
+            if (stateManagerErrors.Count > 0)
+            {
+                errors.AddRange(stateManagerErrors.Select(e => $"StateManager validation failed: {e}"));
+            }
+        }
 
         return errors.AsReadOnly();
     }
@@ -35,6 +60,7 @@ public static class PipelineInitializerValidation
     /// </summary>
     /// <param name="value">The pipeline initializer to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this PipelineInitializer value)
     {
         return value.Validate().Count == 0;
