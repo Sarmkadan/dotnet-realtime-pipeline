@@ -94,12 +94,10 @@ public static class PipelineVisualizationNodeValidation
     /// Determines whether the specified <see cref="PipelineVisualizationNode"/> is valid.
     /// </summary>
     /// <param name="value">The node to check.</param>
-    /// <returns>True if the node is valid; otherwise, false.</returns>
+    /// <returns>True if <paramref name="value"/> is not null and valid; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static bool IsValid(this PipelineVisualizationNode? value)
-    {
-        return value?.Validate().Count == 0;
-    }
+        => value is not null && value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="PipelineVisualizationNode"/> is valid.
@@ -119,10 +117,11 @@ public static class PipelineVisualizationNodeValidation
 
         throw new ArgumentException(
             $"PipelineVisualizationNode is invalid:{Environment.NewLine}- {
-                string.Join(
-                    $"{Environment.NewLine}- ",
-                    problems
-                )
-            }");
+            string.Join(
+                $"{Environment.NewLine}- ",
+                problems
+            )
+            }",
+            nameof(value));
     }
 }
