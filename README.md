@@ -1018,3 +1018,151 @@ else
 // Or, ensure validity by throwing an exception if invalid
 subscription.EnsureValid();
 ```
+
+## LoggingMiddlewareValidation
+
+The `LoggingMiddlewareValidation` static class provides validation helpers for `LoggingMiddleware` and related middleware classes. It includes methods for validating data points, processing results, backpressure contexts, metrics, error logging parameters, performance warnings, correlation IDs, and correlation operations. These validation methods help ensure that logging operations receive valid parameters before attempting to log data.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+
+// Validate a DataPoint for logging
+var dataPoint = new DataPoint {
+    Id = 1,
+    Source = "TemperatureSensor",
+    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    Value = 23.5,
+    Quality = 95
+};
+
+// Validate parameters (returns list of problems)
+var validationErrors = dataPoint.Validate("DataIngestion");
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("DataPoint validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if valid (returns boolean)
+bool isValid = dataPoint.IsValid("DataIngestion");
+Console.WriteLine($"DataPoint is valid: {isValid}");
+
+// Ensure validity (throws if invalid)
+dataPoint.EnsureValid("DataIngestion");
+
+// Validate ProcessingResult for logging
+var result = new ProcessingResult(
+    stageName: "DataProcessing",
+    success: true,
+    processedAt: DateTime.UtcNow
+);
+
+// Validate elapsed time parameter
+var resultErrors = result.Validate(elapsedMs: 125);
+if (resultErrors.Count > 0)
+{
+    Console.WriteLine("ProcessingResult validation failed:");
+    foreach (var error in resultErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate backpressure context
+var context = new BackpressureContext(
+    pipelineStageName: "DataProcessing",
+    maxBufferCapacity: 10000,
+    maxConcurrentConsumers: 4
+);
+
+var contextErrors = LoggingMiddlewareValidation.Validate("DataProcessing", context);
+if (contextErrors.Count > 0)
+{
+    Console.WriteLine("BackpressureContext validation failed:");
+    foreach (var error in contextErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate metric parameters
+var metricErrors = LoggingMiddlewareValidation.Validate(
+    metricName: "ProcessingTime",
+    value: 125,
+    unit: "ms"
+);
+if (metricErrors.Count > 0)
+{
+    Console.WriteLine("Metric validation failed:");
+    foreach (var error in metricErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate error logging parameters
+var error = new Exception("Something went wrong");
+var errorErrors = LoggingMiddlewareValidation.Validate(
+    operationName: "DataProcessing",
+    ex: error,
+    context: "Processing pipeline stage"
+);
+if (errorErrors.Count > 0)
+{
+    Console.WriteLine("Error logging validation failed:");
+    foreach (var err in errorErrors)
+    {
+        Console.WriteLine($"- {err}");
+    }
+}
+
+// Validate performance warning parameters
+var perfErrors = LoggingMiddlewareValidation.Validate(
+    operationName: "DataProcessing",
+    elapsedMs: 125,
+    thresholdMs: 100
+);
+if (perfErrors.Count > 0)
+{
+    Console.WriteLine("Performance warning validation failed:");
+    foreach (var err in perfErrors)
+    {
+        Console.WriteLine($"- {err}");
+    }
+}
+
+// Validate correlation ID
+var correlationId = Guid.NewGuid().ToString();
+var correlationErrors = LoggingMiddlewareValidation.Validate(correlationId);
+if (correlationErrors.Count > 0)
+{
+    Console.WriteLine("Correlation ID validation failed:");
+    foreach (var err in correlationErrors)
+    {
+        Console.WriteLine($"- {err}");
+    }
+}
+
+// Validate correlation operation
+Func<string, Task<int>> operation = async correlationId => {
+    await Task.Delay(100);
+    return 42;
+};
+
+var operationErrors = LoggingMiddlewareValidation.Validate(operation);
+if (operationErrors.Count > 0)
+{
+    Console.WriteLine("Correlation operation validation failed:");
+    foreach (var err in operationErrors)
+    {
+        Console.WriteLine($"- {err}");
+    }
+}
+```
