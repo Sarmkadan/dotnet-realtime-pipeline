@@ -28,9 +28,10 @@ public static class DeadLetterQueueTestsValidation
         var problems = new List<string>();
 
         // Validate test methods exist using reflection
-        var methods = typeof(DeadLetterQueueTests).GetMethods();
-        var methodNames = methods.Select(m => m.Name).ToHashSet();
+        var methods = typeof(DeadLetterQueueTests).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        var methodNames = methods.Select(m => m.Name).ToHashSet(StringComparer.Ordinal);
 
+        // Use pattern matching for cleaner validation
         if (!methodNames.Contains(nameof(DeadLetterQueueTests.EnqueueAsync_ValidEntry_IncreasesCount)))
         {
             problems.Add($"Test method '{nameof(DeadLetterQueueTests.EnqueueAsync_ValidEntry_IncreasesCount)}' is missing.");
@@ -104,10 +105,7 @@ public static class DeadLetterQueueTestsValidation
     /// </summary>
     /// <param name="value">The instance to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-    public static bool IsValid(this DeadLetterQueueTests value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this DeadLetterQueueTests value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="DeadLetterQueueTests"/> instance is valid.
@@ -123,7 +121,7 @@ public static class DeadLetterQueueTestsValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                message: $"DeadLetterQueueTests instance is invalid. Problems: {string.Join(", ", problems)}",
+                message: $"DeadLetterQueueTests instance is invalid. Problems:{Environment.NewLine}- {string.Join($"{Environment.NewLine}- ", problems)}",
                 paramName: nameof(value));
         }
     }
