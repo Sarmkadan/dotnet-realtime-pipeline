@@ -120,3 +120,36 @@ await benchmarks.MemoryAllocationBenchmark();
 
 benchmarks.Cleanup();
 ```
+
+## ApiEndpointHandlerValidation
+The `ApiEndpointHandlerValidation` static class provides a set of extension methods for validating common API-related objects within the pipeline, such as `ApiEndpointHandler.ApiResponse<T>`, `BatchIngestResult`, and `PipelineStatusInfo`. It allows for concise validation of these objects using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.API;
+
+// Example using PipelineStatusInfo
+var status = new PipelineStatusInfo {
+    PipelineName = "MyPipeline",
+    Version = "v1.0.0",
+    TotalProcessed = 100,
+    TotalFailed = 0,
+    Pending = 0,
+    HealthStatus = "Healthy"
+};
+
+// Check if the object is valid
+if (status.IsValid())
+{
+    // Process the status
+}
+else
+{
+    // Retrieve validation errors
+    var errors = status.Validate();
+    Console.WriteLine($"Validation failed: {string.Join(", ", errors)}");
+}
+
+// Or, ensure validity by throwing an exception if invalid
+status.EnsureValid();
+```
