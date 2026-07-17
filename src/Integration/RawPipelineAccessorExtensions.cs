@@ -27,6 +27,7 @@ public static class RawPipelineAccessorExtensions
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task representing the copy operation.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="accessor"/> or <paramref name="writer"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the pipe reader is completed or disposed.</exception>
     public static async ValueTask CopyToAsync(
         this RawPipelineAccessor accessor,
         IBufferWriter<byte> writer,
@@ -69,6 +70,7 @@ public static class RawPipelineAccessorExtensions
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task representing the copy operation.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="accessor"/> or <paramref name="stream"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the pipe reader is completed or disposed.</exception>
     public static async ValueTask CopyToStreamAsync(
         this RawPipelineAccessor accessor,
         System.IO.Stream stream,
@@ -129,13 +131,16 @@ public static class RawPipelineAccessorExtensions
     /// <param name="data">The data to write.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task representing the write operation.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="accessor"/> or <paramref name="data"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="accessor"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the pipe writer is completed or disposed.</exception>
     public static async ValueTask WriteAsync(
         this RawPipelineAccessor accessor,
         ReadOnlyMemory<byte> data,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accessor);
+        ArgumentNullException.ThrowIfNull(data);
 
         var writer = accessor.AsPipeWriter();
         writer.Write(data.Span);
