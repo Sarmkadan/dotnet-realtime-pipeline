@@ -81,10 +81,9 @@ public static class InMemoryMetricsRepositoryExtensions
 
         var metrics = await repository.GetByTypeAndTimeRangeAsync(metricType, startMs, endMs).ConfigureAwait(false);
 
-        if (metrics.Count == 0)
-            return null;
-
-        return metrics.Average(m => m.AverageProcessingTimeMs);
+        return metrics.Count == 0
+            ? null
+            : metrics.Average(m => m.AverageProcessingTimeMs);
     }
 
     /// <summary>
@@ -109,10 +108,9 @@ public static class InMemoryMetricsRepositoryExtensions
 
         var metrics = await repository.GetByTypeAndTimeRangeAsync(metricType, startMs, endMs).ConfigureAwait(false);
 
-        if (metrics.Count == 0)
-            return null;
-
-        return metrics.Max(m => m.MaxProcessingTimeMs);
+        return metrics.Count == 0
+            ? null
+            : metrics.Max(m => m.MaxProcessingTimeMs);
     }
 
     /// <summary>
@@ -137,10 +135,9 @@ public static class InMemoryMetricsRepositoryExtensions
 
         var metrics = await repository.GetByTypeAndTimeRangeAsync(metricType, startMs, endMs).ConfigureAwait(false);
 
-        if (metrics.Count == 0)
-            return null;
-
-        return metrics.Min(m => m.MinProcessingTimeMs);
+        return metrics.Count == 0
+            ? null
+            : metrics.Min(m => m.MinProcessingTimeMs);
     }
 
     /// <summary>
@@ -163,6 +160,7 @@ public static class InMemoryMetricsRepositoryExtensions
         var allMetrics = new List<MetricAggregation>();
         foreach (var type in types)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(type);
             var metrics = await repository.GetByTypeAsync(type).ConfigureAwait(false);
             allMetrics.AddRange(metrics);
         }
@@ -201,6 +199,7 @@ public static class InMemoryMetricsRepositoryExtensions
             throw new ArgumentException("Minimum processing time must be <= maximum processing time", nameof(minProcessingTimeMs));
 
         var metrics = await repository.GetByTypeAndTimeRangeAsync(metricType, startMs, endMs).ConfigureAwait(false);
+
         var filtered = metrics
             .Where(m => m.AverageProcessingTimeMs >= minProcessingTimeMs && m.AverageProcessingTimeMs <= maxProcessingTimeMs)
             .OrderBy(m => m.TimeWindowStartMs)
