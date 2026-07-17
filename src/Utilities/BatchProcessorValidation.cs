@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.Utilities;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Validation helpers for <see cref="BatchProcessor{TInput, TOutput}"/> and related classes.
@@ -59,12 +58,12 @@ public static class BatchProcessorValidation
 
         if (value.StartTime == default)
         {
-            problems.Add("StartTime must be set to a valid DateTime.");
+            problems.Add("StartTime must be set to a non-default DateTime.");
         }
 
         if (value.LastUpdateTime == default)
         {
-            problems.Add("LastUpdateTime must be set to a valid DateTime.");
+            problems.Add("LastUpdateTime must be set to a non-default DateTime.");
         }
 
         return problems;
@@ -82,9 +81,9 @@ public static class BatchProcessorValidation
 
         var problems = new List<string>();
 
-        // DataPointBatchProcessor doesn't expose its internal processor for validation,
-        // so we can't validate batchSize or parallelism directly.
-        // The processor is initialized with default values (1000, 4) which are valid.
+        // DataPointBatchProcessor wraps BatchProcessor with default batchSize=1000 and maxDegreeOfParallelism=4
+        // Both values are validated by BatchProcessor constructor via Math.Max(1, value)
+        // No additional validation needed as constructor ensures valid values
 
         return problems;
     }
@@ -94,8 +93,10 @@ public static class BatchProcessorValidation
     /// </summary>
     /// <param name="value">The batch processing progress to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this BatchProcessingProgress value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return Validate(value).Count == 0;
     }
 
@@ -104,8 +105,10 @@ public static class BatchProcessorValidation
     /// </summary>
     /// <param name="value">The data point batch processor to check.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this DataPointBatchProcessor value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return Validate(value).Count == 0;
     }
 
@@ -123,7 +126,7 @@ public static class BatchProcessorValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"BatchProcessingProgress is not valid:{Environment.NewLine}  - {string.Join($"{Environment.NewLine}  - ", problems)}");
+                $"BatchProcessingProgress is not valid:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
         }
     }
 
@@ -141,7 +144,7 @@ public static class BatchProcessorValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"DataPointBatchProcessor is not valid:{Environment.NewLine}  - {string.Join($"{Environment.NewLine}  - ", problems)}");
+                $"DataPointBatchProcessor is not valid:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
         }
     }
 }
