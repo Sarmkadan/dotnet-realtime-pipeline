@@ -10,6 +10,8 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Provides extension methods for <see cref="DynamicScalingService"/> to simplify
@@ -132,10 +134,18 @@ public static class DynamicScalingServiceExtensions
         int min = service.GetMinConsumers();
         int max = service.GetMaxConsumers();
 
-        // These would need reflection to access, but we'll provide defaults
-        // that match the constructor defaults in DynamicScalingService
-        double scaleUpThreshold = 75.0;
-        double scaleDownThreshold = 30.0;
+        // Use reflection to get the actual configured threshold values
+        var scaleUpThresholdField = service.GetType().GetField(
+            "_scaleUpThresholdPercent",
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic);
+        var scaleDownThresholdField = service.GetType().GetField(
+            "_scaleDownThresholdPercent",
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic);
+
+        double scaleUpThreshold = scaleUpThresholdField?.GetValue(service) as double? ?? 75.0;
+        double scaleDownThreshold = scaleDownThresholdField?.GetValue(service) as double? ?? 30.0;
 
         return string.Create(CultureInfo.InvariantCulture,
             $"Min: {min}, Max: {max}, Scale-up: {scaleUpThreshold}%, Scale-down: {scaleDownThreshold}%");
