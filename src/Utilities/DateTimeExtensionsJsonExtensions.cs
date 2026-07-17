@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ====================================================================
 
 namespace DotNetRealtimePipeline.Utilities;
 
@@ -27,7 +27,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="dateTime">The DateTime to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the DateTime as Unix milliseconds.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when dateTime is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dateTime"/> is null.</exception>
     public static string ToJson(this DateTime dateTime, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(dateTime);
@@ -45,7 +45,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="dateTimeOffset">The DateTimeOffset to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the DateTimeOffset as Unix milliseconds.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when dateTimeOffset is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dateTimeOffset"/> is null.</exception>
     public static string ToJson(this DateTimeOffset dateTimeOffset, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(dateTimeOffset);
@@ -61,8 +61,8 @@ public static class DateTimeExtensionsJsonExtensions
     /// Deserializes a JSON string to a DateTime.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A DateTime instance parsed from Unix milliseconds, or null if the JSON is null or empty.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <returns>A DateTime instance parsed from Unix milliseconds, or null if the JSON is null, empty, or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static DateTime? FromJsonToDateTime(string json)
     {
@@ -81,8 +81,8 @@ public static class DateTimeExtensionsJsonExtensions
     /// Deserializes a JSON string to a DateTimeOffset.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A DateTimeOffset instance parsed from Unix milliseconds, or null if the JSON is null or empty.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <returns>A DateTimeOffset instance parsed from Unix milliseconds, or null if the JSON is null, empty, or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static DateTimeOffset? FromJsonToDateTimeOffset(string json)
     {
@@ -103,7 +103,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized DateTime instance, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJsonToDateTime(string json, out DateTime? value)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -132,7 +132,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized DateTimeOffset instance, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJsonToDateTimeOffset(string json, out DateTimeOffset? value)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -161,7 +161,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="milliseconds">The Unix timestamp in milliseconds to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the Unix timestamp.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when milliseconds is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="milliseconds"/> is negative.</exception>
     public static string ToJson(this long milliseconds, bool indented = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(milliseconds);
@@ -177,8 +177,8 @@ public static class DateTimeExtensionsJsonExtensions
     /// Deserializes a JSON string to a long Unix timestamp.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A long Unix timestamp, or null if the JSON is null or empty.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <returns>A long Unix timestamp, or null if the JSON is null, empty, or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static long? FromJsonToUnixMilliseconds(string json)
     {
@@ -198,7 +198,7 @@ public static class DateTimeExtensionsJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">The deserialized Unix timestamp, or null if deserialization fails.</param>
     /// <returns>True if deserialization succeeds; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJsonToUnixMilliseconds(string json, out long? value)
     {
         ArgumentNullException.ThrowIfNull(json);
