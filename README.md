@@ -24,6 +24,67 @@ concurrency model, extension points, and known limitations.
 The sections below are generated per-class API notes; more per-class docs live in
 [docs/](docs/).
 
+## CommandExecutorExtensions
+
+The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.CLI;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+// Assume executor is an initialized instance of CommandExecutor
+var executor = new CommandExecutor();
+
+// Execute a command and check for success
+var command = new ParsedCommand("ingest", new Dictionary<string, string> { { "file", "data.json" } });
+bool success = await executor.ExecuteSuccessfullyAsync(command);
+Console.WriteLine($"Command executed successfully: {success}");
+
+// Ingest data points from a JSON file and get the count
+int ingestedCount = await executor.IngestFromFileAsync("sensor_data.json", "json");
+Console.WriteLine($"Ingested {ingestedCount} data points");
+
+// Query data points within a time range
+var dataPoints = await executor.QueryDataAsync(
+    startMs: DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    source: "temperature-sensor",
+    minQuality: 80
+);
+Console.WriteLine($"Found {dataPoints.Count} data points");
+
+// Get pipeline status as a dictionary
+var status = await executor.GetStatusAsync();
+Console.WriteLine($"Pipeline health: {status.GetValueOrDefault("health_status")}");
+
+// Count data points in a file without ingesting
+int fileCount = await executor.CountDataPointsAsync("sensor_data.json", "json");
+Console.WriteLine($"File contains {fileCount} data points");
+
+// Export data to a CSV file and get the count
+int exportedCount = await executor.ExportToFileAsync(
+    startMs: DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeMilliseconds(),
+    endMs: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    outputPath: "exported_data.csv",
+    format: "csv"
+);
+Console.WriteLine($"Exported {exportedCount} data points to CSV");
+
+// Count data points in an exported file
+int exportedFileCount = await executor.CountExportedDataPointsAsync("exported_data.csv", "csv");
+Console.WriteLine($"Exported file contains {exportedFileCount} data points");
+
+// Get a formatted status summary
+string statusSummary = await executor.GetStatusSummaryAsync();
+Console.WriteLine(statusSummary);
+```
+
 ## PipelineHttpClientFactoryExtensions
 The `PipelineHttpClientFactoryExtensions` class provides convenient extension methods for `PipelineHttpClientFactory`, allowing for simplified HTTP client creation, configuration, and data exchange. It includes methods for setting up clients with base addresses, applying custom timeout/retry policies, and executing asynchronous GET and POST requests.
 
