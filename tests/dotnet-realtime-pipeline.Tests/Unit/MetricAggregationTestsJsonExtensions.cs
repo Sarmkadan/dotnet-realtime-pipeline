@@ -29,7 +29,7 @@ public static class MetricAggregationTestsJsonExtensions
     /// <param name="value">The metric aggregation tests instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the metric aggregation tests instance.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this MetricAggregationTests value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -45,8 +45,9 @@ public static class MetricAggregationTestsJsonExtensions
     /// Deserializes a JSON string to a <see cref="MetricAggregationTests"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A <see cref="MetricAggregationTests"/> instance, or null if the JSON is empty or whitespace.</returns>
-    /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
+    /// <returns>A <see cref="MetricAggregationTests"/> instance, or <see langword="null"/> if the JSON is empty, whitespace, or invalid.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
+/// <exception cref="JsonException">Thrown when the JSON is malformed and cannot be deserialized.</exception>
     public static MetricAggregationTests? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -66,8 +67,9 @@ public static class MetricAggregationTestsJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">When this method returns, contains the deserialized metric aggregation tests instance if successful; otherwise, null.</param>
-    /// <returns>True if the deserialization succeeded; otherwise, false.</returns>
-    /// <exception cref="ArgumentException"><paramref name="json"/> is null or empty.</exception>
+    /// <returns><see langword="true"/> if the deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
+/// <exception cref="JsonException">Thrown when the JSON is malformed and cannot be deserialized.</exception>
     public static bool TryFromJson(string json, out MetricAggregationTests? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
