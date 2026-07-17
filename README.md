@@ -516,6 +516,68 @@ bool isRelease = backpressureEvent.IsRelease();
 Console.WriteLine($"Is release: {isRelease}"); // Output: Is release: False
 ```
 
+## ExportServiceExtensions
+
+The `ExportServiceExtensions` class provides extension methods for `ExportService` that enhance data export operations with additional functionality. It includes methods for validating output directories, exporting data with automatic retry logic, streaming exports, file size estimation, and metadata-enhanced exports.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Data;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+// Assume exportService is an initialized instance of ExportService
+var exportService = new ExportService();
+
+// Validate output directory and create if needed
+bool directoryValid = exportService.ValidateOutputDirectory("exports/data_export.csv");
+Console.WriteLine($"Directory valid: {directoryValid}");
+
+// Prepare sample data points
+var dataPoints = new List<DataPoint>
+{
+    new DataPoint { Id = 1, Source = "TemperatureSensor", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 23.5, Quality = 95 },
+    new DataPoint { Id = 2, Source = "TemperatureSensor", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 24.1, Quality = 92 },
+    new DataPoint { Id = 3, Source = "HumiditySensor", Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Value = 45.2, Quality = 88 }
+};
+
+// Export with automatic retry (3 attempts by default)
+var exportResult = await exportService.ExportWithRetryAsync(
+    dataPoints,
+    "exports/sensor_data.csv",
+    OutputFormat.Csv,
+    maxRetries: 3
+);
+Console.WriteLine($"Export successful: {exportResult.Success}, Records: {exportResult.RecordCount}");
+
+// Estimate file size before export
+string estimatedSize = await exportService.EstimateFileSizeAsync(dataPoints, OutputFormat.Csv);
+Console.WriteLine($"Estimated file size: {estimatedSize}");
+
+// Export to stream (e.g., for HTTP response)
+using var memoryStream = new MemoryStream();
+var streamResult = await exportService.ExportToStreamAsync(
+    dataPoints,
+    memoryStream,
+    OutputFormat.Json
+);
+Console.WriteLine($"Stream export successful: {streamResult.Success}");
+
+// Export with metadata in filename (includes timestamp and record count)
+var metadataResult = await exportService.ExportWithMetadataAsync(
+    dataPoints,
+    "exports/data_export",
+    OutputFormat.Csv,
+    timestamp: DateTime.UtcNow,
+    includeRecordCount: true
+);
+Console.WriteLine($"Metadata export path: {metadataResult.OutputPath}");
+```
+
 ## BackpressureContextExtensions
 The `BackpressureContextExtensions` class provides extension methods for `BackpressureContext` to simplify common operations and add domain-specific functionality for pipeline backpressure management. It includes methods for estimating time to capacity, checking critical buffer states, formatting metrics, and managing backpressure events.
 
