@@ -29,8 +29,8 @@ public static class ProcessingResultExtensions
         ArgumentNullException.ThrowIfNull(result);
 
         return !result.Success &&
-               (result.Exception != null || !string.IsNullOrWhiteSpace(result.ErrorMessage)) &&
-               result.RetryCount < maxRetryCount;
+            (result.Exception != null || !string.IsNullOrWhiteSpace(result.ErrorMessage)) &&
+            result.RetryCount < maxRetryCount;
     }
 
     /// <summary>
@@ -84,8 +84,8 @@ public static class ProcessingResultExtensions
 
         if (result.Exception != null)
         {
-            dict["ExceptionType"] = result.Exception!.GetType().FullName ?? "Exception";
-            dict["ExceptionMessage"] = result.Exception!.Message;
+            dict["ExceptionType"] = result.Exception.GetType().FullName ?? "Exception";
+            dict["ExceptionMessage"] = result.Exception.Message;
         }
 
         if (!string.IsNullOrWhiteSpace(result.CorrelationId))
@@ -107,7 +107,7 @@ public static class ProcessingResultExtensions
     {
         ArgumentNullException.ThrowIfNull(result);
 
-        var clone = result.Clone(result.ResultId * 1000 + Environment.TickCount % 1000);
+        var clone = result.Clone(result.ResultId);
         clone.ProcessingTimeMs = processingTimeMs;
         return clone;
     }
