@@ -24,6 +24,7 @@ public static class MetricsServiceExtensions
     /// <param name="windowSeconds">Window size in seconds (default: 60).</param>
     /// <returns>A metric aggregation for the specified window.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="windowSeconds"/> is not positive.</exception>
     public static async Task<MetricAggregation> CreateMetricAggregationAsync(
         this MetricsService service,
         long itemsProcessed,
@@ -33,12 +34,9 @@ public static class MetricsServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        if (windowSeconds <= 0)
-        {
-            throw new ArgumentException("Window must be positive", nameof(windowSeconds));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(windowSeconds, 0);
 
-        var windowStartMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (windowSeconds * 1000);
+        var windowStartMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (windowSeconds * 1000L);
         var windowEndMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         return await service.CreateMetricAggregationAsync(
@@ -104,16 +102,17 @@ public static class MetricsServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        lock (service.GetProcessingTimesLock())
+        var processingTimes = GetProcessingTimesList(service);
+        lock (processingTimes)
         {
             var stats = new Dictionary<string, double>
             {
-                ["Count"] = service.GetProcessingTimesCount(),
-                ["AverageMs"] = service.GetAverageProcessingTime(),
-                ["MinimumMs"] = service.GetMinimumProcessingTime(),
-                ["MaximumMs"] = service.GetMaximumProcessingTime(),
-                ["P95Ms"] = service.GetP95ProcessingTime(),
-                ["P99Ms"] = service.GetP99ProcessingTime()
+                ["Count"] = processingTimes.Count,
+                ["AverageMs"] = processingTimes.Count > 0 ? processingTimes.Average() : 0d,
+                ["MinimumMs"] = processingTimes.Count > 0 ? processingTimes.Min() : 0d,
+                ["MaximumMs"] = processingTimes.Count > 0 ? processingTimes.Max() : 0d,
+                ["P95Ms"] = CalculatePercentile(processingTimes, 95),
+                ["P99Ms"] = CalculatePercentile(processingTimes, 99)
             };
 
             return stats.AsReadOnly();
@@ -127,155 +126,56 @@ public static class MetricsServiceExtensions
     /// <param name="historyCount">Number of historical metrics to analyze (default: 10).</param>
     /// <returns>A performance trend analysis.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="historyCount"/> is less than 2.</exception>
     public static async Task<PerformanceTrend> AnalyzePerformanceTrendAsync(
         this MetricsService service,
         int historyCount = 10)
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        if (historyCount < 2)
-        {
-            throw new ArgumentException("History count must be at least 2", nameof(historyCount));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThan(historyCount, 2);
 
         return await service.AnalyzePerformanceTrendAsync(historyCount);
     }
 
-    // Helper methods to access private members via reflection patterns
-    private static object GetProcessingTimesLock(this MetricsService service)
+    /// <summary>
+    /// Gets the processing times list from the metrics service using reflection.
+    /// </summary>
+    /// <param name="service">The metrics service instance.</param>
+    /// <returns>The processing times list.</returns>
+    private static List<double> GetProcessingTimesList(MetricsService service)
     {
-        ArgumentNullException.ThrowIfNull(service);
-
         var field = typeof(MetricsService).GetField(
             "_processingTimes",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-        if (field?.GetValue(service) is object lockObj)
+        if (field?.GetValue(service) is List<double> list)
         {
-            return lockObj;
+            return list;
         }
 
         throw new InvalidOperationException("Could not access processing times collection");
     }
 
-    private static int GetProcessingTimesCount(this MetricsService service)
+    /// <summary>
+    /// Calculates a percentile value from a list of values.
+    /// </summary>
+    /// <param name="values">The list of values.</param>
+    /// <param name="percentile">The percentile to calculate (0-100).</param>
+    /// <returns>The percentile value.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="percentile"/> is not between 0 and 100.</exception>
+    private static double CalculatePercentile(IReadOnlyList<double> values, int percentile)
     {
-        ArgumentNullException.ThrowIfNull(service);
+        if (values.Count == 0)
+            return 0d;
 
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (percentile is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(percentile), "Percentile must be between 0 and 100");
 
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                return list.Count;
-            }
-        }
+        var sorted = values.OrderBy(x => x).ToList();
+        int index = (int)Math.Ceiling((percentile / 100.0) * sorted.Count) - 1;
+        index = Math.Max(0, Math.Min(index, sorted.Count - 1));
 
-        return 0;
+        return sorted[index];
     }
-
-    private static double GetAverageProcessingTime(this MetricsService service)
-    {
-        ArgumentNullException.ThrowIfNull(service);
-
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                return list.Count > 0 ? list.Average() : 0d;
-            }
-        }
-
-        return 0d;
-    }
-
-    private static double GetMinimumProcessingTime(this MetricsService service)
-    {
-        ArgumentNullException.ThrowIfNull(service);
-
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                return list.Count > 0 ? list.Min() : 0d;
-            }
-        }
-
-        return 0d;
-    }
-
-    private static double GetMaximumProcessingTime(this MetricsService service)
-    {
-        ArgumentNullException.ThrowIfNull(service);
-
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                return list.Count > 0 ? list.Max() : 0d;
-            }
-        }
-
-        return 0d;
-    }
-
-    private static double GetP95ProcessingTime(this MetricsService service)
-    {
-        ArgumentNullException.ThrowIfNull(service);
-
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                if (list.Count == 0) return 0d;
-                var sorted = list.OrderBy(x => x).ToList();
-                int index = (int)Math.Ceiling(0.95 * sorted.Count) - 1;
-                return sorted[Math.Max(0, Math.Min(index, sorted.Count - 1))];
-            }
-        }
-
-        return 0d;
-    }
-
-    private static double GetP99ProcessingTime(this MetricsService service)
-    {
-        ArgumentNullException.ThrowIfNull(service);
-
-        var field = typeof(MetricsService).GetField(
-            "_processingTimes",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field?.GetValue(service) is List<double> list)
-        {
-            lock (list)
-            {
-                if (list.Count == 0) return 0d;
-                var sorted = list.OrderBy(x => x).ToList();
-                int index = (int)Math.Ceiling(0.99 * sorted.Count) - 1;
-                return sorted[Math.Max(0, Math.Min(index, sorted.Count - 1))];
-            }
-        }
-
-        return 0d;
-    }
-
 }
