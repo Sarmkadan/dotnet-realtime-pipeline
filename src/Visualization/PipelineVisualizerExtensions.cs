@@ -23,14 +23,13 @@ public static class PipelineVisualizerExtensions
     /// </summary>
     /// <param name="visualizer">The pipeline visualizer instance.</param>
     /// <param name="config">The pipeline configuration.</param>
-    /// <exception cref="ArgumentNullException">Thrown when visualizer or config is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="visualizer"/> or <paramref name="config"/> is null.</exception>
     public static void RenderToConsole(this PipelineVisualizer visualizer, PipelineConfig config)
     {
         ArgumentNullException.ThrowIfNull(visualizer);
         ArgumentNullException.ThrowIfNull(config);
 
-        var output = visualizer.Render(config);
-        Console.Write(output);
+        Console.Write(visualizer.Render(config));
     }
 
     /// <summary>
@@ -40,7 +39,7 @@ public static class PipelineVisualizerExtensions
     /// <param name="visualizer">The pipeline visualizer instance.</param>
     /// <param name="config">The pipeline configuration.</param>
     /// <returns>Read-only list of critical stages with their health status.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when visualizer or config is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="visualizer"/> or <paramref name="config"/> is null.</exception>
     public static IReadOnlyList<(string StageName, string HealthStatus)> FindCriticalStages(
         this PipelineVisualizer visualizer,
         PipelineConfig config)
@@ -53,7 +52,7 @@ public static class PipelineVisualizerExtensions
 
         foreach (var node in nodes)
         {
-            if (node.HealthLabel == "CRITICAL")
+            if (node.HealthLabel is "CRITICAL")
             {
                 criticalStages.Add((node.StageName, node.HealthLabel));
             }
@@ -69,7 +68,7 @@ public static class PipelineVisualizerExtensions
     /// <param name="visualizer">The pipeline visualizer instance.</param>
     /// <param name="config">The pipeline configuration.</param>
     /// <returns>Tuple containing min, max, and average throughput across all stages.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when visualizer or config is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="visualizer"/> or <paramref name="config"/> is null.</exception>
     public static (double MinThroughput, double MaxThroughput, double AvgThroughput) GetStageThroughputSummary(
         this PipelineVisualizer visualizer,
         PipelineConfig config)
