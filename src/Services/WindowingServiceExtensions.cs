@@ -19,6 +19,8 @@ using System.Linq;
 /// </summary>
 public static class WindowingServiceExtensions
 {
+    private const long DefaultWindowId = -1;
+
     /// <summary>
     /// Creates a new window with a specified custom duration that differs from the configured window size.
     /// Useful for creating ad-hoc windows for special processing or debugging.
@@ -28,13 +30,14 @@ public static class WindowingServiceExtensions
     /// <param name="customDurationMs">The custom duration for this window in milliseconds.</param>
     /// <returns>A new <see cref="WindowEvent"/> with the specified custom duration.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="customDurationMs"/> is less than or equal to zero.</exception>
     public static WindowEvent CreateCustomDurationWindow(this WindowingService service, long windowStartMs, long customDurationMs)
     {
         ArgumentNullException.ThrowIfNull(service);
 
         if (customDurationMs <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(customDurationMs), "Custom duration must be positive");
+            throw new ArgumentOutOfRangeException(nameof(customDurationMs), customDurationMs, "Custom duration must be positive");
         }
 
         return new WindowEvent(
@@ -60,10 +63,10 @@ public static class WindowingServiceExtensions
 
         var emitted = service.ProcessDataPoints(dataPoints);
 
-        // Get active windows (excluding the ones we just emitted)
+        // Get active windows after processing (these are the windows that remain active)
         var activeWindows = service.GetActiveWindows().ToList();
 
-        return (emitted.AsReadOnly(), activeWindows.AsReadOnly());
+        return (emitted, activeWindows);
     }
 
     /// <summary>
@@ -83,20 +86,23 @@ public static class WindowingServiceExtensions
 
         if (windowList.Count == 0)
         {
-            return new WindowStatistics { WindowId = -1, DataPointCount = 0 };
+            return new WindowStatistics { WindowId = DefaultWindowId, DataPointCount = 0 };
         }
+
+        var totalDataPoints = windowList.Sum(w => w.DataPoints.Count);
+        var maxDurationMs = windowList.Max(w => w.GetDurationMs());
 
         return new WindowStatistics
         {
-            WindowId = -1, // Combined statistics don't have a single window ID
-            DataPointCount = windowList.Sum(w => w.DataPoints.Count),
+            WindowId = DefaultWindowId, // Combined statistics don't have a single window ID
+            DataPointCount = totalDataPoints,
             Sum = windowList.Sum(w => w.CalculateSum()),
             Average = windowList.Average(w => w.CalculateAverage()),
             Min = windowList.Min(w => w.CalculateMin()),
             Max = windowList.Max(w => w.CalculateMax()),
             StdDev = CalculateCombinedStandardDeviation(windowList),
-            WindowDurationMs = windowList.Max(w => w.GetDurationMs()),
-            Throughput = windowList.Sum(w => w.DataPoints.Count) / (windowList.Max(w => w.GetDurationMs()) / 1000d)
+            WindowDurationMs = maxDurationMs,
+            Throughput = maxDurationMs > 0 ? totalDataPoints / (maxDurationMs / 1000d) : 0
         };
     }
 
@@ -125,15 +131,13 @@ public static class WindowingServiceExtensions
 
         // Use reflection to access the private _activeWindows field
         // This is necessary since the field is private in the original class
-        var field = typeof(WindowingService).GetField("_activeWindows",
+        var field = typeof(WindowingService).GetField(
+            "_activeWindows",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-        if (field?.GetValue(service) is Dictionary<long, WindowEvent> activeWindows)
-        {
-            return activeWindows.Values.ToList().AsReadOnly();
-        }
-
-        return Array.Empty<WindowEvent>();
+        return field?.GetValue(service) is Dictionary<long, WindowEvent> activeWindows
+            ? activeWindows.Values.ToList().AsReadOnly()
+            : Array.Empty<WindowEvent>();
     }
 
     /// <summary>
@@ -146,10 +150,11 @@ public static class WindowingServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        var field = typeof(WindowingService).GetField("_nextWindowId",
+        var field = typeof(WindowingService).GetField(
+            "_nextWindowId",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-        return field != null ? Convert.ToInt64(field.GetValue(service)) : 1;
+        return field?.GetValue(service) is long nextWindowId ? nextWindowId : 1L;
     }
 
     /// <summary>
@@ -165,7 +170,7 @@ public static class WindowingServiceExtensions
         // Calculate combined mean
         double totalSum = windows.Sum(w => w.CalculateSum());
         int totalCount = windows.Sum(w => w.DataPoints.Count);
-        double combinedMean = totalSum / totalCount;
+        double combinedMean = totalCount > 0 ? totalSum / totalCount : 0;
 
         // Calculate sum of squared differences from mean
         double sumOfSquaredDifferences = 0d;
