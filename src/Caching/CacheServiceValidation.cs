@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 namespace DotNetRealtimePipeline.Caching;
 
@@ -18,10 +18,13 @@ public static class CacheServiceValidation
     /// <summary>
     /// Validates a <see cref="CacheService{TKey, TValue}"/> instance.
     /// </summary>
+    /// <typeparam name="TKey">The type of the cache key.</typeparam>
+    /// <typeparam name="TValue">The type of the cached value.</typeparam>
     /// <param name="value">The cache service to validate.</param>
     /// <returns>A list of validation problems; empty if valid.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this CacheService<string, object> value)
+    public static IReadOnlyList<string> Validate<TKey, TValue>(this CacheService<TKey, TValue> value)
+        where TKey : notnull
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -36,9 +39,13 @@ public static class CacheServiceValidation
     /// <summary>
     /// Determines whether a <see cref="CacheService{TKey, TValue}"/> instance is valid.
     /// </summary>
+    /// <typeparam name="TKey">The type of the cache key.</typeparam>
+    /// <typeparam name="TValue">The type of the cached value.</typeparam>
     /// <param name="value">The cache service to check.</param>
     /// <returns>True if valid; otherwise false.</returns>
-    public static bool IsValid(this CacheService<string, object> value)
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    public static bool IsValid<TKey, TValue>(this CacheService<TKey, TValue> value)
+        where TKey : notnull
     {
         return value.Validate().Count == 0;
     }
@@ -46,10 +53,13 @@ public static class CacheServiceValidation
     /// <summary>
     /// Ensures that a <see cref="CacheService{TKey, TValue}"/> instance is valid.
     /// </summary>
+    /// <typeparam name="TKey">The type of the cache key.</typeparam>
+    /// <typeparam name="TValue">The type of the cached value.</typeparam>
     /// <param name="value">The cache service to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is invalid.</exception>
-    public static void EnsureValid(this CacheService<string, object> value)
+    public static void EnsureValid<TKey, TValue>(this CacheService<TKey, TValue> value)
+        where TKey : notnull
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -97,12 +107,12 @@ public static class CacheServiceValidation
             problems.Add($"Statistics.CurrentSize ({statistics.CurrentSize}) cannot exceed MaxCapacity ({statistics.MaxCapacity}).");
         }
 
-        if (statistics.UtilizationPercent < 0 || statistics.UtilizationPercent > 100)
+        if (statistics.UtilizationPercent is < 0 or > 100)
         {
             problems.Add($"Statistics.UtilizationPercent must be between 0 and 100, but was {statistics.UtilizationPercent:F2}%.");
         }
 
-        if (statistics.HitRate < 0 || statistics.HitRate > 100)
+        if (statistics.HitRate is < 0 or > 100)
         {
             problems.Add($"Statistics.HitRate must be between 0 and 100, but was {statistics.HitRate:F2}%.");
         }
