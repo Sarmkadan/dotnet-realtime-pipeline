@@ -12,7 +12,11 @@ namespace DotNetRealtimePipeline.Tests.Unit;
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="BackpressureMetricsCollectorTests"/>.
 /// </summary>
-public static class BackpressureMetricsCollectorTestsJsonExtensions
+/// <remarks>
+/// This class provides JSON serialization and deserialization utilities for unit testing scenarios.
+/// All methods are thread-safe and use a shared <see cref="JsonSerializerOptions"/> instance.
+/// </remarks>
+public sealed class BackpressureMetricsCollectorTestsJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
