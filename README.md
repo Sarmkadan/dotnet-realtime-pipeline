@@ -24,6 +24,37 @@ concurrency model, extension points, and known limitations.
 The sections below are generated per-class API notes; more per-class docs live in
 [docs/](docs/).
 
+## PipelineHttpClientFactoryExtensions
+The `PipelineHttpClientFactoryExtensions` class provides convenient extension methods for `PipelineHttpClientFactory`, allowing for simplified HTTP client creation, configuration, and data exchange. It includes methods for setting up clients with base addresses, applying custom timeout/retry policies, and executing asynchronous GET and POST requests.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Integration;
+using System.Net.Http;
+using System.Text;
+
+// Assume factory is an initialized instance of PipelineHttpClientFactory
+var factory = new PipelineHttpClientFactory();
+
+// Create a client with a specific base address
+var client = factory.CreateClientWithBaseAddress("https://api.example.com");
+
+// Create a configured service client with retry and compression
+var serviceClient = factory.CreateConfiguredServiceClient(
+    serviceName: "MyService",
+    timeout: TimeSpan.FromSeconds(30),
+    maxRetries: 5,
+    useCompression: true
+);
+
+// Execute a GET request
+string result = await factory.GetStringAsync("https://api.example.com/data");
+
+// Execute a POST request with JSON
+var content = new StringContent("{\"key\":\"value\"}", Encoding.UTF8, "application/json");
+string postResult = await factory.PostJsonAsync("https://api.example.com/ingest", content);
+```
+
 ## BackpressureMetricsCollectorTests
 The `BackpressureMetricsCollectorTests` class provides unit tests for the `BackpressureMetricsCollector` class, verifying its ability to track and report backpressure metrics across pipeline stages. It includes tests for handling unknown stages, recording manual events, aggregating metrics, and resetting collected data.
 
