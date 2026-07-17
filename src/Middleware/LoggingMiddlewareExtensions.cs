@@ -1,7 +1,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 namespace DotNetRealtimePipeline.Middleware;
 
@@ -59,12 +59,16 @@ public static class LoggingMiddlewareExtensions
     /// <param name="stopwatch">The stopwatch tracking the operation duration.</param>
     /// <param name="thresholdMs">The performance threshold in milliseconds.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="middleware"/> or <paramref name="stopwatch"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="operationName"/> is null or empty.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="operationName"/> is null or empty, or when <paramref name="thresholdMs"/> is negative.</exception>
     public static void LogPerformanceWarning(this LoggingMiddleware middleware, string operationName, Stopwatch stopwatch, long thresholdMs)
     {
         ArgumentNullException.ThrowIfNull(middleware);
         ArgumentNullException.ThrowIfNull(stopwatch);
         ArgumentException.ThrowIfNullOrEmpty(operationName);
+        if (thresholdMs < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(thresholdMs), "Threshold must be non-negative.");
+        }
 
         middleware.LogPerformanceWarning(operationName, stopwatch.ElapsedMilliseconds, thresholdMs);
     }
