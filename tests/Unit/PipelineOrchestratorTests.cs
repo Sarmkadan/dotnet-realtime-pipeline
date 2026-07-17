@@ -14,16 +14,52 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests.Unit;
 
+/// <summary>
+/// Unit tests for the <see cref="PipelineOrchestrator"/> class.
+/// Tests the constructor, lifecycle methods, data ingestion, batch processing,
+/// and status reporting functionality of the pipeline orchestrator.
+/// </summary>
 public sealed class PipelineOrchestratorTests
 {
+    /// <summary>
+    /// Mock service for data processing operations.
+    /// </summary>
     private readonly Mock<DataProcessingService> _mockProcessingService;
+
+    /// <summary>
+    /// Mock service for windowing operations.
+    /// </summary>
     private readonly Mock<WindowingService> _mockWindowingService;
+
+    /// <summary>
+    /// Mock service for metrics collection and analysis.
+    /// </summary>
     private readonly Mock<MetricsService> _mockMetricsService;
+
+    /// <summary>
+    /// Mock service for backpressure management.
+    /// </summary>
     private readonly Mock<BackpressureService> _mockBackpressureService;
+
+    /// <summary>
+    /// Mock service for query operations.
+    /// </summary>
     private readonly Mock<QueryService> _mockQueryService;
+
+    /// <summary>
+    /// Configuration used for testing the pipeline orchestrator.
+    /// </summary>
     private readonly PipelineConfig _config;
+
+    /// <summary>
+    /// Instance of the pipeline orchestrator being tested.
+    /// </summary>
     private readonly PipelineOrchestrator _orchestrator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineOrchestratorTests"/> class.
+    /// Sets up mock services and a test configuration for testing the pipeline orchestrator.
+    /// </summary>
     public PipelineOrchestratorTests()
     {
         _mockProcessingService = new Mock<DataProcessingService>(Mock.Of<IDataPointRepository>(), new PipelineConfig());
@@ -54,6 +90,9 @@ public sealed class PipelineOrchestratorTests
         );
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null processing service is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullProcessingService_ShouldThrow()
     {
@@ -68,6 +107,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null windowing service is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullWindowingService_ShouldThrow()
     {
@@ -82,6 +124,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null metrics service is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullMetricsService_ShouldThrow()
     {
@@ -96,6 +141,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null backpressure service is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullBackpressureService_ShouldThrow()
     {
@@ -110,6 +158,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null query service is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullQueryService_ShouldThrow()
     {
@@ -124,6 +175,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that the constructor throws an <see cref="ArgumentNullException"/> when a null configuration is provided.
+    /// </summary>
     [Fact]
     public void Constructor_WithNullConfig_ShouldThrow()
     {
@@ -138,6 +192,9 @@ public sealed class PipelineOrchestratorTests
         ));
     }
 
+    /// <summary>
+    /// Tests that calling <see cref="PipelineOrchestrator.StartAsync"/> when the orchestrator is already running returns immediately without throwing.
+    /// </summary>
     [Fact]
     public async Task StartAsync_WhenAlreadyRunning_ShouldReturnImmediately()
     {
@@ -161,6 +218,10 @@ public sealed class PipelineOrchestratorTests
         // Assert - No exception thrown
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.StartAsync"/> creates backpressure contexts for all pipeline stages.
+    /// Verifies that contexts are created for each enabled stage and the windowing stage.
+    /// </summary>
     [Fact]
     public async Task StartAsync_ShouldCreateBackpressureContextsForAllStages()
     {
@@ -177,6 +238,9 @@ public sealed class PipelineOrchestratorTests
         _mockBackpressureService.Verify(b => b.CreateContext(PipelineConstants.StageName_Windowing, _config.MaxBufferSize), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.StopAsync"/> sets the running state to false.
+    /// </summary>
     [Fact]
     public async Task StopAsync_ShouldSetIsRunningToFalse()
     {
@@ -196,6 +260,9 @@ public sealed class PipelineOrchestratorTests
         // Assert - Can't directly verify private field, but method completes without exception
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.IngestDataPointAsync"/> throws an <see cref="ArgumentNullException"/> when a null data point is provided.
+    /// </summary>
     [Fact]
     public async Task IngestDataPointAsync_WithNullDataPoint_ShouldThrow()
     {
@@ -203,6 +270,9 @@ public sealed class PipelineOrchestratorTests
         await Assert.ThrowsAsync<ArgumentNullException>(() => _orchestrator.IngestDataPointAsync(null!));
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.IngestDataPointAsync"/> throws an <see cref="InvalidOperationException"/> when attempting to ingest data while the pipeline is not running.
+    /// </summary>
     [Fact]
     public async Task IngestDataPointAsync_WhenNotRunning_ShouldThrow()
     {
@@ -222,6 +292,9 @@ public sealed class PipelineOrchestratorTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => orchestrator.IngestDataPointAsync(new DataPoint(1, DateTime.UtcNow.Ticks, 10.0, "Test")));
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.IngestDataPointAsync"/> returns true when a valid data point is successfully ingested.
+    /// </summary>
     [Fact]
     public async Task IngestDataPointAsync_WithValidDataPoint_ShouldReturnTrue()
     {
@@ -236,6 +309,9 @@ public sealed class PipelineOrchestratorTests
         result.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.IngestDataPointAsync"/> returns false and applies backpressure when the buffer is full.
+    /// </summary>
     [Fact]
     public async Task IngestDataPointAsync_WhenBufferFull_ShouldApplyBackpressureAndReturnFalse()
     {
@@ -257,6 +333,9 @@ public sealed class PipelineOrchestratorTests
             Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.ProcessBatchDataPointsAsync"/> throws an <see cref="ArgumentNullException"/> when a null collection of data points is provided.
+    /// </summary>
     [Fact]
     public async Task ProcessBatchDataPointsAsync_WithNullDataPoints_ShouldThrow()
     {
@@ -264,6 +343,10 @@ public sealed class PipelineOrchestratorTests
         await Assert.ThrowsAsync<ArgumentNullException>(() => _orchestrator.ProcessBatchDataPointsAsync(null!));
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.ProcessBatchDataPointsAsync"/> successfully processes all valid data points in a batch.
+    /// Verifies that the result contains the correct counts of successful and failed ingestions.
+    /// </summary>
     [Fact]
     public async Task ProcessBatchDataPointsAsync_ShouldProcessAllValidPoints()
     {
@@ -308,6 +391,9 @@ public sealed class PipelineOrchestratorTests
         result.FailedCount.Should().Be(1);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetQueryService"/> returns the configured query service instance.
+    /// </summary>
     [Fact]
     public void GetQueryService_ShouldReturnQueryServiceInstance()
     {
@@ -318,6 +404,10 @@ public sealed class PipelineOrchestratorTests
         queryService.Should().BeSameAs(_mockQueryService.Object);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetStatus"/> returns the current pipeline status.
+    /// Verifies that the status object contains the expected configuration information.
+    /// </summary>
     [Fact]
     public void GetStatus_ShouldReturnPipelineStatus()
     {
@@ -331,6 +421,9 @@ public sealed class PipelineOrchestratorTests
         status.ConfigurationVersion.Should().Be("1.0.0");
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetHealthReportAsync"/> returns the health report from the metrics service.
+    /// </summary>
     [Fact]
     public async Task GetHealthReportAsync_ShouldReturnHealthReport()
     {
@@ -350,6 +443,9 @@ public sealed class PipelineOrchestratorTests
         result.Should().BeSameAs(healthReport);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetThroughput"/> returns the throughput metric from the metrics service.
+    /// </summary>
     [Fact]
     public void GetThroughput_ShouldReturnMetricsServiceThroughput()
     {
@@ -364,6 +460,9 @@ public sealed class PipelineOrchestratorTests
         result.Should().Be(123.45);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetThroughput"/> with a stage name returns the throughput metric for that specific stage from the metrics service.
+    /// </summary>
     [Fact]
     public void GetThroughput_WithStageName_ShouldReturnMetricsServiceThroughput()
     {
@@ -378,6 +477,9 @@ public sealed class PipelineOrchestratorTests
         result.Should().Be(456.78);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.GetPerformanceTrendAsync"/> returns the performance trend analysis from the metrics service.
+    /// </summary>
     [Fact]
     public async Task GetPerformanceTrendAsync_ShouldReturnMetricsServiceAnalysis()
     {
@@ -397,6 +499,9 @@ public sealed class PipelineOrchestratorTests
         result.Should().BeSameAs(trend);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.BatchProcessingResult"/> has the correct properties and can store successful and failed ingestion counts.
+    /// </summary>
     [Fact]
     public void BatchProcessingResult_ShouldHaveCorrectProperties()
     {
@@ -412,6 +517,9 @@ public sealed class PipelineOrchestratorTests
         result.FailedCount.Should().Be(2);
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.PipelineStatus"/> has the correct properties and properly stores pipeline state information.
+    /// </summary>
     [Fact]
     public void PipelineStatus_ShouldHaveCorrectProperties()
     {
@@ -436,6 +544,9 @@ public sealed class PipelineOrchestratorTests
         status.ConfigurationVersion.Should().Be("2.0");
     }
 
+    /// <summary>
+    /// Tests that <see cref="PipelineOrchestrator.PipelineStatus.GetSummary"/> returns a formatted string containing the pipeline status information.
+    /// </summary>
     [Fact]
     public void PipelineStatus_GetSummary_ShouldReturnFormattedString()
     {
