@@ -1245,6 +1245,50 @@ await publisher.PublishPipelineErrorAsync("IngestionOperation", new Exception("S
 await publisher.PublishDataIngestedBatchAsync(new[] { dataPoint });
 ```
 
+## ServiceCollectionExtensionsJsonExtensions
+
+The `ServiceCollectionExtensionsJsonExtensions` class provides System.Text.Json serialization extensions for working with `ServiceCollectionExtensions` configuration. It enables serialization to JSON strings and deserialization from JSON strings, which is useful for persisting configuration state or transmitting it across process boundaries.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Configuration;
+using System;
+
+// Serialize ServiceCollectionExtensions configuration to JSON
+string jsonCompact = ServiceCollectionExtensionsJsonExtensions.ToJson(null);
+Console.WriteLine(jsonCompact);
+
+// Serialize with indentation for readability
+string jsonIndented = ServiceCollectionExtensionsJsonExtensions.ToJson(null, indented: true);
+Console.WriteLine(jsonIndented);
+
+// Deserialize from JSON string
+string json = @"
+{
+  "type": "ServiceCollectionExtensions",
+  "isStaticClass": true,
+  "supportsAddPipelineServices": true
+}";
+
+var deserializedConfig = ServiceCollectionExtensionsJsonExtensions.FromJson(json);
+Console.WriteLine($"Deserialized type: {deserializedConfig?.Type}");
+
+// Try to deserialize with error handling
+if (ServiceCollectionExtensionsJsonExtensions.TryFromJson(json, out var tryDeserializedConfig))
+{
+    Console.WriteLine("Successfully deserialized configuration");
+}
+else
+{
+    Console.WriteLine("Failed to deserialize configuration");
+}
+
+// Handle null/empty JSON gracefully
+var nullConfig = ServiceCollectionExtensionsJsonExtensions.FromJson(null);
+Console.WriteLine($"Null JSON result: {nullConfig}");
+```
+
 ## InMemoryMetricsRepositoryExtensions
 
 The `InMemoryMetricsRepositoryExtensions` class provides extension methods for `InMemoryMetricsRepository` that enhance metric querying capabilities with additional convenience methods for working with metric data. It includes methods for retrieving metrics by type and time range, calculating processing time statistics, and filtering metrics by various criteria.
