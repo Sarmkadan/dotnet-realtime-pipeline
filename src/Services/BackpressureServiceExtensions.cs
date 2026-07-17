@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =====================================================================
+// ===================================================================
 
 namespace DotNetRealtimePipeline.Services;
 
@@ -27,8 +27,8 @@ public static class BackpressureServiceExtensions
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <param name="maxBufferCapacity">Maximum buffer capacity for the stage.</param>
     /// <returns>The existing or newly created backpressure context.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
     public static BackpressureContext GetOrCreateContext(
         this BackpressureService service,
         string stageName,
@@ -49,8 +49,9 @@ public static class BackpressureServiceExtensions
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <param name="itemCount">Number of items to add to the buffer.</param>
     /// <returns>True if items were added; false if buffer capacity would be exceeded.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="itemCount"/> is negative.</exception>
     public static bool SafeAddToBuffer(
         this BackpressureService service,
         string stageName,
@@ -58,10 +59,7 @@ public static class BackpressureServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentException.ThrowIfNullOrEmpty(stageName);
-        if (itemCount < 0)
-        {
-            throw new ArgumentException("Item count cannot be negative", nameof(itemCount));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(itemCount);
 
         return service.TryAddToBuffer(stageName, itemCount);
     }
@@ -73,8 +71,8 @@ public static class BackpressureServiceExtensions
     /// <param name="service">The backpressure service instance.</param>
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <returns>Buffer fill percentage (0-100), or 0 if stage doesn't exist.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
     public static double GetBufferFillPercentage(
         this BackpressureService service,
         string stageName)
@@ -93,8 +91,8 @@ public static class BackpressureServiceExtensions
     /// <param name="service">The backpressure service instance.</param>
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <returns>True if backpressure should be applied; otherwise false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
     public static bool ShouldApplyBackpressure(
         this BackpressureService service,
         string stageName)
@@ -103,12 +101,7 @@ public static class BackpressureServiceExtensions
         ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         var context = service.GetContext(stageName);
-        if (context is null)
-        {
-            return false;
-        }
-
-        return context.ShouldApplyBackpressure();
+        return context is not null && context.ShouldApplyBackpressure();
     }
 
     /// <summary>
@@ -118,8 +111,8 @@ public static class BackpressureServiceExtensions
     /// <param name="service">The backpressure service instance.</param>
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <returns>Number of items dropped due to buffer overflow.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
     public static long GetDroppedItemCount(
         this BackpressureService service,
         string stageName)
@@ -135,7 +128,7 @@ public static class BackpressureServiceExtensions
     /// </summary>
     /// <param name="service">The backpressure service instance.</param>
     /// <returns>A formatted string showing buffer status for each stage.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
     public static string GetBufferStatusReport(
         this BackpressureService service)
     {
@@ -164,9 +157,9 @@ public static class BackpressureServiceExtensions
                 var isBackpressured = context?.IsBackpressured ?? false;
                 var dropped = service.GetDroppedItemCount(kv.Key);
 
-                report.AppendLine($"  {kv.Key,-25} | Fill: {fillPercent,6:N2}% | " +
-                                $"Status: {(isBackpressured ? "BACKPRESSURED" : "OK"),-12} | " +
-                                $"Dropped: {dropped,8}");
+                report.AppendLine($" {kv.Key,-25} | Fill: {fillPercent,6:N2}% | " +
+                    $"Status: {(isBackpressured ? "BACKPRESSURED" : "OK"),-12} | " +
+                    $"Dropped: {dropped,8}");
             }
         }
         else
@@ -184,8 +177,9 @@ public static class BackpressureServiceExtensions
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <param name="timeoutMs">Maximum time to wait for a consumer slot (0 = no wait).</param>
     /// <returns>True if a consumer slot was obtained; false if timeout expired or stage not found.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeoutMs"/> is negative.</exception>
     public static async Task<bool> TryRegisterConsumerAsync(
         this BackpressureService service,
         string stageName,
@@ -193,11 +187,7 @@ public static class BackpressureServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentException.ThrowIfNullOrEmpty(stageName);
-
-        if (timeoutMs < 0)
-        {
-            throw new ArgumentException("Timeout cannot be negative", nameof(timeoutMs));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(timeoutMs);
 
         if (timeoutMs == 0)
         {
@@ -223,7 +213,7 @@ public static class BackpressureServiceExtensions
     /// </summary>
     /// <param name="service">The backpressure service instance.</param>
     /// <returns>A tuple containing the system status and derived metrics.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> is null.</exception>
     public static (BackpressureSystemStatus Status, BackpressureMetrics Metrics) GetEnhancedSystemStatus(
         this BackpressureService service)
     {
@@ -248,15 +238,15 @@ public static class BackpressureServiceExtensions
         {
             metrics.HealthyStages = service.GetBufferStatus()
                 .Count(kv => !service.IsBackpressured(kv.Key) &&
-                             service.GetBufferFillPercentage(kv.Key) <= 50);
+                    service.GetBufferFillPercentage(kv.Key) <= 50);
 
             metrics.WarningStages = service.GetBufferStatus()
                 .Count(kv => service.GetBufferFillPercentage(kv.Key) > 50 &&
-                             service.GetBufferFillPercentage(kv.Key) <= 75);
+                    service.GetBufferFillPercentage(kv.Key) <= 75);
 
             metrics.CriticalStages = service.GetBufferStatus()
                 .Count(kv => service.IsBackpressured(kv.Key) ||
-                             service.GetBufferFillPercentage(kv.Key) > 75);
+                    service.GetBufferFillPercentage(kv.Key) > 75);
         }
 
         return (status, metrics);
@@ -269,8 +259,8 @@ public static class BackpressureServiceExtensions
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <param name="metricName">Name of the metric to record.</param>
     /// <param name="value">Value of the metric.</param>
-    /// <exception cref="ArgumentNullException">Thrown when service, stageName, or metricName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName or metricName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/>, <paramref name="stageName"/>, or <paramref name="metricName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> or <paramref name="metricName"/> is empty or whitespace.</exception>
     public static void RecordBufferMetric(
         this BackpressureService service,
         string stageName,
@@ -291,8 +281,8 @@ public static class BackpressureServiceExtensions
     /// <param name="service">The backpressure service instance.</param>
     /// <param name="stageName">Name of the pipeline stage.</param>
     /// <returns>Backpressure frequency in events per minute, or 0 if insufficient data.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when service or stageName is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when stageName is empty or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="service"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty or whitespace.</exception>
     public static double GetBackpressureFrequency(
         this BackpressureService service,
         string stageName)
