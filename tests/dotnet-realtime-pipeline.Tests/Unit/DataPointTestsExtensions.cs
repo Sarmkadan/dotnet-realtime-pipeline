@@ -10,12 +10,13 @@ using Xunit;
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
-/// Extension methods for <see cref="DataPointTests"/> to reduce boilerplate and improve test clarity.
+/// Provides extension methods for <see cref="DataPointTests"/> to reduce boilerplate and improve test clarity.
 /// </summary>
 public static class DataPointTestsExtensions
 {
     /// <summary>
-    /// Creates a new <see cref="DataPoint"/> instance with the specified ID and validates it.
+    /// Creates a new <see cref="DataPoint"/> instance with the specified ID.
+    /// The created data point has valid default values for all required fields.
     /// </summary>
     /// <param name="tests">The test instance.</param>
     /// <param name="id">The ID of the new data point.</param>
@@ -29,11 +30,11 @@ public static class DataPointTestsExtensions
     }
 
     /// <summary>
-    /// Verifies that the <see cref="DataPointTests"/> instance has a valid data point.
+    /// Verifies that a data point is valid using the <see cref="DataPoint.Validate"/> method.
     /// </summary>
     /// <param name="tests">The test instance.</param>
     /// <param name="dataPoint">The data point to verify.</param>
-    /// <returns>A boolean indicating whether the data point is valid.</returns>
+    /// <returns><see langword="true"/> if the data point is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> or <paramref name="dataPoint"/> is null.</exception>
     public static bool IsValidDataPoint(this DataPointTests tests, DataPoint dataPoint)
     {
