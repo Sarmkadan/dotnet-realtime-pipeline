@@ -921,6 +921,73 @@ var oldestActive = handler.GetOldestActiveSubscription();
 var mostRecentDelivery = handler.GetMostRecentDelivery();
 ```
 
+## RateLimitingMiddlewareValidation
+The `RateLimitingMiddlewareValidation` static class provides validation helpers for `RateLimitingMiddleware` and related rate limiting components. It includes methods for validating middleware instances, checking validity status, and validating rate limit parameters to ensure proper configuration before use.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Middleware;
+using System;
+
+// Create a rate limiting middleware instance with default configuration
+var middleware = new RateLimitingMiddleware(
+    tokensPerSecond: 100,
+    maxBurstSize: 200
+);
+
+// Validate the middleware instance
+var validationErrors = middleware.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("Middleware validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if middleware is valid
+bool isValid = middleware.IsValid();
+Console.WriteLine($"Middleware is valid: {isValid}");
+
+// Ensure middleware is valid (throws if invalid)
+middleware.EnsureValid();
+
+// Validate rate limit parameters before attempting to acquire tokens
+var parameterErrors = RateLimitingMiddlewareValidation.ValidateParameters(
+    identifier: "user-123",
+    tokensRequired: 5
+);
+if (parameterErrors.Count > 0)
+{
+    Console.WriteLine("Parameter validation failed:");
+    foreach (var error in parameterErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate RateLimitStatus instance
+var status = new RateLimitStatus
+{
+    AvailableTokens = 150,
+    Capacity = 200,
+    ResetTime = DateTime.UtcNow.AddMinutes(1)
+};
+
+var statusErrors = status.Validate();
+if (statusErrors.Count > 0)
+{
+    Console.WriteLine("Status validation failed:");
+    foreach (var error in statusErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+status.EnsureValid();
+```
+
 ## WebhookHandlerValidation
 The `WebhookHandlerValidation` static class provides validation extension methods for webhook-related components, including `WebhookHandler`, `WebhookSubscription`, and `WebhookPayload`. It allows for concise validation of these components using `Validate` to retrieve errors, `IsValid` to check status, or `EnsureValid` to throw an exception upon invalid state.
 
