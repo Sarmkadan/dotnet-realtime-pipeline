@@ -42,13 +42,15 @@ namespace DotNetRealtimePipeline.CLI
         /// Deserializes a JSON string into a <see cref="CommandLineParser"/> instance.
         /// </summary>
         /// <param name="json">The JSON string to deserialize.</param>
-        /// <returns>The deserialized command line parser instance, or null if the JSON is invalid.</returns>
+        /// <returns>The deserialized command line parser instance.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
-        public static CommandLineParser? FromJson(string json)
+        /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+        public static CommandLineParser FromJson(string json)
         {
             ArgumentNullException.ThrowIfNull(json);
 
-            return JsonSerializer.Deserialize<CommandLineParser>(json, _jsonOptions);
+            return JsonSerializer.Deserialize<CommandLineParser>(json, _jsonOptions)
+                ?? throw new JsonException("Deserialization returned null for a non-nullable type.");
         }
 
         /// <summary>
@@ -65,7 +67,7 @@ namespace DotNetRealtimePipeline.CLI
             try
             {
                 value = JsonSerializer.Deserialize<CommandLineParser>(json, _jsonOptions);
-                return true;
+                return value is not null;
             }
             catch (JsonException)
             {
