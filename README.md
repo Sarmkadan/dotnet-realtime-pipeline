@@ -724,6 +724,45 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## DynamicScalingServiceExtensions
+
+The `DynamicScalingServiceExtensions` class provides convenient extension methods for `DynamicScalingService` to simplify common scaling operations, state queries, and configuration management. It includes methods for scaling pipeline stages up or down, retrieving scaling configuration, and accessing scaling state information.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Services;
+using System;
+using System.Threading.Tasks;
+
+// Assume service is an initialized instance of DynamicScalingService
+var service = new DynamicScalingService(
+    minConsumers: 2,
+    maxConsumers: 16,
+    scaleUpThresholdPercent: 75.0,
+    scaleDownThresholdPercent: 30.0
+);
+
+// Get scaling configuration
+int minConsumers = service.GetMinConsumers(); // Returns 2
+int maxConsumers = service.GetMaxConsumers(); // Returns 16
+string thresholdsInfo = service.GetScalingThresholdsInfo(); // Returns "Min: 2, Max: 16, Scale-up: 75%, Scale-down: 30%"
+
+// Scale operations
+bool scaledUp = await service.TryScaleUpAsync("DataProcessingStage");
+Console.WriteLine($"Scale-up successful: {scaledUp}");
+
+bool scaledDown = await service.TryScaleDownAsync("DataProcessingStage");
+Console.WriteLine($"Scale-down successful: {scaledDown}");
+
+// Get scaling states
+var statesList = service.GetScalingStatesList();
+Console.WriteLine($"Total scaling states: {statesList.Count}");
+
+var state = service.GetOrCreateScalingState("NewStage");
+Console.WriteLine($"Stage {state.StageName} has {state.CurrentConsumers} consumers");
+```
+
 ## EventSubscriberBaseExtensions
 The `EventSubscriberBaseExtensions` class provides utility extension methods for working with event subscribers in the real-time pipeline. It offers safe unsubscription handling, subscriber identification, metrics collection, and status monitoring capabilities. These methods enable consistent management of different subscriber types while providing type-specific metrics and health indicators.
 
