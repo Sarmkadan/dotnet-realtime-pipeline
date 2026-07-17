@@ -63,13 +63,13 @@ public static class HealthCheckServiceJsonExtensions
 
         if (string.IsNullOrWhiteSpace(json))
         {
-            return true;
+            return false;
         }
 
         try
         {
             value = JsonSerializer.Deserialize<HealthCheckService>(json, _jsonOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
@@ -77,12 +77,8 @@ public static class HealthCheckServiceJsonExtensions
         }
     }
 
-    private static JsonSerializerOptions GetIndentedOptions()
-    {
-        var options = new JsonSerializerOptions(_jsonOptions)
-        {
-            WriteIndented = true,
-        };
-        return options;
-    }
+private static JsonSerializerOptions GetIndentedOptions() => new(_jsonOptions)
+{
+    WriteIndented = true,
+};
 }
