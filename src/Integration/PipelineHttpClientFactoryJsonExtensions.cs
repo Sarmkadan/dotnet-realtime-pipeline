@@ -49,9 +49,12 @@ public static class PipelineHttpClientFactoryJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized factory instance, or null if the JSON is empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static PipelineHttpClientFactory? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
@@ -66,9 +69,22 @@ public static class PipelineHttpClientFactoryJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized factory instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out PipelineHttpClientFactory? value)
+        => TryFromJson(json, out value, out _);
+
+    /// <summary>
+    /// Attempts to deserialize a JSON string to a <see cref="PipelineHttpClientFactory"/> instance.
+    /// </summary>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="value">Receives the deserialized factory instance if successful.</param>
+    /// <param name="error">Receives the deserialization error if failed.</param>
+    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    public static bool TryFromJson(string json, out PipelineHttpClientFactory? value, out JsonException? error)
     {
         value = null;
+        error = null;
 
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -78,10 +94,11 @@ public static class PipelineHttpClientFactoryJsonExtensions
         try
         {
             value = JsonSerializer.Deserialize<PipelineHttpClientFactory>(json, _jsonOptions);
-            return true;
+            return value is not null;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            error = ex;
             return false;
         }
     }
