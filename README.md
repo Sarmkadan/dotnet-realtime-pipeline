@@ -121,6 +121,34 @@ await benchmarks.MemoryAllocationBenchmark();
 benchmarks.Cleanup();
 ```
 
+## PipelineEventPublisherExtensions
+The `PipelineEventPublisherExtensions` class provides a set of extension methods for pipeline event publishers, simplifying the process of publishing various pipeline events such as data ingestion, processing completion, and error notifications. It also includes utility methods to monitor subscriber status and inspect active subscription counts across the pipeline.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Events;
+using DotNetRealtimePipeline.Domain.Models;
+
+// Assuming 'publisher' is an initialized instance of PipelineEventPublisher
+var dataPoint = new DataPoint { /* ... */ };
+
+// Check subscriber status
+if (PipelineEventPublisherExtensions.HasSubscribers(publisher, nameof(DataIngestedEvent)))
+{
+    var counts = publisher.GetAllSubscriberCounts();
+    Console.WriteLine($"Subscribers for DataIngested: {counts[nameof(DataIngestedEvent)]}");
+}
+
+// Publish events
+await publisher.PublishDataIngestedAsync(dataPoint, new Dictionary<string, object> { { "key", "value" } });
+await publisher.PublishProcessingCompletedAsync("123", success: true, stageName: "ProcessingStage");
+await publisher.PublishBackpressureDetectedAsync("ProcessingStage", 50, 100, true);
+await publisher.PublishPipelineErrorAsync("IngestionOperation", new Exception("Something went wrong"));
+
+// Batch processing
+await publisher.PublishDataIngestedBatchAsync(new[] { dataPoint });
+```
+
 ## ApiEndpointHandlerExtensions
 The `ApiEndpointHandlerExtensions` class provides helper methods to streamline the creation of structured API responses, including standard successful and error results. It also simplifies the construction of paginated responses and allows for the seamless inclusion of batch processing statistics in the API output.
 
