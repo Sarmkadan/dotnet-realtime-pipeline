@@ -1,6 +1,6 @@
 #nullable enable
 // =============================================================================
-// Author: 
+// Author:
 // =============================================================================
 
 using DotNetRealtimePipeline.Metrics;
@@ -23,7 +23,7 @@ public static class BackpressureMetricsCollectorTestsExtensions
     public static BackpressureMetricsCollector NewCollector(this BackpressureMetricsCollectorTests tests, int maxEventHistory)
     {
         ArgumentNullException.ThrowIfNull(tests);
-        return new BackpressureMetricsCollector(NewService(), maxEventHistory);
+        return new BackpressureMetricsCollector(NewService(tests), maxEventHistory);
     }
 
     /// <summary>
@@ -47,11 +47,12 @@ public static class BackpressureMetricsCollectorTestsExtensions
     /// <param name="bufferFillPercent">The buffer fill percent.</param>
     /// <param name="droppedItems">The number of dropped items.</param>
     /// <param name="isActivation">Whether it's an activation event.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/> or <paramref name="collector"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tests"/>, <paramref name="collector"/>, or <paramref name="stageName"/> is null.</exception>
     public static void RecordManualEvent(this BackpressureMetricsCollectorTests tests, BackpressureMetricsCollector collector, string stageName, double bufferFillPercent, long droppedItems, bool isActivation)
     {
         ArgumentNullException.ThrowIfNull(tests);
         ArgumentNullException.ThrowIfNull(collector);
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         collector.RecordManualEvent(stageName, bufferFillPercent, droppedItems, isActivation);
     }
