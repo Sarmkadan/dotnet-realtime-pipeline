@@ -7,6 +7,11 @@ namespace DotNetRealtimePipeline.Services;
 /// <summary>
 /// Provides JSON serialization extensions for <see cref="PipelineOrchestrator"/>.
 /// </summary>
+/// <remarks>
+/// This static class provides extension methods for serializing and deserializing
+/// <see cref="PipelineOrchestrator"/> instances to and from JSON format using
+/// camelCase property naming and null value handling.
+/// </remarks>
 public static class PipelineOrchestratorJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
@@ -23,7 +28,7 @@ public static class PipelineOrchestratorJsonExtensions
     /// <param name="value">The orchestrator instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representing the orchestrator state.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this PipelineOrchestrator value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -43,8 +48,8 @@ public static class PipelineOrchestratorJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized <see cref="PipelineOrchestrator"/> instance.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null or empty.</exception>
-    /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
+    /// <exception cref="JsonException">The JSON is invalid or cannot be deserialized.</exception>
     public static PipelineOrchestrator? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -56,9 +61,9 @@ public static class PipelineOrchestratorJsonExtensions
     /// Attempts to deserialize a JSON string to a <see cref="PipelineOrchestrator"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized instance if successful.</param>
-    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null or empty.</exception>
+    /// <param name="value">Receives the deserialized instance if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/> or empty.</exception>
     public static bool TryFromJson(string json, out PipelineOrchestrator? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -66,7 +71,7 @@ public static class PipelineOrchestratorJsonExtensions
         try
         {
             value = JsonSerializer.Deserialize<PipelineOrchestrator>(json, _jsonSerializerOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
