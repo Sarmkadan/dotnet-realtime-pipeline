@@ -45,16 +45,16 @@ public static class DeadLetterQueueJsonExtensions
     /// Deserializes a JSON string to a <see cref="DeadLetterQueue"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized dead letter queue instance, or null if the JSON is empty.</returns>
+    /// <returns>The deserialized dead letter queue instance, or null if the JSON is null, empty, or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static DeadLetterQueue? FromJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<DeadLetterQueue>(json, _jsonOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<DeadLetterQueue>(json, _jsonOptions);
     }
 
     /// <summary>
@@ -63,8 +63,10 @@ public static class DeadLetterQueueJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized dead letter queue instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     public static bool TryFromJson(string json, out DeadLetterQueue? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
         value = null;
 
         if (string.IsNullOrWhiteSpace(json))
