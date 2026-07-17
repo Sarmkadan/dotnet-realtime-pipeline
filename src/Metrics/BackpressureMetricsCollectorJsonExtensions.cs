@@ -42,8 +42,14 @@ public static class BackpressureMetricsCollectorJsonExtensions
     /// <summary>
     /// Deserializes a JSON string to a <see cref="BackpressureMetricsCollector"/> instance.
     /// </summary>
+    /// <remarks>
+    /// This method cannot fully reconstruct a <see cref="BackpressureMetricsCollector"/> because it requires a <see cref="BackpressureService"/> instance.
+    /// It only deserializes the metrics snapshot. Use <see cref="BackpressureMetricsCollector.GetSnapshot"/> on an existing collector
+    /// to obtain a serializable snapshot, then serialize that snapshot instead.
+    /// </remarks>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A deserialized <see cref="BackpressureMetricsCollector"/> instance.</returns>
+    /// <returns>A deserialized <see cref="BackpressureMetricsCollector"/> instance with a null service.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <c>null</c> or empty.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static BackpressureMetricsCollector? FromJson(string json)
     {
@@ -53,16 +59,21 @@ public static class BackpressureMetricsCollectorJsonExtensions
         if (snapshot is null)
             return null;
 
-        var collector = new BackpressureMetricsCollector(default!, snapshot.StageMetrics.Count);
-        return collector;
+        return new BackpressureMetricsCollector(default!, snapshot.StageMetrics.Count);
     }
 
     /// <summary>
     /// Attempts to deserialize a JSON string to a <see cref="BackpressureMetricsCollector"/> instance.
     /// </summary>
+    /// <remarks>
+    /// This method cannot fully reconstruct a <see cref="BackpressureMetricsCollector"/> because it requires a <see cref="BackpressureService"/> instance.
+    /// It only deserializes the metrics snapshot. Use <see cref="BackpressureMetricsCollector.GetSnapshot"/> on an existing collector
+    /// to obtain a serializable snapshot, then serialize that snapshot instead.
+    /// </remarks>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized instance if successful.</param>
     /// <returns><c>true</c> if deserialization succeeded; otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is <c>null</c> or empty.</exception>
     public static bool TryFromJson(string json, out BackpressureMetricsCollector? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
@@ -83,12 +94,6 @@ public static class BackpressureMetricsCollectorJsonExtensions
         }
     }
 
-    private static JsonSerializerOptions GetIndentedOptions()
-    {
-        var options = new JsonSerializerOptions(_jsonOptions)
-        {
-            WriteIndented = true
-        };
-        return options;
-    }
+    private static JsonSerializerOptions GetIndentedOptions() =>
+        new JsonSerializerOptions(_jsonOptions) { WriteIndented = true };
 }
