@@ -1200,6 +1200,79 @@ visualizer.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning();
 visualizer.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy();
 ```
 
+## PipelineStateManagerTests
+
+The `PipelineStateManagerTests` class provides unit tests for the `PipelineStateManager` class, verifying its state management capabilities, transition validation, and operational state reporting. It includes tests for constructor validation, state transitions between all valid states, state history tracking, duration calculations, and listener notification functionality.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.State;
+using Xunit;
+
+var tests = new PipelineStateManagerTests();
+
+// Test constructor validation with null logger
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullLogger_ShouldThrow());
+
+// Test initial state
+var initialState = tests.CurrentState_ShouldDefaultToStopped();
+Assert.Equal(PipelineStateManager.PipelineState.Stopped, initialState);
+
+// Test operational state
+bool isOperational = tests.IsOperational_WhenStopped_ShouldBeFalse();
+Assert.False(isOperational);
+
+// Test valid state transitions
+bool transitionToRunning = tests.TransitionTo_FromStoppedToRunning_ShouldSucceed();
+Assert.True(transitionToRunning);
+
+// Test state transition from Running to Paused
+var testsInstance = new PipelineStateManagerTests();
+testsInstance.TransitionTo_FromRunningToPaused_ShouldSucceed();
+
+// Test state transition from Paused to Running
+var testsInstance2 = new PipelineStateManagerTests();
+testsInstance2.TransitionTo_FromPausedToRunning_ShouldSucceed();
+
+// Test state transition from Running to Stopped
+tests.TransitionTo_FromRunningToStopped_ShouldSucceed();
+
+// Test state transition from Paused to Stopped
+tests.TransitionTo_FromPausedToStopped_ShouldSucceed();
+
+// Test state transition from Failed to Stopped
+tests.TransitionTo_FromFailedToStopped_ShouldSucceed();
+
+// Test invalid state transitions (should fail)
+bool invalidTransition = tests.TransitionTo_FromStoppedToStopped_ShouldFail();
+Assert.False(invalidTransition);
+
+bool sameStateTransition = tests.TransitionTo_FromRunningToRunning_ShouldFail();
+Assert.False(sameStateTransition);
+
+// Test state history tracking
+tests.GetStateHistory_ShouldReturnEmptyListInitially();
+tests.GetStateHistory_ShouldReturnAllTransitions();
+tests.GetStateHistory_ShouldReturnCopyNotReference();
+
+// Test duration calculations
+tests.GetCurrentStateDuration_WithNoTransitions_ShouldReturnZero();
+tests.GetCurrentStateDuration_ShouldReturnTimeSinceLastTransition();
+
+// Test listener registration
+tests.RegisterStateChangeListener_ShouldReceiveCallbacks();
+tests.RegisterStateChangeListener_ShouldHandleExceptionsGracefully();
+tests.RegisterStateChangeListener_MultipleListeners_ShouldAllBeCalled();
+
+// Test operational state across different states
+tests.IsOperational_WhenRunning_ShouldBeTrue();
+tests.IsOperational_WhenPaused_ShouldBeFalse();
+tests.IsOperational_WhenFailed_ShouldBeFalse();
+tests.IsOperational_WhenInitializing_ShouldBeFalse();
+```
+
 ## PipelineVisualizerTestsExtensions
 
 The `PipelineVisualizerTestsExtensions` class provides extension methods for `PipelineVisualizerTests` to simplify common test scenarios and operations for pipeline visualization testing. It includes factory methods for creating pipeline configurations and visualization nodes, along with assertion methods for validating pipeline visualization output.
