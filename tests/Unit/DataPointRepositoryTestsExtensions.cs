@@ -60,8 +60,12 @@ public static class DataPointRepositoryTestsExtensions
     /// <param name="tests">The test instance providing access to <see cref="DataPointRepositoryTests"/>.</param>
     /// <param name="id">The ID of the data point to check.</param>
     /// <param name="expectedValue">The expected value of the data point.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="id"/> is negative.</exception>
     public static async Task AssertValueAsync(this DataPointRepositoryTests tests, long id, decimal expectedValue)
     {
+        if (id < 0)
+            throw new ArgumentOutOfRangeException(nameof(id), "ID must be non-negative.");
+
         var dataPoint = await tests._repository.GetByIdAsync(id);
         Assert.NotNull(dataPoint);
         Assert.Equal(expectedValue, dataPoint.Value, CultureInfo.InvariantCulture);
