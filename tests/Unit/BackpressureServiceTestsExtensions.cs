@@ -16,7 +16,7 @@ namespace DotNetRealtimePipeline.Tests.Unit;
 /// Extension methods for <see cref="BackpressureServiceTests"/> to provide additional test utilities
 /// and assertions for backpressure service testing scenarios.
 /// </summary>
-public static class BackpressureServiceTestsExtensions
+public sealed class BackpressureServiceTestsExtensions
 {
     /// <summary>
     /// Creates a test context with the specified stage name and capacity, and returns the service
@@ -26,7 +26,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="stageName">Name of the processing stage.</param>
     /// <param name="maxCapacity">Maximum buffer capacity for the stage.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> or <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxCapacity"/> is not positive.</exception>
     public static BackpressureServiceTests CreateContextWithCapacity(
         this BackpressureServiceTests tests,
@@ -55,7 +56,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="stageName">Name of the processing stage.</param>
     /// <param name="itemCount">Number of items to add to the buffer.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="itemCount"/> is not positive.</exception>
     public static BackpressureServiceTests AddToBuffer(
         this BackpressureServiceTests tests,
@@ -85,7 +87,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="stageName">Name of the processing stage.</param>
     /// <param name="expectedCapacity">Expected maximum capacity of the buffer.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="expectedCapacity"/> is not positive.</exception>
     public static BackpressureServiceTests AssertBufferAtCapacity(
         this BackpressureServiceTests tests,
@@ -122,7 +125,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="stageName">Name of the processing stage.</param>
     /// <param name="expectedCount">Expected number of items in the buffer.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="expectedCount"/> is negative.</exception>
     public static BackpressureServiceTests AssertBufferCount(
         this BackpressureServiceTests tests,
@@ -155,7 +159,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="itemsToRemove">Number of items to remove from the buffer.</param>
     /// <param name="expectedRemaining">Expected remaining items after removal.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="itemsToRemove"/> is not positive or <paramref name="expectedRemaining"/> is negative.</exception>
     public static BackpressureServiceTests RemoveAndAssert(
         this BackpressureServiceTests tests,
@@ -199,7 +204,8 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="strategy">Backpressure strategy to apply.</param>
     /// <param name="timeoutMs">Timeout in milliseconds for the backpressure operation.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stageName"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeoutMs"/> is not positive.</exception>
     public static async Task<BackpressureServiceTests> AssertBackpressureAppliedAsync(
         this BackpressureServiceTests tests,
@@ -218,13 +224,21 @@ public static class BackpressureServiceTestsExtensions
                 "Timeout must be positive.");
         }
 
-        if (strategy == BackpressureStrategy.Block)
+        switch (strategy)
         {
-            await tests.ApplyBackpressureAsync_WithBlockStrategy_ShouldWait(stageName, strategy, timeoutMs);
-        }
-        else
-        {
-            await tests.ApplyBackpressureAsync_WithThrottleStrategy_ShouldSucceed(stageName, strategy, timeoutMs);
+            case BackpressureStrategy.Block:
+                await tests.ApplyBackpressureAsync_WithBlockStrategy_ShouldWait(stageName, strategy, timeoutMs);
+                break;
+
+            case BackpressureStrategy.Throttle:
+                await tests.ApplyBackpressureAsync_WithThrottleStrategy_ShouldSucceed(stageName, strategy, timeoutMs);
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(strategy),
+                    strategy,
+                    "Unsupported backpressure strategy.");
         }
 
         return tests;
@@ -250,7 +264,7 @@ public static class BackpressureServiceTestsExtensions
     /// <param name="tests">The test instance.</param>
     /// <param name="contexts">Collection of (stageName, capacity) tuples.</param>
     /// <returns>The <see cref="BackpressureServiceTests"/> instance for chaining.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="contexts"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="tests"/> or <paramref name="contexts"/> is null.</exception>
     public static BackpressureServiceTests CreateMultipleContexts(
         this BackpressureServiceTests tests,
         params (string StageName, int Capacity)[] contexts)
