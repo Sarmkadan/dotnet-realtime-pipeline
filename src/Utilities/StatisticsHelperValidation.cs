@@ -32,30 +32,22 @@ public static class StatisticsHelperValidation
         // Validate Mean
         if (double.IsNaN(value.Mean) || double.IsInfinity(value.Mean))
             problems.Add("Mean is NaN or infinity.");
-        else if (value.Mean == 0 && !double.IsNaN(value.Mean))
-            problems.Add("Mean is zero, which may indicate empty or invalid data.");
 
         // Validate Median
         if (double.IsNaN(value.Median) || double.IsInfinity(value.Median))
             problems.Add("Median is NaN or infinity.");
-        else if (value.Median == 0 && !double.IsNaN(value.Median))
-            problems.Add("Median is zero, which may indicate empty or invalid data.");
 
         // Validate StandardDeviation
         if (double.IsNaN(value.StandardDeviation) || double.IsInfinity(value.StandardDeviation))
             problems.Add("StandardDeviation is NaN or infinity.");
         else if (value.StandardDeviation < 0)
             problems.Add("StandardDeviation cannot be negative.");
-        else if (value.StandardDeviation == 0 && !double.IsNaN(value.StandardDeviation))
-            problems.Add("StandardDeviation is zero, which may indicate no variation in data.");
 
         // Validate CoefficientOfVariation
         if (double.IsNaN(value.CoefficientOfVariation) || double.IsInfinity(value.CoefficientOfVariation))
             problems.Add("CoefficientOfVariation is NaN or infinity.");
         else if (value.CoefficientOfVariation < 0)
             problems.Add("CoefficientOfVariation cannot be negative.");
-        else if (value.CoefficientOfVariation == 0 && !double.IsNaN(value.CoefficientOfVariation))
-            problems.Add("CoefficientOfVariation is zero, which may indicate no variation in data.");
 
         // Validate Outliers
         if (value.Outliers is null)
@@ -78,10 +70,7 @@ public static class StatisticsHelperValidation
     /// <param name="value">The statistics helper to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this StatisticsHelper value)
-    {
-        return value.Validate().Count == 0;
-    }
+    public static bool IsValid(this StatisticsHelper value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="StatisticsHelper"/> instance is valid, throwing an exception if it is not.
@@ -97,7 +86,7 @@ public static class StatisticsHelperValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"StatisticsHelper instance is not valid. Problems: {string.Join(" ", problems)}",
+                $"StatisticsHelper instance is not valid. Problems: {string.Join(", ", problems)}",
                 nameof(value));
         }
     }
