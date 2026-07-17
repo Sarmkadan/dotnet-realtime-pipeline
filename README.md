@@ -1542,6 +1542,126 @@ var lastNMetrics = await repository.GetLastNMetricsAsync(10);
 Console.WriteLine($"Last {lastNMetrics.Count} metrics: {string.Join(", ", lastNMetrics.Select(m => m.MetricId))}");
 ```
 
+## CompressionHelperValidation
+
+The `CompressionHelperValidation` static class provides validation helpers for compression operations within the pipeline. It includes methods for validating compression/decompression operations across different algorithms (GZip, Deflate), file operations, and compression ratio calculations. This ensures data integrity when working with compressed data streams and files.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+
+// Create sample data for compression
+var originalData = Encoding.UTF8.GetBytes(
+    "This is a sample text that will be compressed and decompressed to demonstrate the CompressionHelperValidation usage. " +
+    "The validation ensures that compression operations maintain data integrity throughout the pipeline processing."
+);
+
+// Validate compression/decompression operations
+var gzipValidationErrors = CompressionHelperValidation.ValidateForCompressGzip(originalData);
+if (gzipValidationErrors.Count > 0)
+{
+    Console.WriteLine("GZip compression validation failed:");
+    foreach (var error in gzipValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if compression is valid
+bool isGzipValid = CompressionHelperValidation.IsValidForCompression(originalData);
+Console.WriteLine($"GZip compression is valid: {isGzipValid}");
+
+// Ensure compression validity (throws if invalid)
+CompressionHelperValidation.EnsureValidForCompression(originalData);
+
+// Compress and decompress data
+byte[] compressedData = CompressionHelper.CompressGzip(originalData);
+byte[] decompressedData = CompressionHelper.DecompressGzip(compressedData);
+
+// Validate decompression
+var decompressionErrors = CompressionHelperValidation.ValidateForDecompressGzip(compressedData);
+if (decompressionErrors.Count > 0)
+{
+    Console.WriteLine("Decompression validation failed:");
+    foreach (var error in decompressionErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check decompression validity
+bool isDecompressionValid = CompressionHelperValidation.IsValidForDecompression(compressedData);
+Console.WriteLine($"Decompression is valid: {isDecompressionValid}");
+
+// Ensure decompression validity
+CompressionHelperValidation.EnsureValidForDecompression(compressedData);
+
+// Validate file operations
+var filePath = "test_compression.dat";
+await File.WriteAllBytesAsync(filePath, originalData);
+
+var fileValidationErrors = CompressionHelperValidation.ValidateForCompressFileAsync(filePath);
+if (fileValidationErrors.Count > 0)
+{
+    Console.WriteLine("File compression validation failed:");
+    foreach (var error in fileValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Calculate and validate compression ratio
+var ratioValidationErrors = CompressionHelperValidation.ValidateForCalculateCompressionRatio(originalData, compressedData);
+if (ratioValidationErrors.Count > 0)
+{
+    Console.WriteLine("Compression ratio validation failed:");
+    foreach (var error in ratioValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate Deflate compression
+var deflateValidationErrors = CompressionHelperValidation.ValidateForCompressDeflate(originalData);
+if (deflateValidationErrors.Count > 0)
+{
+    Console.WriteLine("Deflate compression validation failed:");
+    foreach (var error in deflateValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Validate comprehensive compression analysis
+var analysisValidationErrors = CompressionHelperValidation.ValidateForAnalyzeCompression(originalData);
+if (analysisValidationErrors.Count > 0)
+{
+    Console.WriteLine("Compression analysis validation failed:");
+    foreach (var error in analysisValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Compare different compression algorithms
+var comparisonValidationErrors = CompressionHelperValidation.ValidateForCompareAlgorithms(originalData);
+if (comparisonValidationErrors.Count > 0)
+{
+    Console.WriteLine("Algorithm comparison validation failed:");
+    foreach (var error in comparisonValidationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+Console.WriteLine("All compression validations completed successfully!");
+```
+
 ## CacheServiceExtensions
 
 The `CacheServiceExtensions` class provides extension methods for `CacheService<TKey, TValue>` that enhance cache operations with batch operations, time-based caching, and convenient utility methods. It includes methods for getting/setting multiple values in a single operation, conditional value retrieval with factory methods, and cache statistics reporting.
