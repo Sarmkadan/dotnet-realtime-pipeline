@@ -70,9 +70,9 @@ public static class ScalingDecisionValidation
         }
 
         // Validate DecidedAt (should not be default/MinValue)
-        if (value.DecidedAt == default)
+        if (value.DecidedAt == DateTime.MinValue)
         {
-            errors.Add("DecidedAt cannot be the default DateTime value.");
+            errors.Add("DecidedAt cannot be DateTime.MinValue (uninitialized).");
         }
 
         return errors.AsReadOnly();
@@ -101,7 +101,7 @@ public static class ScalingDecisionValidation
         if (errors.Count > 0)
         {
             throw new ArgumentException(
-                $"ScalingDecision is invalid. Errors: {string.Join(" ", errors)}");
+                $"ScalingDecision is invalid:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
         }
     }
 }
