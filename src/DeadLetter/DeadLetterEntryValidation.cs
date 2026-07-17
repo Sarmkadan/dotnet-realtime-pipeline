@@ -8,7 +8,6 @@ namespace DotNetRealtimePipeline.DeadLetter;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 /// <summary>
 /// Provides validation helpers for <see cref="DeadLetterEntry"/> instances.
@@ -30,7 +29,7 @@ public static class DeadLetterEntryValidation
         // Validate EntryId
         if (value.EntryId == Guid.Empty)
         {
-            problems.Add($"EntryId must be a non-empty GUID, but was {value.EntryId}.");
+            problems.Add("EntryId must be a non-empty GUID.");
         }
 
         // Validate DataPoint
@@ -65,8 +64,7 @@ public static class DeadLetterEntryValidation
         {
             problems.Add($"MaxRetries cannot be negative, but was {value.MaxRetries}.");
         }
-
-        if (value.MaxRetries == 0)
+        else if (value.MaxRetries == 0)
         {
             problems.Add("MaxRetries must be greater than zero.");
         }
@@ -143,28 +141,15 @@ public static class DeadLetterEntryValidation
             }
         }
 
-        // Validate Status consistency with timestamps
+        // Validate Status consistency with timestamps using pattern matching
         switch (value.Status)
         {
-            case DeadLetterStatus.Resolved:
-                if (!value.ResolvedAt.HasValue)
-                {
-                    problems.Add("Status is Resolved but ResolvedAt is not set.");
-                }
+            case DeadLetterStatus.Resolved or DeadLetterStatus.PermanentFailure when !value.ResolvedAt.HasValue:
+                problems.Add($"Status is {value.Status} but ResolvedAt is not set.");
                 break;
 
-            case DeadLetterStatus.PermanentFailure:
-                if (!value.ResolvedAt.HasValue)
-                {
-                    problems.Add("Status is PermanentFailure but ResolvedAt is not set.");
-                }
-                break;
-
-            case DeadLetterStatus.InRetry:
-                if (!value.LastRetryAt.HasValue)
-                {
-                    problems.Add("Status is InRetry but LastRetryAt is not set.");
-                }
+            case DeadLetterStatus.InRetry when !value.LastRetryAt.HasValue:
+                problems.Add("Status is InRetry but LastRetryAt is not set.");
                 break;
 
             case DeadLetterStatus.Pending:
