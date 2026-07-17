@@ -8,12 +8,17 @@ using System.Text.Json;
 /// <summary>
 /// Provides JSON serialization and deserialization extensions for <see cref="CommandExecutor"/>.
 /// </summary>
+/// <remarks>
+/// This class is sealed to prevent unnecessary inheritance and improve performance.
+/// </remarks>
 public static class CommandExecutorJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
+        WriteIndented = false,
+        // Use case-insensitive property name matching for robustness
+        PropertyNameCaseInsensitive = true
     };
 
     /// <summary>
