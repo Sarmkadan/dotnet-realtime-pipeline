@@ -1515,6 +1515,93 @@ Console.WriteLine($"Snapshot is valid: {snapshotIsValid}");
 snapshot.EnsureValid();
 ```
 
+## DynamicScalingServiceTests
+
+The `DynamicScalingServiceTests` class provides unit tests for the `DynamicScalingService` class, verifying its dynamic scaling functionality that adjusts the number of consumers based on backpressure metrics to optimize pipeline performance. It includes tests for constructor validation, scaling decision logic, state management, and cooldown behavior.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+var tests = new DynamicScalingServiceTests();
+
+// Example 1: Test constructor validation with null backpressure service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullBackpressureService_ShouldThrow());
+
+// Example 2: Test constructor validation with null configuration
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullConfig_ShouldThrow());
+
+// Example 3: Test constructor validation with null logger
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullLogger_ShouldThrow());
+
+// Example 4: Test that scaling evaluates all enabled stages
+await tests.EvaluateScalingAsync_ShouldProcessAllEnabledStages();
+
+// Example 5: Test that disabled stages are skipped during evaluation
+await tests.EvaluateScalingAsync_ShouldSkipDisabledStages();
+
+// Example 6: Test that exceptions are handled gracefully during scaling
+await tests.EvaluateScalingAsync_ShouldHandleExceptionsGracefully();
+
+// Example 7: Test getting scaling state for existing stage
+var existingState = tests.GetScalingState_WithExistingStage_ShouldReturnState();
+Assert.NotNull(existingState);
+Assert.Equal("Stage1", existingState.StageName);
+
+// Example 8: Test getting scaling state for non-existing stage returns null
+var nullState = tests.GetScalingState_WithNonExistingStage_ShouldReturnNull();
+Assert.Null(nullState);
+
+// Example 9: Test getting all scaling states
+var allStates = tests.GetAllScalingStates_ShouldReturnAllStates();
+Assert.NotEmpty(allStates);
+Assert.True(allStates.ContainsKey("Stage1"));
+Assert.True(allStates.ContainsKey("Stage2"));
+
+// Example 10: Test that all scaling states are read-only
+var readOnlyStates = tests.GetAllScalingStates_ShouldReturnReadOnlyDictionary();
+Assert.IsAssignableFrom<IReadOnlyDictionary<string, StageScalingState>>(readOnlyStates);
+
+// Example 11: Test stage evaluation with low buffer (should not scale down)
+tests.EvaluateStage_WithLowBuffer_ShouldNotScaleDown();
+
+// Example 12: Test stage evaluation with high buffer (should scale up)
+tests.EvaluateStage_WithHighBuffer_ShouldScaleUp();
+
+// Example 13: Test stage evaluation with low buffer and low frequency (should scale down)
+tests.EvaluateStage_WithLowBufferAndLowFrequency_ShouldScaleDown();
+
+// Example 14: Test stage evaluation with cooldown (should not scale)
+tests.EvaluateStage_WithCooldown_ShouldNotScale();
+
+// Example 15: Test scaling decision computation with high buffer and not at max
+var scaleUpDecision = tests.ComputeDecision_WithHighBufferAndNotAtMax_ShouldReturnScaleUp();
+Assert.Equal(ScalingDirection.Up, scaleUpDecision.Direction);
+Assert.True(scaleUpDecision.ToConsumers > scaleUpDecision.FromConsumers);
+
+// Example 16: Test scaling decision computation with low buffer and low frequency and not at min
+var scaleDownDecision = tests.ComputeDecision_WithLowBufferAndLowFrequencyAndNotAtMin_ShouldReturnScaleDown();
+Assert.Equal(ScalingDirection.Down, scaleDownDecision.Direction);
+Assert.True(scaleDownDecision.ToConsumers < scaleDownDecision.FromConsumers);
+
+// Example 17: Test scaling decision computation with buffer between thresholds
+var noScaleDecision = tests.ComputeDecision_WithBufferBetweenThresholds_ShouldReturnNoScaling();
+Assert.Equal(ScalingDirection.None, noScaleDecision.Direction);
+
+// Example 18: Test scaling decision at maximum consumers (should not scale up)
+var noScaleAtMax = tests.ComputeDecision_AtMaxConsumers_ShouldNotScaleUp();
+Assert.Equal(ScalingDirection.None, noScaleAtMax.Direction);
+
+// Example 19: Test scaling decision at minimum consumers (should not scale down)
+var noScaleAtMin = tests.ComputeDecision_AtMinConsumers_ShouldNotScaleDown();
+Assert.Equal(ScalingDirection.None, noScaleAtMin.Direction);
+```
+
 ## BackpressureEventExtensions
 The `BackpressureEventExtensions` class provides extension methods for `BackpressureEvent` that simplify backpressure event analysis and formatting. It includes methods for checking critical buffer states, determining severity levels, formatting events as readable strings, and identifying activation/release events.
 
