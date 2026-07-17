@@ -11,15 +11,17 @@ using System.Linq;
 namespace DotNetRealtimePipeline.Tests.Unit;
 
 /// <summary>
-/// Provides validation helpers for <see cref="WindowingServiceTests"/> instances.
+/// Provides validation helpers for ensuring <see cref="WindowingServiceTests"/> instances meet expected test coverage requirements.
 /// </summary>
 public static class WindowingServiceTestsValidation
 {
     /// <summary>
-    /// Validates the specified <see cref="WindowingServiceTests"/> instance.
+    /// Validates that the specified <see cref="WindowingServiceTests"/> instance contains all required test methods.
+    /// Checks for the presence of essential windowing service test methods that verify core functionality:
+    /// window creation, data point assignment, statistics calculation, and window lifecycle management.
     /// </summary>
     /// <param name="value">The instance to validate.</param>
-    /// <returns>A list of validation problems; empty if valid.</returns>
+    /// <returns>A list of validation problems describing missing test methods; empty if all required tests are present.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this WindowingServiceTests value)
     {
@@ -75,9 +77,7 @@ public static class WindowingServiceTestsValidation
     /// <param name="value">The instance to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
     public static bool IsValid(this WindowingServiceTests value)
-    {
-        return value.Validate().Count == 0;
-    }
+        => value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="WindowingServiceTests"/> instance is valid.
