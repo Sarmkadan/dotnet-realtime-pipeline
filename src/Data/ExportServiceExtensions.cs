@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -24,6 +23,14 @@ using System.Threading.Tasks;
 /// </summary>
 public static class ExportServiceExtensions
 {
+    private static readonly TimeSpan[] RetryDelays =
+    [
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(2),
+        TimeSpan.FromSeconds(4),
+        TimeSpan.FromSeconds(8)
+    ];
+
     /// <summary>
     /// Validates that the export service can write to the specified output directory.
     /// Creates the directory if it doesn't exist.
@@ -41,6 +48,7 @@ public static class ExportServiceExtensions
         try
         {
             var directory = Path.GetDirectoryName(outputPath);
+
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
@@ -103,7 +111,7 @@ public static class ExportServiceExtensions
                 retryCount++;
 
                 // Wait with exponential backoff
-                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retryCount)));
+                await Task.Delay(RetryDelays[retryCount]);
             }
         }
 
@@ -172,7 +180,7 @@ public static class ExportServiceExtensions
     /// <exception cref="ArgumentNullException">
     /// <paramref name="exportService"/> or <paramref name="dataPoints"/> is null.
     /// </exception>
-    public static string EstimateFileSize(
+    public static async Task<string> EstimateFileSizeAsync(
         this ExportService exportService,
         List<DataPoint> dataPoints,
         OutputFormat format)
@@ -181,7 +189,7 @@ public static class ExportServiceExtensions
         ArgumentNullException.ThrowIfNull(dataPoints);
 
         var formatter = OutputFormatterFactory.Create(format);
-        var sampleContent = formatter.FormatAsync(dataPoints).Result;
+        var sampleContent = await formatter.FormatAsync(dataPoints);
         var sizeBytes = sampleContent.Length;
 
         return PathHelper.FormatFileSize(sizeBytes);
