@@ -29,7 +29,7 @@ public static class BatchProcessorExtensions
     /// <param name="batchProcessor">The function to process each batch.</param>
     /// <param name="progressCallback">Optional progress callback.</param>
     /// <returns>A read-only list of processing results.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when processor, items, or batchProcessor is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/>, <paramref name="items"/>, or <paramref name="batchProcessor"/> is null.</exception>
     public static async Task<IReadOnlyList<TOutput>> ProcessAsync<TInput, TOutput>(
         this BatchProcessor<TInput, TOutput> processor,
         IEnumerable<TInput> items,
@@ -54,7 +54,7 @@ public static class BatchProcessorExtensions
     /// <param name="items">The items to batch.</param>
     /// <param name="batchSelector">Function to transform each batch.</param>
     /// <returns>An enumerable of transformed batch results.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when processor, items, or batchSelector is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/>, <paramref name="items"/>, or <paramref name="batchSelector"/> is null.</exception>
     public static IEnumerable<TResult> BatchSelect<TInput, TOutput, TResult>(
         this BatchProcessor<TInput, TOutput> processor,
         IEnumerable<TInput> items,
@@ -80,7 +80,7 @@ public static class BatchProcessorExtensions
     /// <param name="resultSelector">Function to aggregate results.</param>
     /// <param name="progressCallback">Optional progress callback.</param>
     /// <returns>The aggregated result.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
+/// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/>, <paramref name="items"/>, <paramref name="batchProcessor"/>, <paramref name="seed"/>, or <paramref name="resultSelector"/> is null.</exception>
     public static async Task<TAggregate> ProcessAsync<TInput, TOutput, TAggregate>(
         this BatchProcessor<TInput, TOutput> processor,
         IEnumerable<TInput> items,
@@ -133,8 +133,7 @@ public static class BatchProcessorExtensions
         }
 
         var batchCount = processor.GetBatchCount(itemCount);
-        var parallelism = processor.GetType().GetProperty("_maxDegreeOfParallelism",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(processor) as int? ?? 4;
+        var parallelism = processor.GetType().GetProperty("_maxDegreeOfParallelism", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(processor) as int? ?? 4;
 
         var totalBatches = (batchCount + parallelism - 1) / parallelism;
         var totalTimeMs = totalBatches * estimatedBatchProcessingTimeMs;
@@ -150,7 +149,7 @@ public static class BatchProcessorExtensions
     /// <param name="processingFunction">Function to process each batch of data points.</param>
     /// <param name="progress">Optional progress reporter.</param>
     /// <returns>A read-only list of processing results.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when processor, dataPoints, or processingFunction is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/>, <paramref name="dataPoints"/>, or <paramref name="processingFunction"/> is null.</exception>
     public static async Task<IReadOnlyList<Domain.Models.ProcessingResult>> ProcessBatchAsync(
         this DataPointBatchProcessor processor,
         List<Domain.Models.DataPoint> dataPoints,
@@ -170,7 +169,7 @@ public static class BatchProcessorExtensions
     /// <param name="processor">The DataPoint batch processor instance.</param>
     /// <param name="dataPoints">The data points to batch.</param>
     /// <returns>An enumerable of DataPoint batches.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when processor or dataPoints is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/> or <paramref name="dataPoints"/> is null.</exception>
     public static IEnumerable<List<Domain.Models.DataPoint>> CreateBatches(
         this DataPointBatchProcessor processor,
         List<Domain.Models.DataPoint> dataPoints)
@@ -189,7 +188,7 @@ public static class BatchProcessorExtensions
     /// <param name="processor">The batch processor instance.</param>
     /// <param name="items">The items to analyze.</param>
     /// <returns>A BatchStatistics object containing batch information.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when processor or items is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="processor"/> or <paramref name="items"/> is null.</exception>
     public static BatchStatistics GetBatchStatistics<T, TOutput>(
         this BatchProcessor<T, TOutput> processor,
         IEnumerable<T> items)
@@ -199,8 +198,7 @@ public static class BatchProcessorExtensions
 
         var itemCount = items.Count();
         var batchCount = processor.GetBatchCount(itemCount);
-        var batchSize = processor.GetType().GetProperty("_batchSize",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(processor) as int? ?? 1000;
+        var batchSize = processor.GetType().GetProperty("_batchSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.GetValue(processor) as int? ?? 1000;
 
         return new BatchStatistics
         {
