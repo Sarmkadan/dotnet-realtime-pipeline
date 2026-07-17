@@ -57,14 +57,14 @@ public static class ServiceCollectionExtensionsJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to a <see cref="ServiceCollectionExtensions"/> type reference.
+    /// Deserializes a JSON string to a <see cref="ServiceCollectionExtensionsConfigMarker"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>A <see cref="ServiceCollectionExtensions"/> type reference, or <see langword="null"/> if deserialization fails.</returns>
+    /// <returns>A <see cref="ServiceCollectionExtensionsConfigMarker"/> instance if deserialization succeeds; otherwise, <see langword="null"/>.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="json"/> is <see langword="null"/>.
     /// </exception>
-    public static object? FromJson(string json)
+    public static ServiceCollectionExtensionsConfigMarker? FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
 
@@ -72,56 +72,46 @@ public static class ServiceCollectionExtensionsJsonExtensions
         {
             var configMarker = JsonSerializer.Deserialize<ServiceCollectionExtensionsConfigMarker>(json, _jsonSerializerOptions);
 
-            if (configMarker is not null && configMarker.Type == nameof(ServiceCollectionExtensions))
-            {
-                return default;
-            }
-
-            return default;
+            return configMarker?.Type == nameof(ServiceCollectionExtensions)
+                ? configMarker
+                : null;
         }
         catch (JsonException)
         {
-            return default;
+            return null;
         }
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to a <see cref="ServiceCollectionExtensions"/> type reference.
+    /// Attempts to deserialize a JSON string to a <see cref="ServiceCollectionExtensionsConfigMarker"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Outputs the deserialized <see cref="ServiceCollectionExtensions"/> type reference, or <see langword="null"/> if deserialization fails.</param>
+    /// <param name="value">Outputs the deserialized <see cref="ServiceCollectionExtensionsConfigMarker"/> instance, or <see langword="null"/> if deserialization fails.</param>
     /// <returns><see langword="true"/> if deserialization succeeds; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="json"/> is <see langword="null"/>.
     /// </exception>
-    public static bool TryFromJson(string json, out object? value)
+    public static bool TryFromJson(string json, out ServiceCollectionExtensionsConfigMarker? value)
     {
         ArgumentNullException.ThrowIfNull(json);
 
         try
         {
-            var configMarker = JsonSerializer.Deserialize<ServiceCollectionExtensionsConfigMarker>(json, _jsonSerializerOptions);
+            value = JsonSerializer.Deserialize<ServiceCollectionExtensionsConfigMarker>(json, _jsonSerializerOptions);
 
-            if (configMarker is not null && configMarker.Type == nameof(ServiceCollectionExtensions))
-            {
-                value = default;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return value?.Type == nameof(ServiceCollectionExtensions);
         }
         catch (JsonException)
         {
-            value = default;
+            value = null;
             return false;
         }
     }
 
     /// <summary>
-    /// Internal marker class representing ServiceCollectionExtensions configuration.
+    /// Marker class representing ServiceCollectionExtensions configuration.
     /// </summary>
-    private sealed class ServiceCollectionExtensionsConfigMarker
+    public sealed class ServiceCollectionExtensionsConfigMarker
     {
         public string? Type { get; set; }
         public bool IsStaticClass { get; set; }
