@@ -1390,6 +1390,72 @@ var nullConfig = ServiceCollectionExtensionsJsonExtensions.FromJson(null);
 Console.WriteLine($"Null JSON result: {nullConfig}");
 ```
 
+## DateTimeExtensionsValidation
+
+The `DateTimeExtensionsValidation` static class provides validation helpers for `DateTimeExtensions` static class methods. It includes extension methods for validating DateTime values and Unix timestamp parameters used in time-based pipeline operations, ensuring they meet business rules and data integrity constraints before conversion or processing.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using System;
+
+// Validate a DateTime value for conversion to Unix milliseconds
+var dateTime = DateTime.UtcNow;
+var validationErrors = dateTime.Validate();
+if (validationErrors.Count > 0)
+{
+    Console.WriteLine("DateTime validation failed:");
+    foreach (var error in validationErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if DateTime is valid for Unix milliseconds conversion
+bool isValid = dateTime.IsValid();
+Console.WriteLine($"DateTime is valid: {isValid}");
+
+// Ensure validity (throws ArgumentException if invalid)
+dateTime.EnsureValid();
+
+// Validate Unix timestamp in milliseconds for time window operations
+long timestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+long windowSizeMs = 300000; // 5-minute window
+
+var timestampErrors = timestampMs.Validate(windowSizeMs);
+if (timestampErrors.Count > 0)
+{
+    Console.WriteLine("Timestamp validation failed:");
+    foreach (var error in timestampErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Check if timestamp and window size are valid
+bool timestampIsValid = timestampMs.IsValid(windowSizeMs);
+Console.WriteLine($"Timestamp is valid: {timestampIsValid}");
+
+// Ensure timestamp validity (throws ArgumentException if invalid)
+timestampMs.EnsureValid(windowSizeMs);
+
+// Validate with parameter name for window boundary rounding
+string paramName = nameof(timestampMs);
+var paramErrors = timestampMs.Validate(windowSizeMs, paramName);
+if (paramErrors.Count > 0)
+{
+    Console.WriteLine("Parameter validation failed:");
+    foreach (var error in paramErrors)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+
+// Ensure parameter validity (throws ArgumentException if invalid)
+timestampMs.EnsureValid(windowSizeMs, paramName);
+```
+
 ## InMemoryMetricsRepositoryExtensions
 
 The `InMemoryMetricsRepositoryExtensions` class provides extension methods for `InMemoryMetricsRepository` that enhance metric querying capabilities with additional convenience methods for working with metric data. It includes methods for retrieving metrics by type and time range, calculating processing time statistics, and filtering metrics by various criteria.
