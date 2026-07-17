@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace DotNetRealtimePipeline.Benchmarks;
 
 /// <summary>
 /// Provides validation helpers for <see cref="PipelineBenchmarks"/> instances.
-/// Validates all public members of PipelineBenchmarks to ensure they are properly configured.
+/// Validates that all benchmark methods can be invoked without throwing exceptions.
 /// </summary>
 public static class PipelineBenchmarksValidation
 {
     /// <summary>
-    /// Validates the specified <see cref="PipelineBenchmarks"/> instance.
+    /// Validates that all benchmark methods on the specified <see cref="PipelineBenchmarks"/> instance
+    /// can be invoked without throwing exceptions.
     /// </summary>
     /// <param name="value">The PipelineBenchmarks instance to validate.</param>
     /// <returns>A list of validation errors; empty if the instance is valid.</returns>
@@ -46,7 +46,7 @@ public static class PipelineBenchmarksValidation
         // Validate IngestSingleDataPoint method
         try
         {
-            value.IngestSingleDataPoint().GetAwaiter().GetResult();
+            _ = value.IngestSingleDataPoint().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -56,7 +56,7 @@ public static class PipelineBenchmarksValidation
         // Validate ProcessBatch method
         try
         {
-            value.ProcessBatch(100).GetAwaiter().GetResult();
+            _ = value.ProcessBatch(100).GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -76,7 +76,7 @@ public static class PipelineBenchmarksValidation
         // Validate GenerateHealthReport method
         try
         {
-            value.GenerateHealthReport().GetAwaiter().GetResult();
+            _ = value.GenerateHealthReport().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -96,7 +96,7 @@ public static class PipelineBenchmarksValidation
         // Validate EndToEndThroughput method
         try
         {
-            value.EndToEndThroughput().GetAwaiter().GetResult();
+            _ = value.EndToEndThroughput().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -106,7 +106,7 @@ public static class PipelineBenchmarksValidation
         // Validate MemoryAllocationBenchmark method
         try
         {
-            value.MemoryAllocationBenchmark().GetAwaiter().GetResult();
+            _ = value.MemoryAllocationBenchmark().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -122,12 +122,8 @@ public static class PipelineBenchmarksValidation
     /// <param name="value">The PipelineBenchmarks instance to check.</param>
     /// <returns><see langword="true"/> if the instance is valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this PipelineBenchmarks value)
-    {
-        ArgumentNullException.ThrowIfNull(value);
-
-        return !value.Validate().Any();
-    }
+    public static bool IsValid(this PipelineBenchmarks value) =>
+        ArgumentNullException.ThrowIfNull(value), !value.Validate().Any();
 
     /// <summary>
     /// Ensures that the specified <see cref="PipelineBenchmarks"/> instance is valid.
