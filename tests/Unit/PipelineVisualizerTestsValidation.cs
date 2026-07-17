@@ -20,42 +20,42 @@ namespace Unit.Tests
 
             // Validate public methods are non-null and non-empty where applicable
             // These are method names, so we just ensure they're not null/empty strings
-            if (string.IsNullOrEmpty(value.BuildNodes_WithValidConfig_ReturnsOneNodePerStage))
+            if (string.IsNullOrWhiteSpace(value.BuildNodes_WithValidConfig_ReturnsOneNodePerStage))
             {
                 errors.Add("BuildNodes_WithValidConfig_ReturnsOneNodePerStage cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.BuildNodes_EdgesAreLinkedSequentially))
+            if (string.IsNullOrWhiteSpace(value.BuildNodes_EdgesAreLinkedSequentially))
             {
                 errors.Add("BuildNodes_EdgesAreLinkedSequentially cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.Render_ContainsPipelineName))
+            if (string.IsNullOrWhiteSpace(value.Render_ContainsPipelineName))
             {
                 errors.Add("Render_ContainsPipelineName cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.Render_ContainsAllStageNames))
+            if (string.IsNullOrWhiteSpace(value.Render_ContainsAllStageNames))
             {
                 errors.Add("Render_ContainsAllStageNames cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.RenderCompact_ContainsSeparators))
+            if (string.IsNullOrWhiteSpace(value.RenderCompact_ContainsSeparators))
             {
                 errors.Add("RenderCompact_ContainsSeparators cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical))
+            if (string.IsNullOrWhiteSpace(value.PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical))
             {
                 errors.Add("PipelineVisualizationNode_ComputeHealthLabel_BackpressuredIsCritical cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning))
+            if (string.IsNullOrWhiteSpace(value.PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning))
             {
                 errors.Add("PipelineVisualizationNode_ComputeHealthLabel_HighBufferIsWarning cannot be null or empty.");
             }
 
-            if (string.IsNullOrEmpty(value.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy))
+            if (string.IsNullOrWhiteSpace(value.PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy))
             {
                 errors.Add("PipelineVisualizationNode_ComputeHealthLabel_NormalIsHealthy cannot be null or empty.");
             }
@@ -67,7 +67,7 @@ namespace Unit.Tests
         /// Determines whether the specified <see cref="PipelineVisualizerTests"/> instance is valid.
         /// </summary>
         /// <param name="value">The instance to check.</param>
-        /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
+        /// <returns><c>true</c> if valid; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
         public static bool IsValid(this PipelineVisualizerTests value)
         {
