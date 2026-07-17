@@ -30,12 +30,7 @@ public static class WebhookHandlerJsonExtensions
     public static string ToJson(this WebhookHandler value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
-
-        var options = indented
-            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
-            : _jsonOptions;
-
-        return JsonSerializer.Serialize(value, options);
+        return JsonSerializer.Serialize(value, GetJsonSerializerOptions(indented));
     }
 
     /// <summary>
@@ -47,7 +42,6 @@ public static class WebhookHandlerJsonExtensions
     public static WebhookHandler? FromJson(string json)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);
-
         return JsonSerializer.Deserialize<WebhookHandler>(json, _jsonOptions);
     }
 
@@ -73,4 +67,14 @@ public static class WebhookHandlerJsonExtensions
             return false;
         }
     }
+
+    /// <summary>
+    /// Gets the appropriate JSON serializer options based on the indented flag.
+    /// </summary>
+    /// <param name="indented">Whether to format the JSON with indentation.</param>
+    /// <returns>Configured <see cref="JsonSerializerOptions"/>.</returns>
+    private static JsonSerializerOptions GetJsonSerializerOptions(bool indented)
+        => indented
+            ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
+            : _jsonOptions;
 }
