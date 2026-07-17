@@ -28,22 +28,28 @@ public static class DataProcessingServiceValidation
 
         var errors = new List<string>();
 
-        // DataProcessingService has no public properties to validate directly
-        // Instead, we validate the service's configuration through its public methods
-        // This ensures the service is properly initialized and can function correctly
-
-        // Validate PipelineConfig through GetStatisticsAsync
-        // The service constructor validates its dependencies, so if we can call a method,
-        // the service is properly initialized
+        // Validate the service's internal state by checking its configuration
+        // Since DataProcessingService is sealed with private readonly fields,
+        // we validate by attempting to access its configuration
         try
         {
-            // Attempt to call a method to validate the service is properly initialized
-            // This will throw if _repository or _config are null/invalid
-            _ = value.GetStatisticsAsync();
+            // Access the service's configuration to validate it's properly initialized
+            // The service constructor ensures _config is not null, but we validate its state
+            var config = value.GetType()
+                .GetField("_config", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(value) as PipelineConfig;
+
+            if (config is null)
+            {
+                errors.Add("Service configuration is null");
+            }
+            else if (!config.Validate())
+            {
+                errors.Add("Service configuration is invalid");
+            }
         }
-        catch (Exception ex) when (ex is not InvalidOperationException)
+        catch
         {
-            // If we can't call the method, the service dependencies are invalid
             errors.Add("Service dependencies (repository or configuration) are invalid or inaccessible");
         }
 
@@ -58,7 +64,7 @@ public static class DataProcessingServiceValidation
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this DataProcessingService value)
     {
-        return value.Validate().Count == 0;
+        return value is not null && value.Validate().Count == 0;
     }
 
     /// <summary>
