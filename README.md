@@ -186,6 +186,109 @@ metric.ShouldBeAtLeast(value: 125.0, minimum: 100.0);
 metric.ShouldBeAtMost(value: 125.0, maximum: 150.0);
 ```
 
+## PipelineOrchestratorTests
+
+The `PipelineOrchestratorTests` class provides unit tests for the `PipelineOrchestrator` class, verifying its constructor validation, lifecycle management, data ingestion, batch processing, and status reporting functionality. It includes tests for null service validation, pipeline state transitions, error handling, and metrics reporting.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using Moq;
+using Xunit;
+
+// Create mock services for testing
+var mockProcessingService = new Mock<DataProcessingService>(Mock.Of<IDataPointRepository>(), new PipelineConfig());
+var mockWindowingService = new Mock<WindowingService>(new PipelineConfig());
+var mockMetricsService = new Mock<MetricsService>(Mock.Of<IMetricsRepository>());
+var mockBackpressureService = new Mock<BackpressureService>();
+var mockQueryService = new Mock<QueryService>(Mock.Of<IDataPointRepository>(), Mock.Of<IMetricsRepository>());
+
+var config = new PipelineConfig
+{
+    PipelineName = "TestPipeline",
+    Version = "1.0.0",
+    MaxBufferSize = 1000,
+    Stages = new List<PipelineStageConfig>
+    {
+        new PipelineStageConfig { StageName = "Stage1", Enabled = true },
+        new PipelineStageConfig { StageName = "Stage2", Enabled = true }
+    }
+};
+
+// Create the test suite instance
+var tests = new PipelineOrchestratorTests();
+
+// Example 1: Test constructor validation with null processing service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullProcessingService_ShouldThrow());
+
+// Example 2: Test constructor validation with null windowing service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullWindowingService_ShouldThrow());
+
+// Example 3: Test constructor validation with null metrics service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullMetricsService_ShouldThrow());
+
+// Example 4: Test constructor validation with null backpressure service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullBackpressureService_ShouldThrow());
+
+// Example 5: Test constructor validation with null query service
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullQueryService_ShouldThrow());
+
+// Example 6: Test constructor validation with null configuration
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullConfig_ShouldThrow());
+
+// Example 7: Test that StartAsync returns immediately when already running
+await tests.StartAsync_WhenAlreadyRunning_ShouldReturnImmediately();
+
+// Example 8: Test that StartAsync creates backpressure contexts for all stages
+await tests.StartAsync_ShouldCreateBackpressureContextsForAllStages();
+
+// Example 9: Test that StopAsync sets the running state to false
+await tests.StopAsync_ShouldSetIsRunningToFalse();
+
+// Example 10: Test data point ingestion with null data point
+await Assert.ThrowsAsync<ArgumentNullException>(() => tests.IngestDataPointAsync_WithNullDataPoint_ShouldThrow());
+
+// Example 11: Test data point ingestion when pipeline is not running
+await Assert.ThrowsAsync<InvalidOperationException>(() => tests.IngestDataPointAsync_WhenNotRunning_ShouldThrow());
+
+// Example 12: Test successful data point ingestion
+bool ingestResult = await tests.IngestDataPointAsync_WithValidDataPoint_ShouldReturnTrue();
+Assert.True(ingestResult);
+
+// Example 13: Test buffer full scenario with backpressure
+bool backpressureResult = await tests.IngestDataPointAsync_WhenBufferFull_ShouldApplyBackpressureAndReturnFalse();
+Assert.False(backpressureResult);
+
+// Example 14: Test batch data point processing with null collection
+await Assert.ThrowsAsync<ArgumentNullException>(() => tests.ProcessBatchDataPointsAsync_WithNullDataPoints_ShouldThrow());
+
+// Example 15: Test successful batch processing
+var batchResult = await tests.ProcessBatchDataPointsAsync_ShouldProcessAllValidPoints();
+Assert.Equal(3, batchResult.SuccessfulCount);
+Assert.Equal(0, batchResult.FailedCount);
+
+// Example 16: Test batch processing with failed ingestions
+var failedBatchResult = await tests.ProcessBatchDataPointsAsync_ShouldCountFailedIngestions();
+Assert.Equal(1, failedBatchResult.SuccessfulCount);
+Assert.Equal(1, failedBatchResult.FailedCount);
+
+// Example 17: Test query service retrieval
+var queryService = tests.GetQueryService_ShouldReturnQueryServiceInstance();
+Assert.NotNull(queryService);
+
+// Example 18: Test pipeline status retrieval
+var status = tests.GetStatus_ShouldReturnPipelineStatus();
+Assert.NotNull(status);
+Assert.Equal("TestPipeline", status.ConfigurationName);
+
+// Example 19: Test health report generation
+var healthReport = await tests.GetHealthReportAsync_ShouldReturnHealthReport();
+Assert.NotNull(healthReport);
+```
+
 ## CommandExecutorExtensions
 
 The `CommandExecutorExtensions` class provides convenient extension methods for `CommandExecutor`, simplifying common data operations and pipeline management scenarios. It includes methods for executing commands with success checking, ingesting data from files, querying data points, getting pipeline status, counting data points, exporting data, and generating status summaries.
