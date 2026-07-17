@@ -52,8 +52,8 @@ public static class DataProcessingServiceJsonExtensions
     /// Attempts to deserialize a JSON string to a <see cref="DataProcessingService"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized data processing service instance if successful.</param>
-    /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <param name="value">Receives the deserialized data processing service instance if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if deserialization succeeded and JSON was non-empty; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is <see langword="null"/>.</exception>
     public static bool TryFromJson(string json, out DataProcessingService? value)
     {
@@ -68,7 +68,7 @@ public static class DataProcessingServiceJsonExtensions
                 value = JsonSerializer.Deserialize<DataProcessingService>(json, _jsonOptions);
             }
 
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
