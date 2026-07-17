@@ -41,6 +41,7 @@ public static class WebhookHandlerExtensions
     /// <param name="eventTypes">The event types to subscribe to.</param>
     /// <param name="secret">Optional secret for webhook signature verification.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="handler"/> or <paramref name="url"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="eventTypes"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="url"/> is empty.</exception>
     public static void SubscribeTo(this WebhookHandler handler, string url, IEnumerable<WebhookEventType> eventTypes, string? secret = null)
     {
