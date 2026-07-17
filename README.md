@@ -1126,6 +1126,64 @@ var response = service.ApplyBackpressureAsync(
 service.RemoveFromBuffer("TestStage", 200);
 ```
 
+## QueryServiceTests
+
+The `QueryServiceTests` class provides unit tests for the `QueryService` class, verifying its ability to query data points, calculate aggregate statistics, analyze trends, and decompose time series. It includes tests for constructor validation, search operations with various filters, statistical calculations (sum, average, min, max, median, standard deviation, percentiles), trend analysis (increasing, decreasing, stable trends), and time series decomposition.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Tests.Unit;
+using DotNetRealtimePipeline.Domain.Models;
+using Xunit;
+
+var tests = new QueryServiceTests();
+
+// Test constructor validation with null repositories
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullDataPointRepository_ShouldThrow());
+Assert.Throws<ArgumentNullException>(() => tests.Constructor_WithNullMetricsRepository_ShouldThrow());
+
+// Test search operations with different filters
+var sourcePoints = await tests.SearchDataPointsAsync_WithSourceSpecified_ShouldCallGetBySourceAsync();
+Assert.Equal("Sensor1", sourcePoints.First().Source);
+
+var timeRangePoints = await tests.SearchDataPointsAsync_WithTimeRangeSpecified_ShouldCallGetByTimeRangeAsync();
+Assert.Equal(10000000L, timeRangePoints.First().Timestamp);
+
+var qualityPoints = await tests.SearchDataPointsAsync_WithQualityThresholdSpecified_ShouldCallGetByQualityThresholdAsync();
+Assert.True(qualityPoints.First().Quality >= 80);
+
+var allPoints = await tests.SearchDataPointsAsync_WithNoParameters_ShouldCallGetPagedAsync();
+Assert.NotEmpty(allPoints);
+
+// Test aggregate statistics calculations
+var stats = await tests.GetAggregateStatisticsAsync_WithDataPoints_ShouldCalculateCorrectStatistics();
+Assert.Equal(3, stats.Count);
+Assert.Equal(60.0, stats.Sum);
+Assert.Equal(20.0, stats.Average);
+Assert.Equal(10.0, stats.Min);
+Assert.Equal(30.0, stats.Max);
+Assert.Equal(2, stats.UniqueSourceCount);
+
+// Test trend analysis
+var increasingTrend = await tests.AnalyzeTrendsAsync_WithIncreasingTrend_ShouldReturnIncreasingDirection();
+Assert.Equal("INCREASING", increasingTrend.Direction);
+Assert.True(increasingTrend.ChangePercent > 0);
+
+var decreasingTrend = await tests.AnalyzeTrendsAsync_WithDecreasingTrend_ShouldReturnDecreasingDirection();
+Assert.Equal("DECREASING", decreasingTrend.Direction);
+Assert.True(decreasingTrend.ChangePercent < 0);
+
+var stableTrend = await tests.AnalyzeTrendsAsync_WithStableTrend_ShouldReturnStableDirection();
+Assert.Equal("STABLE", stableTrend.Direction);
+Assert.InRange(stableTrend.ChangePercent, -1, 1);
+
+// Test time series decomposition
+var decomposition = await tests.DecomposeTimeSeriesAsync_WithSufficientData_ShouldReturnSuccessStatus();
+Assert.Equal("SUCCESS", decomposition.Status);
+Assert.Equal(10, decomposition.OriginalCount);
+```
+
 ## PipelineVisualizerTests
 The `PipelineVisualizerTests` class provides unit tests for the `PipelineVisualizer` class, verifying its ability to visualize pipeline stages and their relationships. It includes tests for building nodes, rendering pipeline visualizations, and computing health labels for pipeline nodes. 
 
