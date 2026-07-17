@@ -1,4 +1,5 @@
 #nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,9 +31,11 @@ public static class WindowEventExtensions
     /// <param name="windowEvent">The window whose data points are to be sorted.</param>
     /// <returns>An <see cref="IReadOnlyList{DataPoint}"/> ordered by <c>Timestamp</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="windowEvent"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="windowEvent"/>.DataPoints is <c>null</c>.</exception>
     public static IReadOnlyList<DataPoint> GetDataPointsSortedByTimestamp(this WindowEvent windowEvent)
     {
         ArgumentNullException.ThrowIfNull(windowEvent);
+        ArgumentNullException.ThrowIfNull(windowEvent.DataPoints);
         return windowEvent.DataPoints
             .OrderBy(dp => dp.Timestamp)
             .ToList()
@@ -52,8 +55,8 @@ public static class WindowEventExtensions
     public static double GetPercentile(this WindowEvent windowEvent, double percentile)
     {
         ArgumentNullException.ThrowIfNull(windowEvent);
-        if (percentile < 0.0 || percentile > 100.0)
-            throw new ArgumentOutOfRangeException(nameof(percentile), "Percentile must be between 0 and 100.");
+        ArgumentOutOfRangeException.ThrowIfLessThan(percentile, 0.0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(percentile, 100.0);
 
         if (windowEvent.DataPoints.Count == 0)
             return 0.0;
