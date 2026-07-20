@@ -24,6 +24,50 @@ concurrency model, extension points, and known limitations.
 The sections below are generated per-class API notes; more per-class docs live in
 [docs/](docs/).
 
+## SerializationHelperJsonExtensions
+
+The `SerializationHelperJsonExtensions` class provides extension methods for convenient JSON serialization and deserialization of pipeline data types like `DataPoint`, `ProcessingResult`, and `MetricAggregation`. It simplifies converting these objects to and from JSON strings using pre-configured `JsonSerializerOptions` with camelCase naming.
+
+Example usage:
+
+```csharp
+using DotNetRealtimePipeline.Utilities;
+using DotNetRealtimePipeline.Domain.Models;
+using System;
+using System.Collections.Generic;
+
+// 1. Serialize a DataPoint
+var dataPoint = new DataPoint { Id = 1, Source = "Sensor1", Value = 23.5 };
+string json = dataPoint.ToJson();
+Console.WriteLine(json); // {"id":1,"source":"Sensor1","value":23.5}
+
+// 2. Deserialize a DataPoint
+DataPoint deserializedDp = json.FromJsonToDataPoint();
+Console.WriteLine(deserializedDp.Source); // Sensor1
+
+// 3. Try to deserialize a DataPoint
+if (json.TryFromJsonToDataPoint(out var dp))
+{
+    Console.WriteLine($"Successfully deserialized: {dp.Id}");
+}
+
+// 4. Serialize a ProcessingResult
+var result = new ProcessingResult("Stage1", true, new Dictionary<string, object> { { "key", "value" } }, 10);
+string resultJson = result.ToJson();
+
+// 5. Deserialize a ProcessingResult
+ProcessingResult deserializedResult = resultJson.FromJsonToProcessingResult();
+Console.WriteLine(deserializedResult.StageName); // Stage1
+
+// 6. Serialize a MetricAggregation
+var metrics = new MetricAggregation { MetricType = "Performance", TotalItemsProcessed = 100 };
+string metricsJson = metrics.ToJson();
+
+// 7. Deserialize a MetricAggregation
+MetricAggregation deserializedMetrics = metricsJson.FromJsonToMetricAggregation();
+Console.WriteLine(deserializedMetrics.MetricType); // Performance
+```
+
 ## BatchProcessorExtensions
 
 The `BatchProcessorExtensions` class provides extension methods for `BatchProcessor<TInput, TOutput>` and `DataPointBatchProcessor` that simplify batch processing operations. It includes methods for processing collections in batches, creating batches from collections, batch transformations, parallel processing with aggregation, estimating processing time, and analyzing batch statistics.
