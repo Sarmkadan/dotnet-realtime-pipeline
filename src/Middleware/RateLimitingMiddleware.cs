@@ -103,24 +103,39 @@ internal sealed class RateLimitBucket
     private readonly int _refillTokensPerSecond;
     private DateTime _lastRefillTime = DateTime.UtcNow;
     private readonly object _lockObject = new();
+    private DateTime _nextRefillTime;
 
     public int AvailableTokens
     {
         get
         {
-            RefillTokens();
-            return (int)Math.Min(_availableTokens, _capacity);
+            lock (_lockObject)
+            {
+                RefillTokens();
+                return (int)Math.Min(_availableTokens, _capacity);
+            }
         }
     }
 
     public int Capacity => _capacity;
-    public DateTime NextRefillTime { get; private set; }
+    public DateTime NextRefillTime
+    {
+        get
+        {
+            lock (_lockObject)
+            {
+                RefillTokens();
+                return _nextRefillTime;
+            }
+        }
+    }
 
     public RateLimitBucket(int refillTokensPerSecond, int capacity)
     {
         _refillTokensPerSecond = refillTokensPerSecond;
         _capacity = capacity;
         _availableTokens = capacity;
+        _nextRefillTime = DateTime.UtcNow.AddSeconds(1);
     }
 
     /// <summary>
@@ -155,7 +170,7 @@ internal sealed class RateLimitBucket
             var tokensToAdd = (long)(_refillTokensPerSecond * elapsedSeconds);
             _availableTokens = Math.Min(_availableTokens + tokensToAdd, _capacity);
             _lastRefillTime = now;
-            NextRefillTime = now.AddSeconds(1);
+            _nextRefillTime = now.AddSeconds(1);
         }
     }
 }
