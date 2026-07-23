@@ -210,4 +210,21 @@ public static class EventSubscriberBaseExtensions
 
         return $"[{typeName}] {isSubscribed}{metricsString}";
     }
+
+    /// <summary>
+    /// Resets the accumulated metrics in a <see cref="MetricsAggregationSubscriber"/>.
+    /// Useful for testing or after snapshot operations.
+    /// Returns without error if the subscriber is not a <see cref="MetricsAggregationSubscriber"/>.
+    /// </summary>
+    /// <param name="subscriber">The subscriber instance.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="subscriber"/> is <see langword="null"/></exception>
+    public static void ResetMetrics(this EventSubscriberBase subscriber)
+    {
+        ArgumentNullException.ThrowIfNull(subscriber);
+
+        if (subscriber is MetricsAggregationSubscriber metricsSubscriber)
+        {
+            metricsSubscriber.Reset();
+        }
+    }
 }
