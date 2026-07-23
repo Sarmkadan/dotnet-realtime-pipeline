@@ -17,14 +17,16 @@ using System.Threading.Tasks;
 /// Publisher for pipeline events using observer pattern.
 /// Decouples event producers from consumers through subscription-based notification.
 /// </summary>
-public sealed class PipelineEventPublisher
+public sealed class PipelineEventPublisher : IDisposable
 {
-    private readonly ConcurrentDictionary<string, List<Delegate>> _subscribers = new();
+    private readonly SubscriberChannelManager _channelManager;
     private readonly ILogger<PipelineEventPublisher> _logger;
+    private bool _disposed;
 
     public PipelineEventPublisher(ILogger<PipelineEventPublisher> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _channelManager = new SubscriberChannelManager(logger);
     }
 
     /// <summary>
@@ -93,85 +95,91 @@ public sealed class PipelineEventPublisher
     }
 
     /// <summary>
-    /// Subscribes to a specific event type.
+    /// Subscribes to a specific event type with default options.
     /// </summary>
     public void Subscribe<T>(string eventName, Func<T, Task> handler) where T : PipelineEventArgs
     {
-        var handlers = _subscribers.GetOrAdd(eventName, _ => new List<Delegate>());
-        lock (handlers)
+        Subscribe(eventName, handler, new SubscriberOptions
         {
-            handlers.Add(handler);
-        }
-
-        _logger.LogDebug("Subscriber registered for event: {Event}", eventName);
+            Name = handler.Method.DeclaringType?.Name ?? "AnonymousSubscriber"
+        });
     }
 
     /// <summary>
-    /// Unsubscribes from an event.
+    /// Subscribes to a specific event type with customizable options.
     /// </summary>
-    public void Unsubscribe(string eventName, Delegate handler)
+    public void Subscribe<T>(string eventName, Func<T, Task> handler, SubscriberOptions options) where T : PipelineEventArgs
     {
-        if (_subscribers.TryGetValue(eventName, out var handlers))
+        if (string.IsNullOrWhiteSpace(eventName))
         {
-            lock (handlers)
-            {
-                handlers.Remove(handler);
-            }
+            throw new ArgumentException("Event name cannot be null or empty", nameof(eventName));
         }
 
-        _logger.LogDebug("Subscriber unregistered from event: {Event}", eventName);
+        if (handler == null)
+        {
+            throw new ArgumentNullException(nameof(handler));
+        }
+
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        _channelManager.RegisterSubscriber(eventName, handler, options);
+        _logger.LogDebug("Subscriber registered for event: {Event} with options: {Options}", eventName, options);
     }
 
     /// <summary>
     /// Publishes an event to all registered subscribers.
+    /// Each subscriber processes events independently with its own error handling and concurrency.
     /// </summary>
     private async Task PublishEventAsync(string eventName, PipelineEventArgs args)
     {
-        if (!_subscribers.TryGetValue(eventName, out var handlers))
+        await _channelManager.PostEventAsync(eventName, args).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Starts all subscriber channels.
+    /// Call this after all subscriptions are registered to begin processing events.
+    /// </summary>
+    public void Start()
+    {
+        _channelManager.StartAll();
+    }
+
+    /// <summary>
+    /// Stops all subscriber channels gracefully.
+    /// </summary>
+    public async Task StopAsync()
+    {
+        await _channelManager.StopAllAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the total error count across all subscribers for an event.
+    /// </summary>
+    public int GetSubscriberErrorCount(string eventName)
+    {
+        return _channelManager.GetTotalErrorCount(eventName);
+    }
+
+    /// <summary>
+    /// Gets the number of registered subscriber channels for an event.
+    /// </summary>
+    public int GetSubscriberCount(string eventName)
+    {
+        return _channelManager.GetSubscriberCount(eventName);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
         {
             return;
         }
 
-        List<Delegate> handlersCopy;
-        lock (handlers)
-        {
-            handlersCopy = new List<Delegate>(handlers);
-        }
-
-        foreach (var handler in handlersCopy)
-        {
-            try
-            {
-                if (handler is Delegate del)
-                {
-                    var result = del.DynamicInvoke(args);
-                    if (result is Task task)
-                    {
-                        await task;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error invoking subscriber for event: {Event}", eventName);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets subscriber count for an event.
-    /// </summary>
-    public int GetSubscriberCount(string eventName)
-    {
-        if (_subscribers.TryGetValue(eventName, out var handlers))
-        {
-            lock (handlers)
-            {
-                return handlers.Count;
-            }
-        }
-
-        return 0;
+        _channelManager.Dispose();
+        _disposed = true;
     }
 }
 

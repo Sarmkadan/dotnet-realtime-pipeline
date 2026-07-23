@@ -44,6 +44,41 @@ public abstract class EventSubscriberBase
         _isSubscribed = false;
         _logger.LogInformation("{SubscriberName} unsubscribed from events", GetType().Name);
     }
+
+    /// <summary>
+    /// Gets the default subscriber options for this subscriber.
+    /// Override this property to customize per-subscriber behavior.
+    /// </summary>
+    protected virtual SubscriberOptions GetSubscriberOptions()
+    {
+        return new SubscriberOptions
+        {
+            Name = GetType().Name,
+            MaxQueueSize = 1000,
+            MaxQueueSizeBehavior = MaxQueueSizeBehavior.DropNew,
+            DispatchMode = SubscriberDispatchMode.Sequential,
+            ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount,
+            MaxDegreeOfParallelism = 1
+        };
+    }
+
+    /// <summary>
+    /// Starts the subscriber's event processing.
+    /// </summary>
+    public virtual void Start()
+    {
+        // Base implementation does nothing
+        // Derived classes can override to start background processing
+    }
+
+    /// <summary>
+    /// Stops the subscriber's event processing gracefully.
+    /// </summary>
+    public virtual async Task StopAsync()
+    {
+        // Base implementation does nothing
+        await Task.CompletedTask;
+    }
 }
 
 /// <summary>
@@ -59,8 +94,9 @@ public class DataIngestSubscriber : EventSubscriberBase
     public override void Subscribe()
     {
         base.Subscribe();
+        var options = GetSubscriberOptions();
         _publisher.Subscribe<DataIngestedEventArgs>(
-            nameof(DataIngestedEvent), OnDataIngestedAsync);
+            nameof(DataIngestedEvent), OnDataIngestedAsync, options);
     }
 
     /// <summary>
@@ -107,8 +143,9 @@ public class ProcessingCompletionSubscriber : EventSubscriberBase
     public override void Subscribe()
     {
         base.Subscribe();
+        var options = GetSubscriberOptions();
         _publisher.Subscribe<ProcessingCompletedEventArgs>(
-            nameof(ProcessingCompletedEvent), OnProcessingCompletedAsync);
+            nameof(ProcessingCompletedEvent), OnProcessingCompletedAsync, options);
     }
 
     /// <summary>
@@ -172,8 +209,9 @@ public class BackpressureAlertSubscriber : EventSubscriberBase
     public override void Subscribe()
     {
         base.Subscribe();
+        var options = GetSubscriberOptions();
         _publisher.Subscribe<BackpressureDetectedEventArgs>(
-            nameof(BackpressureDetectedEvent), OnBackpressureDetectedAsync);
+            nameof(BackpressureDetectedEvent), OnBackpressureDetectedAsync, options);
     }
 
     /// <summary>
@@ -248,8 +286,9 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
     public override void Subscribe()
     {
         base.Subscribe();
+        var options = GetSubscriberOptions();
         _publisher.Subscribe<MetricsCollectedEventArgs>(
-            nameof(MetricsCollectedEvent), OnMetricsCollectedAsync);
+            nameof(MetricsCollectedEvent), OnMetricsCollectedAsync, options);
     }
 
     /// <summary>
@@ -416,8 +455,9 @@ public class ErrorAlertSubscriber : EventSubscriberBase
     public override void Subscribe()
     {
         base.Subscribe();
+        var options = GetSubscriberOptions();
         _publisher.Subscribe<PipelineErrorEventArgs>(
-            nameof(PipelineErrorEvent), OnPipelineErrorAsync);
+            nameof(PipelineErrorEvent), OnPipelineErrorAsync, options);
     }
 
     /// <summary>
