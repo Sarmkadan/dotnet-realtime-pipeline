@@ -1,9 +1,4 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =====================================================================
-
+// src/Integration/RawPipelineAccessorValidation.cs
 namespace DotNetRealtimePipeline.Integration;
 
 using System;
