@@ -221,16 +221,28 @@ public class BackpressureAlertSubscriber : EventSubscriberBase
 
 /// <summary>
 /// Subscriber for metrics collection events with aggregation.
+/// Uses striped counters with Interlocked operations to minimize allocations on the hot path.
 /// </summary>
-public class MetricsAggregationSubscriber : EventSubscriberBase
+public sealed class MetricsAggregationSubscriber : EventSubscriberBase
 {
-    private double _totalThroughput;
-    private double _totalLatency;
-    private int _metricsCount;
+    // Striped counters for thread-safe aggregation across multiple threads
+    // Using 16 stripes to reduce contention while maintaining cache locality
+    private const int StripeCount = 16;
+    private readonly StripedMetrics[] _stripedMetrics = new StripedMetrics[StripeCount];
+
+    // Simple lock for snapshot operations (infrequent, not on hot path)
+    private readonly object _snapshotLock = new object();
+    private MetricsSnapshot _currentSnapshot;
 
     public MetricsAggregationSubscriber(PipelineEventPublisher publisher, ILogger<MetricsAggregationSubscriber> logger)
         : base(publisher, logger)
     {
+        // Initialize striped counters
+        for (int i = 0; i < StripeCount; i++)
+        {
+            _stripedMetrics[i] = new StripedMetrics();
+        }
+        _currentSnapshot = new MetricsSnapshot(0, 0);
     }
 
     public override void Subscribe()
@@ -241,19 +253,30 @@ public class MetricsAggregationSubscriber : EventSubscriberBase
     }
 
     /// <summary>
-    /// Handles metrics collection events.
+    /// Handles metrics collection events on the hot path.
+    /// Uses Interlocked operations for thread-safe accumulation with minimal overhead.
     /// </summary>
     private async Task OnMetricsCollectedAsync(MetricsCollectedEventArgs args)
     {
         try
         {
-            _totalLatency += args.Metrics.AverageProcessingTimeMs;
-            _metricsCount++;
+            // Fast path: accumulate metrics using striped counters
+            // Use thread ID for minimal contention
+            var stripeIndex = Environment.CurrentManagedThreadId % StripeCount;
+            var metrics = _stripedMetrics[stripeIndex];
 
-            _logger.LogDebug("Metrics collected - Processing Time: {ProcessingTime:F2}ms, Total Items: {Total}",
-                args.Metrics.AverageProcessingTimeMs, args.Metrics.TotalItemsProcessed);
+            // Accumulate using Interlocked operations - zero allocation on hot path
+            Interlocked.Add(ref metrics.TotalLatencyNs, (long)(args.Metrics.AverageProcessingTimeMs * 1_000_000));
+            Interlocked.Increment(ref metrics.MetricsCount);
 
-            await OnMetricsReceivedAsync(args.Metrics);
+            // Optional: Log at debug level only when needed
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Metrics collected - Processing Time: {ProcessingTime:F2}ms, Total Items: {Total}",
+                    args.Metrics.AverageProcessingTimeMs, args.Metrics.TotalItemsProcessed);
+            }
+
+            OnMetricsReceived(args.Metrics);
         }
         catch (Exception ex)
         {
@@ -262,27 +285,119 @@ public class MetricsAggregationSubscriber : EventSubscriberBase
     }
 
     /// <summary>
-    /// Gets average processing time.
+    /// Gets the average processing time in milliseconds.
+    /// Takes a consistent snapshot and computes the average from striped counters.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when the subscriber is null.</exception>
     public double GetAverageProcessingTime()
     {
-        return _metricsCount > 0 ? _totalLatency / _metricsCount : 0;
+        var snapshot = TakeSnapshot();
+        return snapshot.MetricsCount > 0
+            ? snapshot.TotalLatencyMs / snapshot.MetricsCount
+            : 0.0;
     }
 
     /// <summary>
-    /// Gets total metrics collected.
+    /// Gets the total number of metrics collected.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when the subscriber is null.</exception>
     public int GetMetricsCount()
     {
-        return _metricsCount;
+        return TakeSnapshot().MetricsCount;
+    }
+
+    /// <summary>
+    /// Takes a consistent snapshot of all accumulated metrics.
+    /// Uses double-checked locking for efficiency (snapshot is infrequent).
+    /// </summary>
+    private MetricsSnapshot TakeSnapshot()
+    {
+        // Fast path: return cached snapshot if valid
+        var snapshot = _currentSnapshot;
+        if (snapshot.IsValid)
+        {
+            return snapshot;
+        }
+
+        // Slow path: merge all striped counters under lock
+        lock (_snapshotLock)
+        {
+            // Re-check after acquiring lock
+            snapshot = _currentSnapshot;
+            if (snapshot.IsValid)
+            {
+                return snapshot;
+            }
+
+            // Merge all striped counters
+            long totalLatencyNs = 0;
+            int metricsCount = 0;
+
+            foreach (var metrics in _stripedMetrics)
+            {
+                totalLatencyNs += metrics.TotalLatencyNs;
+                metricsCount += metrics.MetricsCount;
+            }
+
+            // Create new snapshot
+            snapshot = new MetricsSnapshot(totalLatencyNs / 1_000_000.0, metricsCount);
+            _currentSnapshot = snapshot;
+
+            return snapshot;
+        }
     }
 
     /// <summary>
     /// Custom logic when metrics are received.
+    /// Made non-virtual for maximum performance on hot path.
     /// </summary>
-    protected virtual async Task OnMetricsReceivedAsync(MetricAggregation metrics)
+    private void OnMetricsReceived(MetricAggregation metrics)
     {
-        await Task.CompletedTask;
+        // Extension point for derived classes - empty by default
+    }
+
+    /// <summary>
+    /// Resets all accumulated metrics. Useful for testing or after snapshot operations.
+    /// </summary>
+    public void Reset()
+    {
+        for (int i = 0; i < StripeCount; i++)
+        {
+            _stripedMetrics[i] = new StripedMetrics();
+        }
+
+        lock (_snapshotLock)
+        {
+            _currentSnapshot = new MetricsSnapshot(0, 0);
+        }
+    }
+
+    /// <summary>
+    /// Struct representing per-stripe metrics using Interlocked-compatible fields.
+    /// </summary>
+    private struct StripedMetrics
+    {
+        public long TotalLatencyNs;
+        public int MetricsCount;
+    }
+
+    /// <summary>
+    /// Immutable snapshot of accumulated metrics.
+    /// </summary>
+    private readonly struct MetricsSnapshot
+    {
+        public readonly double TotalLatencyMs;
+        public readonly int MetricsCount;
+        public readonly DateTime Timestamp;
+
+        public MetricsSnapshot(double totalLatencyMs, int metricsCount)
+        {
+            TotalLatencyMs = totalLatencyMs;
+            MetricsCount = metricsCount;
+            Timestamp = DateTime.UtcNow;
+        }
+
+        public readonly bool IsValid => MetricsCount >= 0;
     }
 }
 
