@@ -69,6 +69,17 @@ public sealed class DeadLetterEntry
     public int RetryCount { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of in-line processing attempts that were made
+    /// (by the retry policy) before the item was dead-lettered.
+    /// </summary>
+    public int AttemptsBeforeDeadLetter { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets the stack trace of the last exception, if available.
+    /// </summary>
+    public string? LastExceptionStackTrace { get; set; }
+
+    /// <summary>
     /// Gets or sets the maximum number of retries allowed before marking as permanent failure.
     /// </summary>
     public int MaxRetries { get; set; } = 3;

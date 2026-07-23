@@ -54,13 +54,14 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
     }
 
     /// <inheritdoc/>
-    public Task EnqueueAsync(DataPoint dataPoint, string stageName, string failureReason, Exception? exception = null)
+    public Task EnqueueAsync(DataPoint dataPoint, string stageName, string failureReason, Exception? exception = null, int attemptsMade = 1)
     {
-        if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
+        ArgumentNullException.ThrowIfNull(dataPoint);
         if (string.IsNullOrWhiteSpace(stageName))
             throw new ArgumentException("Stage name cannot be null or empty.", nameof(stageName));
         if (string.IsNullOrWhiteSpace(failureReason))
             throw new ArgumentException("Failure reason cannot be null or empty.", nameof(failureReason));
+        if (attemptsMade < 1) throw new ArgumentOutOfRangeException(nameof(attemptsMade));
 
         lock (_lock)
         {
@@ -74,6 +75,8 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
                 MaxRetries = _defaultMaxRetries,
                 ExceptionType = exception?.GetType().Name,
                 ExceptionMessage = exception?.Message,
+                LastExceptionStackTrace = exception?.StackTrace,
+                AttemptsBeforeDeadLetter = attemptsMade,
                 EnqueuedAt = DateTime.UtcNow,
                 Status = DeadLetterStatus.Pending
             };
@@ -82,6 +85,28 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public Task<int> ReplayAsync(Func<DeadLetterEntry, bool> filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+
+        lock (_lock)
+        {
+            var replayed = 0;
+
+            foreach (var entry in _entries.Values.Where(filter).ToList())
+            {
+                entry.Status = DeadLetterStatus.Pending;
+                entry.RetryCount = 0;
+                entry.ResolutionNote = null;
+                entry.ResolvedAt = null;
+                replayed++;
+            }
+
+            return Task.FromResult(replayed);
+        }
     }
 
     /// <inheritdoc/>

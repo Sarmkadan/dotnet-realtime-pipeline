@@ -25,7 +25,18 @@ public interface IDeadLetterQueue
     /// <param name="stageName">The name of the pipeline stage where the failure occurred.</param>
     /// <param name="failureReason">The reason for the failure.</param>
     /// <param name="exception">The exception that caused the failure, if any.</param>
-    Task EnqueueAsync(DataPoint dataPoint, string stageName, string failureReason, Exception? exception = null);
+    /// <param name="attemptsMade">The number of in-line processing attempts made before dead-lettering.</param>
+    Task EnqueueAsync(DataPoint dataPoint, string stageName, string failureReason, Exception? exception = null, int attemptsMade = 1);
+
+    /// <summary>
+    /// Requeues entries matching <paramref name="filter"/> for another round of retries:
+    /// their status is reset to <see cref="DeadLetterStatus.Pending"/> and the retry
+    /// counter is cleared, so operators can replay transient failures.
+    /// </summary>
+    /// <param name="filter">Selects which entries to replay (e.g. by stage or exception type).</param>
+    /// <returns>The number of entries that were reset for replay.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="filter"/> is <see langword="null"/>.</exception>
+    Task<int> ReplayAsync(Func<DeadLetterEntry, bool> filter);
 
     /// <summary>
     /// Returns up to <paramref name="maxCount"/> entries from the queue without removing them.

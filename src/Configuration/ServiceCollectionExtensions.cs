@@ -60,6 +60,9 @@ public static class ServiceCollectionExtensions
         // Register dead-letter queue
         services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IDeadLetterQueue, DotNetRealtimePipeline.DeadLetter.DeadLetterQueue>();
 
+        // Register retry policy used before dead-lettering
+        services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IRetryPolicy, DotNetRealtimePipeline.DeadLetter.ExponentialBackoffRetryPolicy>();
+
 // Register HTTP client factory
 services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFactory>();
 
