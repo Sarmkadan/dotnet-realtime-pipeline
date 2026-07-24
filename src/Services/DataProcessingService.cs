@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.Services;
 
 using DotNetRealtimePipeline.Constants;
 using DotNetRealtimePipeline.Data.Repositories;
+using DotNetRealtimePipeline.DeadLetter;
 using DotNetRealtimePipeline.Domain.Exceptions;
 using DotNetRealtimePipeline.Domain.Models;
 using System;
@@ -24,12 +25,45 @@ public sealed class DataProcessingService
 {
     private readonly IDataPointRepository _repository;
     private readonly PipelineConfig _config;
+    private readonly IRetryPolicy _retryPolicy;
+    private readonly IDeadLetterQueue _deadLetterQueue;
     private int _nextResultId;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataProcessingService"/> class,
+    /// using a default exponential-backoff retry policy and a private in-memory
+    /// dead-letter queue. Prefer the four-argument constructor when the retry
+    /// policy and dead-letter queue should be shared across the pipeline.
+    /// </summary>
+    /// <param name="repository">The repository used to persist processed data points.</param>
+    /// <param name="config">The pipeline configuration.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> or <paramref name="config"/> is <see langword="null"/>.</exception>
     public DataProcessingService(IDataPointRepository repository, PipelineConfig config)
+        : this(repository, config, new ExponentialBackoffRetryPolicy(), new DeadLetterQueue())
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataProcessingService"/> class.
+    /// </summary>
+    /// <param name="repository">The repository used to persist processed data points.</param>
+    /// <param name="config">The pipeline configuration.</param>
+    /// <param name="retryPolicy">The policy consulted to retry transient failures before dead-lettering.</param>
+    /// <param name="deadLetterQueue">The queue that receives items whose retry budget is exhausted.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="repository"/>, <paramref name="config"/>, <paramref name="retryPolicy"/>,
+    /// or <paramref name="deadLetterQueue"/> is <see langword="null"/>.
+    /// </exception>
+    public DataProcessingService(
+        IDataPointRepository repository,
+        PipelineConfig config,
+        IRetryPolicy retryPolicy,
+        IDeadLetterQueue deadLetterQueue)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _config = config ?? throw new ArgumentNullException(nameof(config));
+        _retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
+        _deadLetterQueue = deadLetterQueue ?? throw new ArgumentNullException(nameof(deadLetterQueue));
     }
 
     /// <summary>
@@ -95,7 +129,9 @@ public sealed class DataProcessingService
     }
 
     /// <summary>
-    /// Processes a batch of data points, applying retry logic on failure.
+    /// Processes a batch of data points, retrying transient failures with backoff via
+    /// <see cref="IRetryPolicy"/> and routing items that exhaust their retry budget
+    /// (or fail with a non-transient error) to the dead-letter queue.
     /// </summary>
     /// <param name="dataPoints">The list of <see cref="DataPoint"/> to be processed.</param>
     /// <returns>A task that represents the asynchronous operation, returning a list of <see cref="ProcessingResult"/>.</returns>
@@ -108,41 +144,36 @@ public sealed class DataProcessingService
 
         foreach (var dataPoint in dataPoints)
         {
-            ProcessingResult result = null;
-            int retryCount = 0;
-
-            while (retryCount <= _config.MaxRetries)
+            var retryResult = await _retryPolicy.ExecuteAsync(async attempt =>
             {
-                try
-                {
-                    result = await ProcessDataPointAsync(dataPoint);
+                var attemptResult = await ProcessDataPointAsync(dataPoint);
+                if (attemptResult.Success)
+                    return attemptResult;
 
-                    if (result.Success) break;
+                if (attempt > 1)
+                    attemptResult.IncrementRetryCount();
 
-                    retryCount++;
-                    if (retryCount <= _config.MaxRetries)
-                    {
-                        await Task.Delay(TimeSpan.FromMilliseconds(_config.RetryDelayMs * retryCount));
-                        result.IncrementRetryCount();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result ??= new ProcessingResult(_nextResultId++, false, PipelineConstants.StageName_Ingestion);
-                    result.MarkFailure(ex.Message, ex);
-                    result.IncrementRetryCount();
+                throw new PipelineProcessingException(
+                    attemptResult.ErrorMessage ?? "Data point processing failed", dataPoint, attemptResult);
+            });
 
-                    if (retryCount >= _config.MaxRetries) break;
-
-                    retryCount++;
-                    await Task.Delay(TimeSpan.FromMilliseconds(_config.RetryDelayMs * retryCount));
-                }
+            if (retryResult.Succeeded)
+            {
+                results.Add(retryResult.Value!);
+                continue;
             }
 
-            if (result is not null)
-            {
-                results.Add(result);
-            }
+            var finalResult = (retryResult.LastException as PipelineProcessingException)?.Result
+                ?? new ProcessingResult(System.Threading.Interlocked.Increment(ref _nextResultId), false, PipelineConstants.StageName_Ingestion);
+            finalResult.MarkFailure(retryResult.LastException.Message, retryResult.LastException);
+            results.Add(finalResult);
+
+            await _deadLetterQueue.EnqueueAsync(
+                dataPoint,
+                finalResult.StageName,
+                retryResult.LastException.Message,
+                retryResult.LastException,
+                retryResult.Attempts);
         }
 
         return results;

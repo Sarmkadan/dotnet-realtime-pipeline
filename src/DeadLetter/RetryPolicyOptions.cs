@@ -6,6 +6,7 @@
 
 namespace DotNetRealtimePipeline.DeadLetter;
 
+using DotNetRealtimePipeline.Domain.Exceptions;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -96,6 +97,10 @@ public sealed class RetryPolicyOptions
             TimeoutException or IOException or SocketException or HttpRequestException => true,
             OperationCanceledException => false,
             AggregateException aggregate => aggregate.InnerException is { } inner && DefaultTransientPredicate(inner),
+            // A stage-processing failure is transient only when the underlying cause is;
+            // business-rule rejections (e.g. failed validation) carry no inner exception
+            // and are therefore treated as permanent.
+            PipelineProcessingException processing => processing.Result.Exception is { } cause && DefaultTransientPredicate(cause),
             _ => false
         };
     }
