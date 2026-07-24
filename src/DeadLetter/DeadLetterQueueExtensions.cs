@@ -13,9 +13,14 @@ using System.Linq;
 using System.Threading.Tasks;
 
 /// <summary>
-/// Extension methods for <see cref="DeadLetterQueue"/> that provide common operations
+/// Extension methods for <see cref="IDeadLetterQueue"/> that provide common operations
 /// for working with dead-letter entries.
 /// </summary>
+/// <remarks>
+/// This is the single extension surface over <see cref="IDeadLetterQueue"/>; there is
+/// deliberately no parallel set of helpers over the concrete <see cref="DeadLetterQueue"/>
+/// implementation so the two never drift out of sync.
+/// </remarks>
 public static class DeadLetterQueueExtensions
 {
     private const string ExceptionReconstructionFailedMessage = "Failed to reconstruct exception from stored type information";
@@ -24,14 +29,14 @@ public static class DeadLetterQueueExtensions
     /// Attempts to dequeue and process entries for retry until the queue is empty or
     /// the maximum number of entries have been processed.
     /// </summary>
-    /// <param name="queue">The dead letter queue instance.</param>
+    /// <param name="queue">The dead letter queue instance that implements <see cref="IDeadLetterQueue"/>.</param>
     /// <param name="maxCount">Maximum number of entries to process.</param>
     /// <param name="processEntry">Async function that processes a single entry.</param>
     /// <returns>Statistics about the processing operation.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> or <paramref name="processEntry"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<DeadLetterProcessingResult> ProcessForRetryAsync(
-        this DeadLetterQueue queue,
+        this IDeadLetterQueue queue,
         int maxCount,
         Func<DeadLetterEntry, Task<bool>> processEntry)
     {
@@ -159,14 +164,14 @@ public static class DeadLetterQueueExtensions
     /// <summary>
     /// Finds all entries matching the specified predicate.
     /// </summary>
-    /// <param name="queue">The dead letter queue instance.</param>
+    /// <param name="queue">The dead letter queue instance that implements <see cref="IDeadLetterQueue"/>.</param>
     /// <param name="predicate">Filter predicate to match entries.</param>
     /// <param name="maxCount">Maximum number of entries to return.</param>
     /// <returns>Matching entries, ordered by enqueue time.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> or <paramref name="predicate"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<IReadOnlyList<DeadLetterEntry>> FindAsync(
-        this DeadLetterQueue queue,
+        this IDeadLetterQueue queue,
         Func<DeadLetterEntry, bool> predicate,
         int maxCount = 100)
     {
@@ -186,7 +191,7 @@ public static class DeadLetterQueueExtensions
     /// <summary>
     /// Finds entries by failure stage name.
     /// </summary>
-    /// <param name="queue">The dead letter queue instance.</param>
+    /// <param name="queue">The dead letter queue instance that implements <see cref="IDeadLetterQueue"/>.</param>
     /// <param name="stageName">Stage name to filter by (case-insensitive).</param>
     /// <param name="maxCount">Maximum number of entries to return.</param>
     /// <returns>Matching entries, ordered by enqueue time.</returns>
@@ -194,7 +199,7 @@ public static class DeadLetterQueueExtensions
     /// <exception cref="ArgumentException"><paramref name="stageName"/> is null or empty.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxCount"/> is not positive.</exception>
     public static async Task<IReadOnlyList<DeadLetterEntry>> FindByStageAsync(
-        this DeadLetterQueue queue,
+        this IDeadLetterQueue queue,
         string stageName,
         int maxCount = 100)
     {
@@ -214,12 +219,12 @@ public static class DeadLetterQueueExtensions
     /// <summary>
     /// Gets a summary report of the dead letter queue state.
     /// </summary>
-    /// <param name="queue">The dead letter queue instance.</param>
+    /// <param name="queue">The dead letter queue instance that implements <see cref="IDeadLetterQueue"/>.</param>
     /// <param name="includeDetails">Whether to include detailed entry information.</param>
     /// <returns>A formatted report string.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="queue"/> is null.</exception>
     public static async Task<string> GetReportAsync(
-        this DeadLetterQueue queue,
+        this IDeadLetterQueue queue,
         bool includeDetails = false)
     {
         ArgumentNullException.ThrowIfNull(queue);
