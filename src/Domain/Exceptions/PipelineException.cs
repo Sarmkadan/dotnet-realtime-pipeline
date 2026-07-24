@@ -6,6 +6,7 @@
 
 namespace DotNetRealtimePipeline.Domain.Exceptions;
 
+using DotNetRealtimePipeline.Domain.Models;
 using System;
 
 /// <summary>
@@ -123,6 +124,40 @@ public sealed class InvalidConfigurationException : PipelineException
 {
     public InvalidConfigurationException(string message)
         : base(message, "INVALID_CONFIGURATION") { }
+}
+
+/// <summary>
+/// Thrown internally by <see cref="DotNetRealtimePipeline.Services.DataProcessingService"/> when a single
+/// processing attempt for a <see cref="DataPoint"/> does not succeed, so the surrounding
+/// <see cref="DotNetRealtimePipeline.DeadLetter.IRetryPolicy"/> can classify and retry the failure.
+/// </summary>
+public sealed class PipelineProcessingException : PipelineException
+{
+    /// <summary>
+    /// Gets the data point whose processing attempt failed.
+    /// </summary>
+    public DataPoint DataPoint { get; }
+
+    /// <summary>
+    /// Gets the failed processing result produced by the attempt.
+    /// </summary>
+    public ProcessingResult Result { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineProcessingException"/> class.
+    /// </summary>
+    /// <param name="message">The failure reason.</param>
+    /// <param name="dataPoint">The data point whose processing attempt failed.</param>
+    /// <param name="result">The failed processing result produced by the attempt.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dataPoint"/> or <paramref name="result"/> is <see langword="null"/>.</exception>
+    public PipelineProcessingException(string message, DataPoint dataPoint, ProcessingResult result)
+        : base(message, "PIPELINE_PROCESSING_FAILED")
+    {
+        ArgumentNullException.ThrowIfNull(dataPoint);
+        ArgumentNullException.ThrowIfNull(result);
+        DataPoint = dataPoint;
+        Result = result;
+    }
 }
 
 /// <summary>

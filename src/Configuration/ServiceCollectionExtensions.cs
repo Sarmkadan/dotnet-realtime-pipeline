@@ -25,13 +25,19 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="pipelineConfig">The pipeline configuration to use.</param>
+    /// <param name="configureRetryPolicy">
+    /// Optional callback to customize the retry policy applied before failed items are
+    /// dead-lettered (max attempts, backoff, jitter, transient-exception classification).
+    /// When omitted, <see cref="DotNetRealtimePipeline.DeadLetter.RetryPolicyOptions"/> defaults are used.
+    /// </param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="services"/> or <paramref name="pipelineConfig"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddPipelineServices(
         this IServiceCollection services,
-        PipelineConfig pipelineConfig)
+        PipelineConfig pipelineConfig,
+        Action<DotNetRealtimePipeline.DeadLetter.RetryPolicyOptions>? configureRetryPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(pipelineConfig);
@@ -61,7 +67,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IDeadLetterQueue, DotNetRealtimePipeline.DeadLetter.DeadLetterQueue>();
 
         // Register retry policy used before dead-lettering
-        services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IRetryPolicy, DotNetRealtimePipeline.DeadLetter.ExponentialBackoffRetryPolicy>();
+        var retryOptions = new DotNetRealtimePipeline.DeadLetter.RetryPolicyOptions();
+        configureRetryPolicy?.Invoke(retryOptions);
+        services.AddSingleton(retryOptions);
+        services.AddSingleton<DotNetRealtimePipeline.DeadLetter.IRetryPolicy>(
+            _ => new DotNetRealtimePipeline.DeadLetter.ExponentialBackoffRetryPolicy(retryOptions));
 
 // Register HTTP client factory
 services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFactory>();
@@ -73,16 +83,19 @@ services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFacto
     /// Registers pipeline services with a default configuration.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configureRetryPolicy">Optional callback to customize the retry-before-dead-letter policy.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="services"/> is <see langword="null"/>.
     /// </exception>
-    public static IServiceCollection AddPipelineServices(this IServiceCollection services)
+    public static IServiceCollection AddPipelineServices(
+        this IServiceCollection services,
+        Action<DotNetRealtimePipeline.DeadLetter.RetryPolicyOptions>? configureRetryPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         var defaultConfig = CreateDefaultConfiguration();
-        return services.AddPipelineServices(defaultConfig);
+        return services.AddPipelineServices(defaultConfig, configureRetryPolicy);
     }
 
     /// <summary>
@@ -96,7 +109,8 @@ services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFacto
     /// </exception>
     public static IServiceCollection AddPipelineServices(
         this IServiceCollection services,
-        Action<PipelineConfig> configureOptions)
+        Action<PipelineConfig> configureOptions,
+        Action<DotNetRealtimePipeline.DeadLetter.RetryPolicyOptions>? configureRetryPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configureOptions);
@@ -104,7 +118,7 @@ services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFacto
         var config = CreateDefaultConfiguration();
         configureOptions(config);
 
-        return services.AddPipelineServices(config);
+        return services.AddPipelineServices(config, configureRetryPolicy);
     }
 
     /// <summary>
