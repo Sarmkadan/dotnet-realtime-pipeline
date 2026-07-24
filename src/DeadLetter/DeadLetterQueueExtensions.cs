@@ -72,26 +72,9 @@ public static class DeadLetterQueueExtensions
                     else
                     {
                         // Requeue the entry for another attempt
-                        Exception? exceptionToRequeue = null;
-                        if (entry.ExceptionType is not null)
-                        {
-                            try
-                            {
-                                var exceptionType = Type.GetType(entry.ExceptionType);
-                                if (exceptionType is not null)
-                                {
-                                    var constructor = exceptionType.GetConstructor(Type.EmptyTypes);
-                                    if (constructor is not null)
-                                    {
-                                        exceptionToRequeue = constructor.Invoke(null) as Exception;
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                // If we can't reconstruct the exception, proceed without it
-                            }
-                        }
+                        var exceptionToRequeue = entry.ExceptionType is not null
+                            ? TryReconstructException(entry.ExceptionType)
+                            : null;
 
                         await queue.EnqueueAsync(
                             entry.DataPoint,
@@ -117,6 +100,60 @@ public static class DeadLetterQueueExtensions
             FailedProcessing = failedCount,
             EntriesProcessed = entriesProcessed.AsReadOnly()
         };
+    }
+
+    /// <summary>
+    /// Attempts to reconstruct a parameterless <see cref="Exception"/> instance from the
+    /// short type name recorded on a <see cref="DeadLetterEntry"/> (see
+    /// <see cref="DeadLetterEntry.ExceptionType"/>). <see cref="Type.GetType(string)"/> only
+    /// resolves fully-qualified names, so this searches every currently loaded assembly for
+    /// a matching, parameterless-constructible <see cref="Exception"/> subtype instead.
+    /// </summary>
+    /// <param name="exceptionTypeName">The short (namespace-less) exception type name to resolve.</param>
+    /// <returns>A new instance of the matching exception type, or <see langword="null"/> when none could be reconstructed.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="exceptionTypeName"/> is null or empty.</exception>
+    private static Exception? TryReconstructException(string exceptionTypeName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(exceptionTypeName);
+
+        try
+        {
+            var candidate = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(assembly => SafeGetTypes(assembly))
+                .FirstOrDefault(type =>
+                    type.Name == exceptionTypeName &&
+                    typeof(Exception).IsAssignableFrom(type) &&
+                    type.GetConstructor(Type.EmptyTypes) is not null);
+
+            return candidate?.GetConstructor(Type.EmptyTypes)?.Invoke(null) as Exception;
+        }
+        catch
+        {
+            // If we can't reconstruct the exception, proceed without it.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Returns the exported types of <paramref name="assembly"/>, or an empty sequence when
+    /// some of its types fail to load (dynamic assemblies, missing dependencies, etc.).
+    /// </summary>
+    /// <param name="assembly">The assembly to inspect.</param>
+    /// <returns>The types successfully loaded from <paramref name="assembly"/>.</returns>
+    private static IEnumerable<Type> SafeGetTypes(System.Reflection.Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (System.Reflection.ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(t => t is not null).Select(t => t!);
+        }
+        catch
+        {
+            return Enumerable.Empty<Type>();
+        }
     }
 
     /// <summary>
