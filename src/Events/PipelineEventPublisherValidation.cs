@@ -51,8 +51,11 @@ public static class PipelineEventPublisherValidation
     /// This method returns <see langword="true"/> because <see cref="PipelineEventPublisher"/>
     /// has no validation criteria on its internal state.
     /// </remarks>
-    public static bool IsValid(this PipelineEventPublisher value) =>
-        value.Validate().Count == 0;
+    public static bool IsValid(this PipelineEventPublisher value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Validate().Count == 0;
+    }
 
     /// <summary>
     /// Ensures that the specified <see cref="PipelineEventPublisher"/> instance is valid.
@@ -62,7 +65,7 @@ public static class PipelineEventPublisherValidation
     /// Thrown if <paramref name="value"/> is <see langword="null"/>.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Thrown when the instance is invalid; the message contains a list of validation problems.
+    /// Thrown if the instance is invalid, containing a list of validation problems.
     /// </exception>
     /// <remarks>
     /// This method validates the publisher instance and throws if any validation problems are found.
@@ -73,11 +76,13 @@ public static class PipelineEventPublisherValidation
         ArgumentNullException.ThrowIfNull(value);
 
         var problems = value.Validate();
-
-        if (problems.Count > 0)
+        if (problems.Count == 0)
         {
-            throw new ArgumentException(
-                $"PipelineEventPublisher is invalid. Problems:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
+            return;
         }
+
+        throw new ArgumentException(
+            $"PipelineEventPublisher is not valid. Problems:{Environment.NewLine}- {string.Join($"{Environment.NewLine}- ", problems)}",
+            nameof(value));
     }
 }
