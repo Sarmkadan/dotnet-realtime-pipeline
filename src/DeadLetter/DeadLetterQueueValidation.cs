@@ -9,6 +9,7 @@ namespace DotNetRealtimePipeline.DeadLetter;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 /// <summary>
 /// Provides validation helpers for <see cref="DeadLetterQueue"/> instances.
@@ -375,6 +376,34 @@ public static class DeadLetterQueueValidation
         }
 
         return problems.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Validates that a file path constructed from entry data stays within the allowed directory.
+    /// </summary>
+    /// <param name="baseDirectory">The base directory that should contain the resolved path.</param>
+    /// <param name="userProvidedPathSegment">The user-provided path segment to validate.</param>
+    /// <returns>True if the path is safe; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="baseDirectory"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="baseDirectory"/> is empty or whitespace.</exception>
+    public static bool IsPathWithinDirectory(this string baseDirectory, string userProvidedPathSegment)
+    {
+        ArgumentNullException.ThrowIfNull(baseDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
+
+        try
+        {
+            var fullBasePath = Path.GetFullPath(baseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            var fullUserPath = Path.GetFullPath(Path.Combine(fullBasePath, userProvidedPathSegment.SanitizeForPath() ?? string.Empty));
+
+            return fullUserPath.StartsWith(fullBasePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(fullUserPath, fullBasePath, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            // If path validation fails for any reason, consider it unsafe
+            return false;
+        }
     }
 
     // Reflection-based accessors for private fields to enable validation

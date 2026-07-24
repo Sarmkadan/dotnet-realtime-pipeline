@@ -167,6 +167,81 @@ public static class DeadLetterEntryValidation
     }
 
     /// <summary>
+    /// Validates that the entry's string fields do not contain path traversal sequences.
+    /// </summary>
+    /// <param name="value">The dead-letter entry to validate for path safety.</param>
+    /// <returns>A list of path traversal problems; empty if no path traversal sequences found.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
+    public static IReadOnlyList<string> ValidatePathSafety(this DeadLetterEntry value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        var problems = new List<string>();
+
+        // Check FailureStageName for path traversal sequences
+        if (!string.IsNullOrEmpty(value.FailureStageName))
+        {
+            var sanitized = value.FailureStageName.SanitizeForPath();
+            if (value.FailureStageName != sanitized)
+            {
+                problems.Add("FailureStageName contains path traversal sequences that were removed.");
+            }
+        }
+
+        // Check FailureReason for path traversal sequences
+        if (!string.IsNullOrEmpty(value.FailureReason))
+        {
+            var sanitized = value.FailureReason.SanitizeForPath();
+            if (value.FailureReason != sanitized)
+            {
+                problems.Add("FailureReason contains path traversal sequences that were removed.");
+            }
+        }
+
+        // Check ExceptionType for path traversal sequences
+        if (!string.IsNullOrEmpty(value.ExceptionType))
+        {
+            var sanitized = value.ExceptionType.SanitizeForPath();
+            if (value.ExceptionType != sanitized)
+            {
+                problems.Add("ExceptionType contains path traversal sequences that were removed.");
+            }
+        }
+
+        // Check ExceptionMessage for path traversal sequences
+        if (!string.IsNullOrEmpty(value.ExceptionMessage))
+        {
+            var sanitized = value.ExceptionMessage.SanitizeForPath();
+            if (value.ExceptionMessage != sanitized)
+            {
+                problems.Add("ExceptionMessage contains path traversal sequences that were removed.");
+            }
+        }
+
+        // Check LastExceptionStackTrace for path traversal sequences
+        if (!string.IsNullOrEmpty(value.LastExceptionStackTrace))
+        {
+            var sanitized = value.LastExceptionStackTrace.SanitizeForPath();
+            if (value.LastExceptionStackTrace != sanitized)
+            {
+                problems.Add("LastExceptionStackTrace contains path traversal sequences that were removed.");
+            }
+        }
+
+        // Check ResolutionNote for path traversal sequences
+        if (!string.IsNullOrEmpty(value.ResolutionNote))
+        {
+            var sanitized = value.ResolutionNote.SanitizeForPath();
+            if (value.ResolutionNote != sanitized)
+            {
+                problems.Add("ResolutionNote contains path traversal sequences that were removed.");
+            }
+        }
+
+        return problems.AsReadOnly();
+    }
+
+    /// <summary>
     /// Determines whether the specified <see cref="DeadLetterEntry"/> is valid.
     /// </summary>
     /// <param name="value">The dead-letter entry to check.</param>
