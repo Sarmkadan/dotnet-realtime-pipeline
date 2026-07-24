@@ -13,6 +13,17 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="RawPipelineAccessor"/>.
 /// </summary>
+/// <remarks>
+/// <see cref="RawPipelineAccessor"/> exposes no public state beyond the live
+/// <see cref="System.IO.Pipelines.PipeReader"/>/<see cref="System.IO.Pipelines.PipeWriter"/>
+/// pair (see <see cref="IRawPipelineAccess"/>), and neither is serializable. The
+/// methods here therefore serialize and reconstruct only the accessor's identity,
+/// not any buffered bytes in flight through the pipe - <see cref="FromJson"/> always
+/// yields a fresh accessor with an empty, independent pipe, never a resurrection of
+/// the original instance's buffered data. Because they never touch the live reader
+/// or writer, all three methods are safe to call at any time, including while the
+/// pipeline is actively reading or writing on another thread.
+/// </remarks>
 public static class RawPipelineAccessorJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
