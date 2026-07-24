@@ -120,3 +120,82 @@ public class PipelineExceptionValidationTests
         Assert.Empty(errors);
     }
 }
+
+    [Fact]
+    public void Validate_WithEmptyMessage_ThrowsValidationError()
+    {
+        // Arrange: empty message triggers a validation error
+        var ex = new PipelineException(string.Empty, "ERR001");
+
+        // Act
+        IReadOnlyList<string> errors = ex.Validate();
+
+        // Assert
+        Assert.Contains("Message cannot be null, empty, or whitespace.", errors);
+    }
+
+    [Fact]
+    public void Validate_WithWhitespaceMessage_ThrowsValidationError()
+    {
+        // Arrange: whitespace-only message triggers a validation error
+        var ex = new PipelineException("   ", "ERR001");
+
+        // Act
+        IReadOnlyList<string> errors = ex.Validate();
+
+        // Assert
+        Assert.Contains("Message cannot be null, empty, or whitespace.", errors);
+    }
+
+    [Fact]
+    public void Validate_WithEmptyErrorCode_ThrowsValidationError()
+    {
+        // Arrange: empty error code triggers a validation error
+        var ex = new PipelineException("Message present", string.Empty);
+
+        // Act
+        IReadOnlyList<string> errors = ex.Validate();
+
+        // Assert
+        Assert.Contains("ErrorCode cannot be null or empty.", errors);
+    }
+
+    [Fact]
+    public void Validate_WithWhitespaceErrorCode_ThrowsValidationError()
+    {
+        // Arrange: whitespace-only error code triggers a validation error
+        var ex = new PipelineException("Message present", "   ");
+
+        // Act
+        IReadOnlyList<string> errors = ex.Validate();
+
+        // Assert
+        Assert.Contains("ErrorCode cannot be null or empty.", errors);
+    }
+
+    [Fact]
+    public void IsValid_WithEmptyMessage_ReturnsFalse()
+    {
+        // Arrange
+        var ex = new PipelineException(string.Empty, "ERR001");
+
+        // Act
+        bool isValid = ex.IsValid();
+
+        // Assert
+        Assert.False(isValid);
+    }
+
+    [Fact]
+    public void IsValid_WithWhitespaceErrorCode_ReturnsFalse()
+    {
+        // Arrange
+        var ex = new PipelineException("Message present", "   ");
+
+        // Act
+        bool isValid = ex.IsValid();
+
+        // Assert
+        Assert.False(isValid);
+    }
+}
