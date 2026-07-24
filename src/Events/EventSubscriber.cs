@@ -215,6 +215,27 @@ public class BackpressureAlertSubscriber : EventSubscriberBase
     }
 
     /// <summary>
+    /// Gets the subscriber options for backpressure alerting.
+    /// Alerts are the signal that tells operators the pipeline is saturated, so their
+    /// channel must never apply the same bounded, drop-on-overflow policy used for
+    /// high-volume data events - doing so would silently discard the alert exactly
+    /// when it matters most. This overrides the default with an effectively unbounded,
+    /// non-dropping queue, giving alert delivery a dedicated out-of-band lane.
+    /// </summary>
+    protected override SubscriberOptions GetSubscriberOptions()
+    {
+        return new SubscriberOptions
+        {
+            Name = GetType().Name,
+            MaxQueueSize = int.MaxValue,
+            MaxQueueSizeBehavior = MaxQueueSizeBehavior.Block,
+            DispatchMode = SubscriberDispatchMode.Sequential,
+            ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount,
+            MaxDegreeOfParallelism = 1
+        };
+    }
+
+    /// <summary>
     /// Handles backpressure detection events with alerting.
     /// </summary>
     private async Task OnBackpressureDetectedAsync(BackpressureDetectedEventArgs args)
@@ -458,6 +479,24 @@ public class ErrorAlertSubscriber : EventSubscriberBase
         var options = GetSubscriberOptions();
         _publisher.Subscribe<PipelineErrorEventArgs>(
             nameof(PipelineErrorEvent), OnPipelineErrorAsync, options);
+    }
+
+    /// <summary>
+    /// Gets the subscriber options for error alerting.
+    /// Uses an effectively unbounded, non-dropping queue so error alerts are never
+    /// discarded due to the same bounded capacity applied to high-volume data events.
+    /// </summary>
+    protected override SubscriberOptions GetSubscriberOptions()
+    {
+        return new SubscriberOptions
+        {
+            Name = GetType().Name,
+            MaxQueueSize = int.MaxValue,
+            MaxQueueSizeBehavior = MaxQueueSizeBehavior.Block,
+            DispatchMode = SubscriberDispatchMode.Sequential,
+            ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount,
+            MaxDegreeOfParallelism = 1
+        };
     }
 
     /// <summary>
