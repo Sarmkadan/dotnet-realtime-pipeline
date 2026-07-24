@@ -277,6 +277,27 @@ public sealed class WindowingService
     }
 
     /// <summary>
+    /// Forcibly emits every currently active window regardless of whether it has
+    /// reached its natural completion time. Used during a graceful shutdown / drain
+    /// so that partial (in-flight) tumbling and sliding window state is not silently
+    /// lost when the host stops.
+    /// </summary>
+    /// <returns>A list of <see cref="WindowEmissionResult"/> for every active window that was flushed.</returns>
+    public List<WindowEmissionResult> FlushAllWindows()
+    {
+        var flushed = new List<WindowEmissionResult>();
+
+        foreach (var window in _activeWindows.Values.ToList())
+        {
+            flushed.Add(EmitWindow(window));
+        }
+
+        _activeWindows.Clear();
+
+        return flushed;
+    }
+
+    /// <summary>
     /// Gets a summary of active windows.
     /// </summary>
     /// <returns>A <see cref="WindowingSummary"/> object.</returns>

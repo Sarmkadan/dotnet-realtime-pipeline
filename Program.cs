@@ -62,8 +62,11 @@ catch (Exception ex)
 }
 finally
 {
-    await orchestrator.StopAsync();
-    logger.LogInformation("Pipeline stopped");
+    var drainResult = await orchestrator.DrainAsync(TimeSpan.FromSeconds(5));
+    logger.LogInformation(
+        "Pipeline stopped after drain: {Result}",
+        drainResult.ToString());
+    await orchestrator.DisposeAsync();
 }
 
 async Task RunDemoAsync(PipelineOrchestrator pipeline, ILogger<Program> log)

@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 /// Orchestrates the entire data processing pipeline.
 /// Coordinates multiple services and manages the flow of data through stages.
 /// </summary>
-public sealed class PipelineOrchestrator
+public sealed class PipelineOrchestrator : IAsyncDisposable
 {
     private readonly DataProcessingService _processingService;
     private readonly WindowingService _windowingService;
@@ -29,9 +29,13 @@ public sealed class PipelineOrchestrator
     private readonly PipelineConfig _config;
 
     private bool _isRunning;
+    private volatile bool _drainRequested;
+    private bool _disposed;
     private readonly Queue<DataPoint> _incomingDataQueue = new();
     private long _totalProcessed;
     private long _totalFailed;
+    private readonly TaskCompletionSource<bool> _loopCompletion =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public PipelineOrchestrator(
         DataProcessingService processingService,
@@ -81,13 +85,85 @@ public sealed class PipelineOrchestrator
     }
 
     /// <summary>
-    /// Stops the pipeline orchestrator.
+    /// Stops the pipeline orchestrator, performing a graceful drain of any
+    /// in-flight items and windows with a default five-second timeout.
     /// </summary>
     /// <returns>A task that represents the asynchronous stop operation.</returns>
     public async Task StopAsync()
     {
+        await DrainAsync(TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// Stops accepting new items, drains items already queued for ingestion, flushes
+    /// any partially filled tumbling/sliding windows that are still active, and reports
+    /// how many items were processed versus dropped during the shutdown.
+    /// </summary>
+    /// <param name="timeout">
+    /// The maximum amount of time to wait for the in-flight queue to drain before the
+    /// remaining, unprocessed items are counted as dropped and discarded.
+    /// </param>
+    /// <returns>A <see cref="DrainResult"/> describing the outcome of the drain.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="timeout"/> is zero or negative.</exception>
+    public async Task<DrainResult> DrainAsync(TimeSpan timeout)
+    {
+        if (timeout <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "Drain timeout must be a positive duration.");
+
+        // Stop accepting new items immediately; the processing loop keeps running
+        // until the queue is empty or the timeout elapses.
+        _drainRequested = true;
         _isRunning = false;
-        await Task.Delay(500); // Allow processing loop to finish
+
+        bool timedOut = false;
+        var completedTask = await Task.WhenAny(_loopCompletion.Task, Task.Delay(timeout));
+        if (completedTask != _loopCompletion.Task)
+            timedOut = true;
+
+        int dropped;
+        lock (_incomingDataQueue)
+        {
+            dropped = _incomingDataQueue.Count;
+            _incomingDataQueue.Clear();
+        }
+
+        // Flush partial window state (tumbling/sliding windows that never reached
+        // their natural completion time) so it is not silently lost on shutdown.
+        var flushedWindows = _windowingService.FlushAllWindows();
+
+        // Force a final metrics snapshot so throughput/latency figures reflect
+        // everything that was processed up to and including the drain, rather
+        // than being cut off mid-interval.
+        HealthReport finalHealth = await _metricsService.GenerateHealthReportAsync();
+
+        return new DrainResult
+        {
+            ItemsProcessed = Interlocked.Read(ref _totalProcessed),
+            ItemsFailed = Interlocked.Read(ref _totalFailed),
+            ItemsDropped = dropped,
+            WindowsFlushed = flushedWindows.Count,
+            DataPointsFlushedFromWindows = flushedWindows.Sum(w => w.DataPointCount),
+            TimedOut = timedOut,
+            FinalHealth = finalHealth
+        };
+    }
+
+    /// <summary>
+    /// Asynchronously releases the resources used by the pipeline, performing a final
+    /// drain with a five-second timeout if the pipeline was never explicitly stopped.
+    /// </summary>
+    /// <returns>A value task representing the asynchronous dispose operation.</returns>
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        if (_isRunning || !_drainRequested)
+        {
+            await DrainAsync(TimeSpan.FromSeconds(5));
+        }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>
@@ -207,7 +283,7 @@ public sealed class PipelineOrchestrator
         List<DataPoint> batch = new();
         int batchSize = 100;
 
-        while (_isRunning)
+        while (_isRunning || _drainRequested)
         {
             try
             {
@@ -222,6 +298,10 @@ public sealed class PipelineOrchestrator
 
                 if (batch.Count == 0)
                 {
+                    // Once a drain has been requested and the queue is empty, there is
+                    // nothing left to process - exit deterministically instead of idling.
+                    if (_drainRequested) break;
+
                     await Task.Delay(100);
                     continue;
                 }
@@ -338,7 +418,44 @@ public sealed class PipelineOrchestrator
                 await Task.Delay(100);
             }
         }
+
+        _loopCompletion.TrySetResult(true);
     }
+}
+
+/// <summary>
+/// Describes the outcome of a graceful pipeline shutdown / drain.
+/// </summary>
+public sealed class DrainResult
+{
+    /// <summary>Gets the total number of items successfully processed over the pipeline's lifetime, including the drain.</summary>
+    public long ItemsProcessed { get; init; }
+
+    /// <summary>Gets the total number of items that failed processing over the pipeline's lifetime, including the drain.</summary>
+    public long ItemsFailed { get; init; }
+
+    /// <summary>Gets the number of queued items that were discarded because the drain timeout elapsed before they could be processed.</summary>
+    public int ItemsDropped { get; init; }
+
+    /// <summary>Gets the number of active (partial) windows that were force-flushed as part of the drain.</summary>
+    public int WindowsFlushed { get; init; }
+
+    /// <summary>Gets the total number of data points contained in the windows that were force-flushed.</summary>
+    public int DataPointsFlushedFromWindows { get; init; }
+
+    /// <summary>Gets a value indicating whether the drain timed out before the ingestion queue fully emptied.</summary>
+    public bool TimedOut { get; init; }
+
+    /// <summary>Gets the final metrics snapshot captured at the end of the drain, or <see langword="null"/> if none could be generated.</summary>
+    public HealthReport? FinalHealth { get; init; }
+
+    /// <summary>
+    /// Returns a short human-readable summary of the drain outcome.
+    /// </summary>
+    /// <returns>A formatted summary string.</returns>
+    public override string ToString() =>
+        $"Drain[Processed={ItemsProcessed}, Failed={ItemsFailed}, Dropped={ItemsDropped}, " +
+        $"WindowsFlushed={WindowsFlushed}, TimedOut={TimedOut}]";
 }
 
 /// <summary>
