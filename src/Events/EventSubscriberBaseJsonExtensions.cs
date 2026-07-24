@@ -9,20 +9,14 @@ namespace DotNetRealtimePipeline.Events;
 
 using System;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using DotNetRealtimePipeline.Utilities;
 
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="EventSubscriberBase"/>.
 /// </summary>
 public static class EventSubscriberBaseJsonExtensions
 {
-    private static readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNameCaseInsensitive = true
-    };
+    private static readonly JsonSerializerOptions _jsonSerializerOptions = PipelineJsonUtilities.JsonSerializerOptions;
 
     /// <summary>
     /// Serializes the <see cref="EventSubscriberBase"/> instance to a JSON string.
@@ -36,8 +30,7 @@ public static class EventSubscriberBaseJsonExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         var options = indented
-            ? new JsonSerializerOptions(_jsonSerializerOptions)
-            { WriteIndented = true }
+            ? new JsonSerializerOptions(_jsonSerializerOptions) { WriteIndented = true }
             : _jsonSerializerOptions;
 
         return JsonSerializer.Serialize(value, options);
@@ -49,12 +42,16 @@ public static class EventSubscriberBaseJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized subscriber instance, or null if the JSON is null or empty.</returns>
     /// <exception cref="JsonException">Thrown when the JSON is malformed or cannot be deserialized.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the JSON payload exceeds size limits.</exception>
     public static EventSubscriberBase? FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
         }
+
+        // Security: Validate JSON payload size before deserialization
+        PipelineJsonUtilities.ValidateJsonPayloadSize(json);
 
         return JsonSerializer.Deserialize<EventSubscriberBase>(json, _jsonSerializerOptions);
     }
@@ -79,6 +76,9 @@ public static class EventSubscriberBaseJsonExtensions
 
         try
         {
+            // Security: Validate JSON payload size before deserialization
+            PipelineJsonUtilities.ValidateJsonPayloadSize(json);
+
             value = JsonSerializer.Deserialize<EventSubscriberBase>(json, _jsonSerializerOptions);
             return true;
         }
