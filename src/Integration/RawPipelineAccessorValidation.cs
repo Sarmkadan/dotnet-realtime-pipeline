@@ -7,6 +7,15 @@ using System.Collections.Generic;
 /// <summary>
 /// Provides validation extensions for <see cref="RawPipelineAccessor"/> instances.
 /// </summary>
+/// <remarks>
+/// This validation is limited to instance presence: <see cref="RawPipelineAccessor"/>
+/// has no user-configurable public state to check beyond the null guard itself, since
+/// the underlying <see cref="System.IO.Pipelines.Pipe"/> is always constructed with
+/// valid options and managed internally. None of these methods read from or write to
+/// the accessor's <see cref="System.IO.Pipelines.PipeReader"/> or
+/// <see cref="System.IO.Pipelines.PipeWriter"/>, so they are safe to call at any time,
+/// including while the pipeline is actively reading or writing on another thread.
+/// </remarks>
 public static class RawPipelineAccessorValidation
 {
     /// <summary>
