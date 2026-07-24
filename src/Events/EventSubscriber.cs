@@ -86,6 +86,12 @@ public abstract class EventSubscriberBase
 /// </summary>
 public class DataIngestSubscriber : EventSubscriberBase
 {
+    /// <summary>
+    /// Gets the maximum number of data points allowed in a single batch.
+    /// This prevents memory DoS attacks and ensures predictable memory usage.
+    /// </summary>
+    public const int MaxBatchSize = 10000;
+
     public DataIngestSubscriber(PipelineEventPublisher publisher, ILogger<DataIngestSubscriber> logger)
         : base(publisher, logger)
     {
@@ -100,28 +106,83 @@ public class DataIngestSubscriber : EventSubscriberBase
     }
 
     /// <summary>
-    /// Handles data ingestion events.
+    /// Handles data ingestion events with input validation.
     /// </summary>
+    /// <param name="args">The data ingestion event arguments containing the data point to process.</param>
+    /// <exception cref="ArgumentNullException">Thrown when args or DataPoint is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when data validation fails (null/empty source, invalid timestamp/value, quality out of range).</exception>
     private async Task OnDataIngestedAsync(DataIngestedEventArgs args)
     {
-        try
+        if (args == null)
         {
-            _logger.LogDebug("Data point ingested - ID: {Id}, Source: {Source}, Quality: {Quality}",
-                args.DataPoint.Id, args.DataPoint.Source, args.DataPoint.Quality);
+            throw new ArgumentNullException(nameof(args));
+        }
 
-            await ProcessIngestedDataAsync(args.DataPoint);
-        }
-        catch (Exception ex)
+        if (args.DataPoint == null)
         {
-            _logger.LogError(ex, "Error processing ingested data");
+            throw new ArgumentNullException(nameof(args.DataPoint), "DataPoint cannot be null");
         }
+
+        // Validate data point integrity using the built-in Validate method
+        if (!args.DataPoint.Validate())
+        {
+            throw new ArgumentException(
+                $"DataPoint validation failed. Ensure: Id > 0, Timestamp > 0, Source is not null/empty, Quality is between 0-100. " +
+                $"Received - Id: {args.DataPoint.Id}, Timestamp: {args.DataPoint.Timestamp}, Source: '{args.DataPoint.Source}', Quality: {args.DataPoint.Quality}",
+                nameof(args.DataPoint));
+        }
+
+        // Validate timestamp is reasonable (not in the distant future or past)
+        const long maxFutureTimestampMs = 86400000; // 24 hours in future
+        const long maxPastTimestampMs = 864000000; // 10 days in past
+        long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (args.DataPoint.Timestamp > currentTimestamp + maxFutureTimestampMs)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(args.DataPoint.Timestamp),
+                $"Timestamp is too far in the future. Current: {currentTimestamp}, Received: {args.DataPoint.Timestamp}");
+        }
+
+        if (args.DataPoint.Timestamp < currentTimestamp - maxPastTimestampMs)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(args.DataPoint.Timestamp),
+                $"Timestamp is too old. Current: {currentTimestamp}, Received: {args.DataPoint.Timestamp}");
+        }
+
+        // Validate value is within reasonable range for sensor data
+        if (double.IsNaN(args.DataPoint.Value) || double.IsInfinity(args.DataPoint.Value))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(args.DataPoint.Value),
+                $"Value must be a valid number. Received: {args.DataPoint.Value}");
+        }
+
+        // Validate value is within reasonable bounds (e.g., temperature sensor: -273.15°C to 1000°C)
+        // This prevents obviously invalid sensor readings
+        if (args.DataPoint.Value < -10000 || args.DataPoint.Value > 10000)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(args.DataPoint.Value),
+                $"Value is outside reasonable range for sensor data. Received: {args.DataPoint.Value}");
+        }
+
+        // Log successful validation
+        _logger.LogDebug("Data point ingested - ID: {Id}, Source: {Source}, Quality: {Quality}",
+            args.DataPoint.Id, args.DataPoint.Source, args.DataPoint.Quality);
+
+        await ProcessIngestedDataAsync(args.DataPoint);
     }
 
     /// <summary>
     /// Custom processing logic for ingested data.
     /// </summary>
+    /// <param name="dataPoint">The validated data point to process.</param>
+    /// <exception cref="ArgumentNullException">Thrown when dataPoint is null.</exception>
     protected virtual async Task ProcessIngestedDataAsync(DataPoint dataPoint)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
+
         // Can be overridden by derived classes
         await Task.CompletedTask;
     }
