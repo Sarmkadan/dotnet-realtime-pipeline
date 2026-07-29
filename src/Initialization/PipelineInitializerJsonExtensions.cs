@@ -1,3 +1,4 @@
+// src/Initialization/PipelineInitializerJsonExtensions.cs
 #nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
