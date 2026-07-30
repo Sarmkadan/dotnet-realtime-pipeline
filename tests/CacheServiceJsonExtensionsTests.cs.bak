@@ -1,0 +1,89 @@
+using System;
+using System.Text.Json;
+using Xunit;
+using DotNetRealtimePipeline.Caching;
+
+namespace DotNetRealtimePipeline.Tests.Caching
+{
+    public class CacheServiceJsonExtensionsTests
+    {
+        [Fact]
+        public void ToJson_HappyPath_ReturnsString()
+        {
+            // Arrange
+            var cache = new CacheService<object, object>();
+            
+            // Act
+            var json = cache.ToJson();
+            
+            // Assert
+            Assert.NotNull(json);
+            Assert.Contains("{", json);
+        }
+
+        [Fact]
+        public void ToJson_Indented_ReturnsFormattedString()
+        {
+            // Arrange
+            var cache = new CacheService<object, object>();
+            
+            // Act
+            var json = cache.ToJson(indented: true);
+            
+            // Assert
+            Assert.NotNull(json);
+            Assert.Contains(Environment.NewLine, json);
+        }
+
+        [Fact]
+        public void ToJson_NullInput_ThrowsArgumentNullException()
+        {
+            // Arrange
+            CacheService<object, object>? cache = null;
+            
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => cache!.ToJson());
+        }
+
+        [Fact]
+        public void FromJson_InvalidJson_ThrowsJsonException()
+        {
+            // Arrange
+            var invalidJson = "invalid";
+            
+            // Act & Assert
+            Assert.Throws<JsonException>(() => CacheServiceJsonExtensions.FromJson(invalidJson));
+        }
+
+        [Fact]
+        public void FromJson_NullOrEmptyJson_ThrowsArgumentException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => CacheServiceJsonExtensions.FromJson(null!));
+            Assert.Throws<ArgumentException>(() => CacheServiceJsonExtensions.FromJson(""));
+        }
+
+        [Fact]
+        public void TryFromJson_InvalidJson_ReturnsFalse()
+        {
+            // Arrange
+            var invalidJson = "invalid";
+            
+            // Act
+            var result = CacheServiceJsonExtensions.TryFromJson(invalidJson, out var cache);
+            
+            // Assert
+            Assert.False(result);
+            Assert.Null(cache);
+        }
+
+        [Fact]
+        public void TryFromJson_NullOrEmptyJson_ThrowsArgumentException()
+        {
+            // Act & Assert
+            CacheService<object, object>? cache;
+            Assert.Throws<ArgumentException>(() => CacheServiceJsonExtensions.TryFromJson(null!, out cache));
+            Assert.Throws<ArgumentException>(() => CacheServiceJsonExtensions.TryFromJson("", out cache));
+        }
+    }
+}
