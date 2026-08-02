@@ -8,8 +8,14 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="SlidingWindowAggregator"/> class, validating aggregation, eviction, metadata, and trend calculations.
+/// </summary>
 public class SlidingWindowAggregatorTests
 {
+    /// <summary>
+    /// Verifies that data points falling within the configured sliding window are correctly aggregated together.
+    /// </summary>
     [Fact]
     public void ValuesWithinWindowAggregateCorrectly()
     {
@@ -35,6 +41,9 @@ public class SlidingWindowAggregatorTests
         targetWindow.Max.Should().Be(30.0);
     }
 
+    /// <summary>
+    /// Verifies that data points older than the defined window size are evicted from the aggregation.
+    /// </summary>
     [Fact]
     public void ValuesOlderThanWindowAreEvictedFromAggregate()
     {
@@ -61,6 +70,9 @@ public class SlidingWindowAggregatorTests
         recentWindow.Max.Should().Be(40.0);
     }
 
+    /// <summary>
+    /// Verifies that flushing a window with no added data points returns an empty result set.
+    /// </summary>
     [Fact]
     public void EmptyWindowResult()
     {
@@ -75,6 +87,9 @@ public class SlidingWindowAggregatorTests
         results.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Verifies that a single data point within a window is correctly processed as an aggregation result.
+    /// </summary>
     [Fact]
     public void SingleValueInWindow()
     {
@@ -98,6 +113,9 @@ public class SlidingWindowAggregatorTests
         windowWithPoint.Max.Should().Be(42.5);
     }
 
+    /// <summary>
+    /// Verifies that data points arriving with out-of-order timestamps are handled correctly by the aggregator.
+    /// </summary>
     [Fact]
     public void OutOfOrderTimestampHandling()
     {
@@ -123,6 +141,9 @@ public class SlidingWindowAggregatorTests
         windowWithAllPoints.Max.Should().Be(30.0);
     }
 
+    /// <summary>
+    /// Verifies that the aggregator correctly emits multiple aggregated windows when data points span across them.
+    /// </summary>
     [Fact]
     public void MultipleWindowsEmitted()
     {
@@ -156,6 +177,9 @@ public class SlidingWindowAggregatorTests
         firstDataWindow.Sum.Should().NotBe(secondDataWindow.Sum);
     }
 
+    /// <summary>
+    /// Verifies the correctness of the aggregated metrics (average, sum, min, max, count) for a set of data points.
+    /// </summary>
     [Fact]
     public void AggregationCalculationsAreCorrect()
     {
@@ -183,6 +207,9 @@ public class SlidingWindowAggregatorTests
         targetWindow.DataPointCount.Should().Be(3);
     }
 
+    /// <summary>
+    /// Verifies that the trend calculation correctly identifies positive and negative trends based on data point values.
+    /// </summary>
     [Fact]
     public void TrendCalculationIsCorrect()
     {
@@ -217,6 +244,9 @@ public class SlidingWindowAggregatorTests
         targetWindow2.Trend.Should().BeNegative(); // Should be negative since values are decreasing
     }
 
+    /// <summary>
+    /// Verifies that the resulting aggregated windows contain the correct metadata, such as window size, step interval, and window type.
+    /// </summary>
     [Fact]
     public void WindowMetadataIsCorrect()
     {
