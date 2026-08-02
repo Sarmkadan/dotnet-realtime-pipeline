@@ -15,8 +15,15 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
+/// <summary>
+/// Tests for RateLimitingMiddleware concurrency safety and race condition fixes.
+/// Validates that the fixed-window reset race is properly handled.
+/// </summary>
 public class RateLimitingMiddlewareConcurrencyTests
 {
+    /// <summary>
+    /// Tests that when making concurrent requests, the rate limiter does not exceed the limit.
+    /// </summary>
     [Fact]
     public void TryConsume_WithConcurrentRequests_ShouldNotExceedLimit()
     {
@@ -55,6 +62,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.True(successCount <= limit, $"Expected at most {limit} successful requests, but got {successCount}");
     }
 
+    /// <summary>
+    /// Tests that accessing the AvailableTokens property concurrently is thread-safe.
+    /// </summary>
     [Fact]
     public void AvailableTokens_WhenAccessedConcurrently_ShouldBeThreadSafe()
     {
@@ -84,6 +94,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.True(status.AvailableTokens <= status.Capacity);
     }
 
+    /// <summary>
+    /// Tests that accessing the NextRefillTime property concurrently is thread-safe.
+    /// </summary>
     [Fact]
     public void NextRefillTime_WhenAccessedConcurrently_ShouldBeThreadSafe()
     {
@@ -118,6 +131,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.True(finalStatus.Capacity > 0);
     }
 
+    /// <summary>
+    /// Tests that at the window boundary, the limiter does not allow more than the limit (i.e., no double dipping).
+    /// </summary>
     [Fact]
     public void TryConsume_AtWindowBoundary_ShouldNotAllowDoubleTheLimit()
     {
@@ -141,6 +157,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.True(limiter.TryAcquire(identifier));
     }
 
+    /// <summary>
+    /// Tests that calling GetStatus concurrently does not throw exceptions.
+    /// </summary>
     [Fact]
     public void GetStatus_WhenCalledConcurrently_ShouldNotThrow()
     {
@@ -170,6 +189,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.NotNull(status);
     }
 
+    /// <summary>
+    /// Tests that concurrent access to different identifiers does not interfere.
+    /// </summary>
     [Fact]
     public void MultipleIdentifiers_WhenAccessedConcurrently_ShouldNotInterfere()
     {
@@ -199,6 +221,9 @@ public class RateLimitingMiddlewareConcurrencyTests
         Assert.True(status2.AvailableTokens >= 0);
     }
 
+    /// <summary>
+    /// Tests that calling Reset concurrently does not cause issues.
+    /// </summary>
     [Fact]
     public void Reset_WhenCalledConcurrently_ShouldNotCauseIssues()
     {
