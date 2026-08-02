@@ -1,0 +1,23 @@
+add benchmark for DeadLetterEntry
+
+Create ONE new file: dotnet-realtime-pipeline.Benchmarks/DeadLetterEntryBenchmarks.cs with class DeadLetterEntryBenchmarks
+
+Write 3-5 benchmark methods covering the main public methods. For each:
+- Use [Benchmark] attribute
+- Set up realistic test data in [GlobalSetup]
+- Include a [Params] for input size where relevant (e.g. 10, 100, 1000)
+- Add [MemoryDiagnoser] on the class
+
+HARD RULES:
+- Create ONLY the benchmark file. Do NOT modify existing files.
+- Do NOT add NuGet packages (BenchmarkDotNet should already be referenced).
+- Must compile with `dotnet build`.
+- Commit message: conventional commits, lowercase, no AI mentions.
+
+EXPLICIT STEPS:
+1. Check the benchmark project .csproj has a PackageReference to BenchmarkDotNet. If NOT, STOP - do not create the file.
+2. Create the benchmark file at the path above.
+3. Add [MemoryDiagnoser] on the class, [Benchmark] on each method.
+4. Use [GlobalSetup] to prepare test data. Keep it simple - arrays, lists, dictionaries.
+5. Run: dotnet build in the benchmark project. Must compile.
+6. Do NOT benchmark trivial getters/setters. Only methods with loops, LINQ, or I/O.
