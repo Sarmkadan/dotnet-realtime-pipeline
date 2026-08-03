@@ -1,3 +1,13 @@
+## CommandLineParserTests
+
+The CommandLineParserTests class contains unit tests for the CommandLineParser class. These tests verify that the parser correctly handles various command-line scenarios, including parsing empty arguments, unknown commands, and commands with required and optional options.
+
+Example usage:
+```csharp
+CommandLineParser parser = new CommandLineParser();
+parser.Parse("--help");
+```
+
 ## MetricsServiceTestsExtensions
 
 The MetricsServiceTestsExtensions class provides extension methods for testing the MetricsService class. It includes methods for getting the service instance, setting up a mock repository, generating test data points, and verifying the results.
