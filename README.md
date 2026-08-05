@@ -23,3 +23,24 @@ public static void VerifyTestResult
 public static void VerifyRepositoryCall
 public static void VerifyTestResult
 ```
+
+## ValidationHelperValidation
+
+The ValidationHelperValidation class provides a suite of static methods for validating data integrity, including time range checks and boundary validations. It supports multiple validation strategies, returning boolean flags, detailed result objects, or lists of error messages to accommodate different error handling requirements.
+
+Example usage:
+```csharp
+// Perform specific checks
+bool timeValid = ValidationHelperValidation.IsInTimeRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(-1));
+bool boundsValid = ValidationHelperValidation.IsWithinBounds(50, 0, 100);
+
+// Validate and retrieve results
+var result = ValidationHelperValidation.Validate(inputData);
+var errors = ValidationHelperValidation.Validate(inputData);
+
+// Check validity or enforce it
+if (ValidationHelperValidation.IsValid(inputData))
+{
+    ValidationHelperValidation.EnsureValid(inputData);
+}
+```
