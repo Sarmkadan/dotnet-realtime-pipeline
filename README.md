@@ -20,7 +20,6 @@ public static void VerifyMetricsService
 public static IReadOnlyList<DataPoint> GenerateTestDataPoints
 public static void ConfigureMockRepository
 public static void VerifyTestResult
-public static void VerifyRepositoryCall
 public static void VerifyTestResult
 ```
 
@@ -43,4 +42,18 @@ if (ValidationHelperValidation.IsValid(inputData))
 {
     ValidationHelperValidation.EnsureValid(inputData);
 }
+```
+
+## DataProcessingServiceTestsExtensions
+
+The DataProcessingServiceTestsExtensions class provides static methods for creating test data and pipeline configurations for unit testing the DataProcessingService class.
+
+Example usage:
+```csharp
+public static DataPoint CreateValidDataPoint
+public static DataPoint CreateLowQualityDataPoint
+public static DataPoint CreateInvalidDataPoint
+public static PipelineConfig CreateTestPipelineConfig
+public static ProcessingResult CreateSuccessfulResult
+public static ProcessingResult CreateFailedResult
 ```
