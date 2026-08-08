@@ -57,3 +57,24 @@ public static PipelineConfig CreateTestPipelineConfig
 public static ProcessingResult CreateSuccessfulResult
 public static ProcessingResult CreateFailedResult
 ```
+
+## PipelineEventPublisherJsonExtensionsTests
+
+The PipelineEventPublisherJsonExtensionsTests class validates the JSON serialization and deserialization functionality for PipelineEventPublisher, ensuring proper formatting, null handling, and robust parsing through both direct and Try-based methods.
+
+Example usage:
+```csharp
+var publisher = new PipelineEventPublisher();
+
+// Serialize to JSON (supports indentation)
+string json = publisher.ToJson(indented: true);
+
+// Deserialize from JSON
+var deserialized = PipelineEventPublisherJsonExtensions.FromJson(json);
+
+// Try to parse from JSON safely
+if (PipelineEventPublisherJsonExtensions.TryFromJson(json, out var result))
+{
+    // Result is now an instance of PipelineEventPublisher
+}
+```
