@@ -78,3 +78,20 @@ if (PipelineEventPublisherJsonExtensions.TryFromJson(json, out var result))
     // Result is now an instance of PipelineEventPublisher
 }
 ```
+
+## ApiEndpointHandlerExtensionsTests
+
+The ApiEndpointHandlerExtensionsTests class verifies that the ApiEndpointHandlerExtensions class correctly manages API response construction, ensuring that successful results, error responses, and paginated outputs are generated as expected. It includes comprehensive test coverage for edge cases, including null handling and invalid input parameters, guaranteeing reliability across all response scenarios.
+
+Example usage:
+```csharp
+// Verify standard successful response creation
+[Fact]
+public void Ok_CreatesSuccessfulResponseWithData_Example()
+{
+    var handler = new ApiEndpointHandler();
+    var data = new { Message = "Test" };
+    var result = handler.Ok(data);
+    Assert.Equal(200, result.StatusCode);
+}
+```
