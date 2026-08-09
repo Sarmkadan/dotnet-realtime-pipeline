@@ -32,8 +32,7 @@ public sealed class BackpressureService
     /// </summary>
     public BackpressureContext CreateContext(string stageName, long maxBufferCapacity)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(stageName));
         if (maxBufferCapacity <= 0)
             throw new ArgumentException("Max capacity must be > 0", nameof(maxBufferCapacity));
 
