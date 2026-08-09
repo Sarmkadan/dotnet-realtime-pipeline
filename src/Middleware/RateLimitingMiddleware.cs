@@ -31,6 +31,7 @@ public sealed class RateLimitingMiddleware
     /// </summary>
     public bool TryAcquire(string identifier, int tokensRequired = 1)
     {
+        ArgumentException.ThrowIfNullOrEmpty(identifier);
         var bucket = _buckets.GetOrAdd(identifier, _ => new RateLimitBucket(_tokensPerSecond, _maxBurstSize));
         return bucket.TryConsume(tokensRequired);
     }
@@ -40,6 +41,7 @@ public sealed class RateLimitingMiddleware
     /// </summary>
     public RateLimitStatus GetStatus(string identifier)
     {
+        ArgumentException.ThrowIfNullOrEmpty(identifier);
         if (_buckets.TryGetValue(identifier, out var bucket))
         {
             return new RateLimitStatus
@@ -58,6 +60,7 @@ public sealed class RateLimitingMiddleware
     /// </summary>
     public void Reset(string identifier)
     {
+        ArgumentException.ThrowIfNullOrEmpty(identifier);
         _buckets.TryRemove(identifier, out _);
     }
 
@@ -187,6 +190,7 @@ public sealed class StageRateLimitingMiddleware
     /// </summary>
     public void RegisterStageLimit(string stageName, int itemsPerSecond, int burstSize)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
         _stageLimits[stageName] = new RateLimitingMiddleware(itemsPerSecond, burstSize);
     }
 
@@ -195,6 +199,7 @@ public sealed class StageRateLimitingMiddleware
     /// </summary>
     public bool CanProcessInStage(string stageName, int itemCount = 1)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
         if (!_stageLimits.TryGetValue(stageName, out var limiter))
         {
             return true; // No limit registered, allow
