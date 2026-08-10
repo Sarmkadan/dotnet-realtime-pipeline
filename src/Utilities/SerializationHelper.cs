@@ -32,6 +32,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string ToJson(DataPoint dataPoint)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
         return JsonSerializer.Serialize(dataPoint, JsonOptions);
     }
 
@@ -40,6 +41,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static DataPoint FromJson(string json)
     {
+        ArgumentException.ThrowIfNullOrEmpty(json);
         return JsonSerializer.Deserialize<DataPoint>(json, JsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize DataPoint");
     }
@@ -49,6 +51,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string ToJsonArray(List<DataPoint> dataPoints)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
         return JsonSerializer.Serialize(dataPoints, JsonOptions);
     }
 
@@ -57,6 +60,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static List<DataPoint> FromJsonArray(string json)
     {
+        ArgumentException.ThrowIfNullOrEmpty(json);
         return JsonSerializer.Deserialize<List<DataPoint>>(json, JsonOptions)
             ?? new List<DataPoint>();
     }
@@ -66,6 +70,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string ToCsv(DataPoint dataPoint, bool includeHeader = true)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
         var sb = new StringBuilder();
 
         if (includeHeader)
