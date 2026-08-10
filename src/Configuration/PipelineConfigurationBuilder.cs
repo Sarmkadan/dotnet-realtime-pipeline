@@ -20,10 +20,8 @@ public sealed class PipelineConfigurationBuilder
 
     public PipelineConfigurationBuilder(string pipelineName, string version)
     {
-        if (string.IsNullOrWhiteSpace(pipelineName))
-            throw new ArgumentException("Pipeline name cannot be null", nameof(pipelineName));
-        if (string.IsNullOrWhiteSpace(version))
-            throw new ArgumentException("Version cannot be null", nameof(version));
+        ArgumentException.ThrowIfNullOrEmpty(pipelineName);
+        ArgumentException.ThrowIfNullOrEmpty(version);
 
         _config = new PipelineConfig(1, pipelineName, version);
     }
@@ -50,6 +48,7 @@ public sealed class PipelineConfigurationBuilder
         long windowSlideMs,
         string windowType)
     {
+        ArgumentException.ThrowIfNullOrEmpty(windowType);
         _config.WindowSizeMs = windowSizeMs;
         _config.WindowSlideMs = windowSlideMs;
         _config.WindowType = windowType;
@@ -91,6 +90,8 @@ public sealed class PipelineConfigurationBuilder
     /// </summary>
     public PipelineConfigurationBuilder WithStage(string stageName, string stageType)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+        ArgumentException.ThrowIfNullOrEmpty(stageType);
         _config.AddStage(new PipelineStageDef(stageName, stageType));
         return this;
     }
@@ -100,6 +101,8 @@ public sealed class PipelineConfigurationBuilder
     /// </summary>
     public PipelineConfigurationBuilder WithCustomSetting(string key, object value)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(value);
         _config.SetCustomSetting(key, value);
         return this;
     }
