@@ -51,6 +51,7 @@ public sealed record StatisticsHelper
         double? coefficientOfVariation = null,
         List<double>? outliers = null)
     {
+        ArgumentNullException.ThrowIfNull(values);
         return new StatisticsHelper
         {
             Mean = mean ?? CalculateMean(values),
@@ -66,7 +67,8 @@ public sealed record StatisticsHelper
     /// </summary>
     public static double CalculateMean(List<double> values)
     {
-        if (values is null || values.Count == 0) return 0d;
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count == 0) return 0d;
         return values.Sum() / values.Count;
     }
 
@@ -75,7 +77,8 @@ public sealed record StatisticsHelper
     /// </summary>
     public static double CalculateMedian(List<double> values)
     {
-        if (values is null || values.Count == 0) return 0d;
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count == 0) return 0d;
 
         var sorted = values.OrderBy(x => x).ToList();
         int count = sorted.Count;
@@ -91,7 +94,8 @@ public sealed record StatisticsHelper
     /// </summary>
     public static double CalculateStandardDeviation(List<double> values)
     {
-        if (values is null || values.Count <= 1) return 0d;
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count <= 1) return 0d;
 
         double mean = CalculateMean(values);
         double sumOfSquares = values.Sum(x => Math.Pow(x - mean, 2));
@@ -147,7 +151,8 @@ public sealed record StatisticsHelper
     /// </summary>
     public static double CalculateCoefficientOfVariation(List<double> values)
     {
-        if (values is null || values.Count == 0) return 0d;
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count == 0) return 0d;
 
         double mean = CalculateMean(values);
         if (mean == 0) return 0d;
@@ -161,7 +166,8 @@ public sealed record StatisticsHelper
     /// </summary>
     public static List<double> FindOutliers(List<double> values)
     {
-        if (values is null || values.Count < 4) return new();
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count < 4) return new();
 
         double q1 = CalculatePercentile(values, 25);
         double q3 = CalculatePercentile(values, 75);
