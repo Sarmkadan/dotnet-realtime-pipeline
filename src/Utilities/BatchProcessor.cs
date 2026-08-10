@@ -22,8 +22,10 @@ public sealed class BatchProcessor<TInput, TOutput>
 
     public BatchProcessor(int batchSize = 1000, int maxDegreeOfParallelism = 4)
     {
-        _batchSize = Math.Max(1, batchSize);
-        _maxDegreeOfParallelism = Math.Max(1, maxDegreeOfParallelism);
+        if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than 0");
+        if (maxDegreeOfParallelism < 1) throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "Max degree of parallelism must be greater than 0");
+        _batchSize = batchSize;
+        _maxDegreeOfParallelism = maxDegreeOfParallelism;
     }
 
     /// <summary>
@@ -34,6 +36,8 @@ public sealed class BatchProcessor<TInput, TOutput>
         Func<List<TInput>, Task<List<TOutput>>> batchProcessor,
         Action<int> progressCallback = null)
     {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(batchProcessor);
         var results = new List<TOutput>();
         var batches = CreateBatches(items).ToList();
 
@@ -69,6 +73,7 @@ public sealed class BatchProcessor<TInput, TOutput>
     /// </summary>
     public IEnumerable<List<TInput>> CreateBatches(IEnumerable<TInput> items)
     {
+        ArgumentNullException.ThrowIfNull(items);
         var batch = new List<TInput>(_batchSize);
 
         foreach (var item in items)
@@ -147,6 +152,8 @@ public sealed class DataPointBatchProcessor
 
     public DataPointBatchProcessor(int batchSize = 1000, int parallelism = 4)
     {
+        if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than 0");
+        if (parallelism < 1) throw new ArgumentOutOfRangeException(nameof(parallelism), "Parallelism must be greater than 0");
         _processor = new BatchProcessor<Domain.Models.DataPoint, Domain.Models.ProcessingResult>(batchSize, parallelism);
     }
 
@@ -158,6 +165,8 @@ public sealed class DataPointBatchProcessor
         Func<List<Domain.Models.DataPoint>, Task<List<Domain.Models.ProcessingResult>>> processingFunction,
         IProgress<BatchProcessingProgress> progress = null)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
+        ArgumentNullException.ThrowIfNull(processingFunction);
         var totalBatches = _processor.GetBatchCount(dataPoints.Count);
         var progressTracker = new BatchProcessingProgress
         {
@@ -186,6 +195,7 @@ public sealed class DataPointBatchProcessor
     /// </summary>
     public IEnumerable<List<Domain.Models.DataPoint>> CreateBatches(List<Domain.Models.DataPoint> dataPoints)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
         return _processor.CreateBatches(dataPoints);
     }
 }
