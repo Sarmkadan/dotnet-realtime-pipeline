@@ -284,6 +284,7 @@ public sealed class InMemoryDistributedCache : IDistributedCache
 
     public async Task<T> GetAsync<T>(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         await Task.CompletedTask;
 
         if (_cache.TryGetValue(key, out var value) && value is T typed)
@@ -296,18 +297,21 @@ public sealed class InMemoryDistributedCache : IDistributedCache
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? ttl = null)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         await Task.CompletedTask;
         _cache.Set(key, value, ttl ?? TimeSpan.FromHours(1));
     }
 
     public async Task RemoveAsync(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         await Task.CompletedTask;
         _cache.TryRemove(key);
     }
 
     public async Task<bool> ExistsAsync(string key)
     {
+        ArgumentException.ThrowIfNullOrEmpty(key);
         await Task.CompletedTask;
         return _cache.TryGetValue(key, out _);
     }
