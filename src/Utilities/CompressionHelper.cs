@@ -23,8 +23,7 @@ public sealed class CompressionHelper
     /// </summary>
     public static byte[] CompressGzip(string data)
     {
-        if (string.IsNullOrEmpty(data))
-            return Array.Empty<byte>();
+        ArgumentException.ThrowIfNullOrEmpty(data);
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
 
@@ -141,6 +140,8 @@ public sealed class CompressionHelper
     /// </summary>
     public static double CalculateCompressionRatio(string originalData)
     {
+        ArgumentException.ThrowIfNullOrEmpty(originalData);
+
         var compressed = CompressGzip(originalData);
         var original = Encoding.UTF8.GetBytes(originalData);
 
