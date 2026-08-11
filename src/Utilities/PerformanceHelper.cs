@@ -22,6 +22,7 @@ public sealed class PerformanceHelper
     /// </summary>
     public static (T Result, long ElapsedMs) MeasureExecution<T>(Func<T> operation)
     {
+        ArgumentNullException.ThrowIfNull(nameof(operation));
         var stopwatch = Stopwatch.StartNew();
         var result = operation();
         stopwatch.Stop();
@@ -33,6 +34,7 @@ public sealed class PerformanceHelper
     /// </summary>
     public static async System.Threading.Tasks.Task<(T Result, long ElapsedMs)> MeasureExecutionAsync<T>(Func<System.Threading.Tasks.Task<T>> operation)
     {
+        ArgumentNullException.ThrowIfNull(nameof(operation));
         var stopwatch = Stopwatch.StartNew();
         var result = await operation();
         stopwatch.Stop();
@@ -44,6 +46,7 @@ public sealed class PerformanceHelper
     /// </summary>
     public static BenchmarkResult Benchmark(Action operation, int iterations = 1000)
     {
+        ArgumentNullException.ThrowIfNull(nameof(operation));
         var measurements = new List<long>();
 
         for (int i = 0; i < iterations; i++)
@@ -165,6 +168,7 @@ public sealed class PerformanceTracker
     /// </summary>
     public void Record(string metricName, double value)
     {
+        ArgumentException.ThrowIfNullOrEmpty(nameof(metricName));
         lock (_lockObject)
         {
             _samples.Add(new PerformanceSample
