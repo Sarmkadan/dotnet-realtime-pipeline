@@ -34,10 +34,20 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishDataIngestedAsync(DataPoint dataPoint)
     {
-        var eventName = nameof(DataIngestedEvent);
-        var args = new DataIngestedEventArgs { DataPoint = dataPoint, Timestamp = DateTime.UtcNow };
+        _logger.LogInformation("PublishDataIngestedAsync called with {DataPoint}", dataPoint);
+        try
+        {
+            var eventName = nameof(DataIngestedEvent);
+            var args = new DataIngestedEventArgs { DataPoint = dataPoint, Timestamp = DateTime.UtcNow };
 
-        await PublishEventAsync(eventName, args);
+            await PublishEventAsync(eventName, args);
+            _logger.LogInformation("PublishDataIngestedAsync completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish DataIngestedEvent");
+            throw;
+        }
     }
 
     /// <summary>
@@ -45,10 +55,20 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishProcessingCompletedAsync(ProcessingResult result)
     {
-        var eventName = nameof(ProcessingCompletedEvent);
-        var args = new ProcessingCompletedEventArgs { Result = result, Timestamp = DateTime.UtcNow };
+        _logger.LogInformation("PublishProcessingCompletedAsync called with {Result}", result);
+        try
+        {
+            var eventName = nameof(ProcessingCompletedEvent);
+            var args = new ProcessingCompletedEventArgs { Result = result, Timestamp = DateTime.UtcNow };
 
-        await PublishEventAsync(eventName, args);
+            await PublishEventAsync(eventName, args);
+            _logger.LogInformation("PublishProcessingCompletedAsync completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish ProcessingCompletedEvent");
+            throw;
+        }
     }
 
     /// <summary>
@@ -56,15 +76,25 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishBackpressureDetectedAsync(string stageName, BackpressureContext context)
     {
-        var eventName = nameof(BackpressureDetectedEvent);
-        var args = new BackpressureDetectedEventArgs
+        _logger.LogInformation("PublishBackpressureDetectedAsync called with {StageName}", stageName);
+        try
         {
-            StageName = stageName,
-            Context = context,
-            Timestamp = DateTime.UtcNow
-        };
+            var eventName = nameof(BackpressureDetectedEvent);
+            var args = new BackpressureDetectedEventArgs
+            {
+                StageName = stageName,
+                Context = context,
+                Timestamp = DateTime.UtcNow
+            };
 
-        await PublishEventAsync(eventName, args);
+            await PublishEventAsync(eventName, args);
+            _logger.LogInformation("PublishBackpressureDetectedAsync completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish BackpressureDetectedEvent");
+            throw;
+        }
     }
 
     /// <summary>
@@ -72,10 +102,20 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishMetricsCollectedAsync(MetricAggregation metrics)
     {
-        var eventName = nameof(MetricsCollectedEvent);
-        var args = new MetricsCollectedEventArgs { Metrics = metrics, Timestamp = DateTime.UtcNow };
+        _logger.LogInformation("PublishMetricsCollectedAsync called with {Metrics}", metrics);
+        try
+        {
+            var eventName = nameof(MetricsCollectedEvent);
+            var args = new MetricsCollectedEventArgs { Metrics = metrics, Timestamp = DateTime.UtcNow };
 
-        await PublishEventAsync(eventName, args);
+            await PublishEventAsync(eventName, args);
+            _logger.LogInformation("PublishMetricsCollectedAsync completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish MetricsCollectedEvent");
+            throw;
+        }
     }
 
     /// <summary>
@@ -83,15 +123,25 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishPipelineErrorAsync(string operationName, Exception exception)
     {
-        var eventName = nameof(PipelineErrorEvent);
-        var args = new PipelineErrorEventArgs
+        _logger.LogInformation("PublishPipelineErrorAsync called with {OperationName}", operationName);
+        try
         {
-            OperationName = operationName,
-            Exception = exception,
-            Timestamp = DateTime.UtcNow
-        };
+            var eventName = nameof(PipelineErrorEvent);
+            var args = new PipelineErrorEventArgs
+            {
+                OperationName = operationName,
+                Exception = exception,
+                Timestamp = DateTime.UtcNow
+            };
 
-        await PublishEventAsync(eventName, args);
+            await PublishEventAsync(eventName, args);
+            _logger.LogInformation("PublishPipelineErrorAsync completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish PipelineErrorEvent");
+            throw;
+        }
     }
 
     /// <summary>
