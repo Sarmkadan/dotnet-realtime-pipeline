@@ -55,6 +55,11 @@ public sealed class DataPoint
     /// </summary>
     public int Quality { get; set; } = 100;
 
+    /// <summary>
+    /// Returns a concise, informative string representation of this data point.
+    /// </summary>
+    public override string ToString() => $"DataPoint {{ Id = {Id}, Timestamp = {Timestamp}, Value = {Value}, Source = {Source}, Metadata = {Metadata}, CreatedAt = {CreatedAt} }}";
+
     public DataPoint()
     {
     }
