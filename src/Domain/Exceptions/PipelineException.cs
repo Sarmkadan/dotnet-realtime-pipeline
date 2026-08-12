@@ -34,6 +34,19 @@ public class PipelineException : Exception
         ErrorCode = errorCode;
         ErrorDetails = errorDetails;
     }
+
+    /// <summary>
+    /// Returns a concise, informative representation of this exception, including the
+    /// error code, error details, and any backpressure or stage context available on
+    /// more derived exception types.
+    /// </summary>
+    public override string ToString()
+    {
+        var backpressure = this as BackpressureException;
+        var stageProcessing = this as StageProcessingException;
+
+        return $"PipelineException {{ ErrorCode = {ErrorCode}, ErrorDetails = {ErrorDetails}, BufferSize = {backpressure?.BufferSize}, MaxCapacity = {backpressure?.MaxCapacity}, StageName = {stageProcessing?.StageName}, RetryCount = {stageProcessing?.RetryCount} }}";
+    }
 }
 
 /// <summary>
