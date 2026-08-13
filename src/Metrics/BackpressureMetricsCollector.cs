@@ -211,6 +211,21 @@ public sealed class BackpressureMetricsCollector
         }
     }
 
+    public override string ToString()
+    {
+        lock (_lock)
+        {
+            var totalActivationCount = _stageState.Values.Sum(s => s.ActivationCount);
+            var totalActiveDurationMs = _stageState.Values.Sum(s => s.TotalActiveDurationMs);
+            var peakBufferFillPercent = _stageState.Values.Any() ? _stageState.Values.Max(s => s.PeakBufferFillPercent) : 0;
+            var currentBufferFillPercent = _stageState.Values.Any() ? _stageState.Values.Average(s => s.CurrentBufferFillPercent) : 0;
+            var wasBackpressured = _stageState.Values.Any(s => s.WasBackpressured);
+            var stageName = "AllStages";
+
+            return $"BackpressureMetricsCollector {{ StageName = {stageName}, WasBackpressured = {wasBackpressured}, ActivationCount = {totalActivationCount}, TotalActiveDurationMs = {totalActiveDurationMs}, PeakBufferFillPercent = {peakBufferFillPercent}, CurrentBufferFillPercent = {currentBufferFillPercent} }}";
+        }
+    }
+
     // -------------------------------------------------------------------------
 
     private void RecordEvent(string stageName, double fillPercent, long dropped, bool isActivation, DateTime ts)
