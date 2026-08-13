@@ -263,6 +263,8 @@ public sealed class DataQualityAnalysis
     public int UniqueSourceCount { get; set; }
     public int QualityScore { get; set; }
     public double PassRate { get; set; }
+
+    public override string ToString() => $"DataQualityAnalysis {{ TotalPoints = {TotalPoints}, HighQualityCount = {HighQualityCount}, LowQualityCount = {LowQualityCount}, AverageQuality = {AverageQuality}, MinQuality = {MinQuality}, MaxQuality = {MaxQuality} }}";
 }
 
 /// <summary>
