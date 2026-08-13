@@ -88,6 +88,7 @@ public sealed class DynamicScalingServiceTests
     [Fact]
     public async Task EvaluateScalingAsync_ShouldProcessAllEnabledStages()
     {
+        _mockLogger.Object.LogInformation("Method {MethodName} called", nameof(EvaluateScalingAsync_ShouldProcessAllEnabledStages));
         // Arrange
         _mockBackpressureService.Setup(b => b.GetContext(It.IsAny<string>()))
             .Returns(new BackpressureContext("Stage1", 1000));
