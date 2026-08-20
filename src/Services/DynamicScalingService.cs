@@ -63,6 +63,7 @@ public sealed class DynamicScalingService
         _scaleUpThresholdPercent = scaleUpThresholdPercent;
         _scaleDownThresholdPercent = scaleDownThresholdPercent;
         _cooldown = TimeSpan.FromSeconds(Math.Max(1, cooldownSeconds));
+            _logger.LogInformation("Initializing DynamicScalingService with minConsumers={minConsumers}, maxConsumers={maxConsumers}, scaleUpThresholdPercent={scaleUpThresholdPercent}, scaleDownThresholdPercent={scaleDownThresholdPercent}", minConsumers, maxConsumers, scaleUpThresholdPercent, scaleDownThresholdPercent);
     }
 
     /// <summary>
