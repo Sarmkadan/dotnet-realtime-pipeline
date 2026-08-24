@@ -144,6 +144,12 @@ public sealed class PipelineConfig
     }
 
     /// <summary>
+    /// Returns a concise, informative representation of this configuration.
+    /// </summary>
+    public override string ToString()
+        => $"PipelineConfig {{ ConfigId = {ConfigId}, PipelineName = {PipelineName}, Version = {Version}, MaxBufferSize = {MaxBufferSize}, BufferFlushIntervalMs = {BufferFlushIntervalMs}, MaxConcurrentConsumers = {MaxConcurrentConsumers} }}";
+
+    /// <summary>
     /// Validates the configuration for correctness and consistency.
     /// </summary>
     public bool Validate()
