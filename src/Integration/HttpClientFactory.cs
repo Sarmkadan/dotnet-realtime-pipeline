@@ -65,6 +65,12 @@ public sealed class PipelineHttpClientFactory
     }
 
     /// <summary>
+    /// Returns a string representation of the factory configuration.
+    /// </summary>
+    public override string ToString() =>
+        $"PipelineHttpClientFactory {{ Timeout = {Timeout}, MaxRetries = {MaxRetries}, RetryDelay = {RetryDelay}, MaxConnectionsPerHost = {MaxConnectionsPerHost}, UseCompression = {UseCompression}, UserAgent = {UserAgent} }}";
+
+    /// <summary>
     /// Creates an HTTP client with default configuration.
     /// </summary>
     public HttpClient CreateDefaultClient()
