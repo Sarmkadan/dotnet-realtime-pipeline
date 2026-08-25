@@ -157,4 +157,9 @@ public sealed class ProcessingResult
             OutputData = new Dictionary<string, object>(OutputData)
         };
     }
+
+    public override string ToString()
+    {
+        return $"ProcessingResult {{ ResultId = {ResultId}, Success = {Success}, StageName = {StageName}, ProcessingTimeMs = {ProcessingTimeMs}, ErrorMessage = {ErrorMessage}, Exception = {Exception} }}";
+    }
 }
