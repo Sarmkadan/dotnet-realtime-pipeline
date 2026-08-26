@@ -26,6 +26,13 @@ public sealed class MetricsService
     private long _nextMetricId = 1;
     private readonly List<double> _processingTimes = new();
 
+    public string Status { get; set; } = "UNKNOWN";
+    public string Message { get; set; } = "";
+    public double ThroughputItemsPerSecond { get; set; }
+    public double SuccessRatePercent { get; set; }
+    public double ErrorRatePercent { get; set; }
+    public double AverageProcessingTimeMs { get; set; }
+
     public MetricsService(IMetricsRepository repository, IPipelineMetrics? throughputCounter = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -261,6 +268,8 @@ public sealed class MetricsService
             _processingTimes.Clear();
         }
     }
+
+    public override string ToString() => $"MetricsService {{ Status = {Status}, Message = {Message}, ThroughputItemsPerSecond = {ThroughputItemsPerSecond}, SuccessRatePercent = {SuccessRatePercent}, ErrorRatePercent = {ErrorRatePercent}, AverageProcessingTimeMs = {AverageProcessingTimeMs} }}";
 }
 
 /// <summary>
