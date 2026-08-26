@@ -26,6 +26,8 @@ public sealed class RateLimitingMiddleware
         _maxBurstSize = maxBurstSize;
     }
 
+    public override string ToString() => $"RateLimitingMiddleware {{ AvailableTokens = {_tokensPerSecond}, Capacity = {_maxBurstSize}, ResetTime = {DateTime.UtcNow} }}";
+
     /// <summary>
     /// Checks if an operation is allowed under rate limits.
     /// </summary>
