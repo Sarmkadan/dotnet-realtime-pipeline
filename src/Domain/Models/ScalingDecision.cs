@@ -69,6 +69,4 @@ public sealed class StageScalingState
 
     /// <summary>Total number of scale-down operations performed on this stage.</summary>
     public int ScaleDownCount { get; set; }
-
-    public override string ToString() => $"StageScalingState {{ CurrentConsumers = {CurrentConsumers}, LastDecision = {LastDecision}, LastScalingActionAt = {LastScalingActionAt}, ScaleUpCount = {ScaleUpCount}, ScaleDownCount = {ScaleDownCount} }}";
 }
