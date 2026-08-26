@@ -156,6 +156,11 @@ public sealed class WindowEvent
         IsComplete = true;
     }
 
+    public override string ToString()
+    {
+        return $"WindowEvent {{ DataPoints = {DataPoints.Count}, CreatedAt = {CreatedAt}, Description = {Description ?? "null"}, IsComplete = {IsComplete}, CreatedAtTicks = {CreatedAtTicks} }}";
+    }
+
     /// <summary>
     /// Gets window metadata for reporting.
     /// </summary>
