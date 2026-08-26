@@ -275,6 +275,11 @@ public sealed class DataAggregateStatistics
     public double P99 { get; set; }
     public int UniqueSourceCount { get; set; }
     public double AverageQuality { get; set; }
+
+    public override string ToString()
+    {
+        return $"DataAggregateStatistics {{ StartMs = {StartMs}, EndMs = {EndMs}, Count = {Count}, Sum = {Sum}, Average = {Average}, Min = {Min} }}";
+    }
 }
 
 /// <summary>
