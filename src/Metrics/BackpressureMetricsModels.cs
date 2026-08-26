@@ -28,6 +28,11 @@ public sealed class BackpressureEvent
 
     /// <summary>Number of items dropped at this stage when the event was captured.</summary>
     public long DroppedItems { get; set; }
+
+    public override string ToString()
+    {
+        return $"BackpressureEvent {{ Timestamp = {Timestamp}, StageName = {StageName}, BufferFillPercent = {BufferFillPercent}, IsActivation = {IsActivation}, DroppedItems = {DroppedItems} }}";
+    }
 }
 
 /// <summary>
