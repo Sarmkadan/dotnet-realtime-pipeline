@@ -276,6 +276,9 @@ public sealed class PipelineOrchestrator : IAsyncDisposable
         return await _metricsService.AnalyzePerformanceTrendAsync();
     }
 
+    public override string ToString() =>
+        $"PipelineOrchestrator {{ SuccessfulCount = {_totalProcessed}, FailedCount = {_totalFailed}, IsRunning = {_isRunning}, TotalDataPointsProcessed = {_totalProcessed}, TotalDataPointsFailed = {_totalFailed}, PendingItemsInQueue = {_incomingDataQueue.Count} }}";
+
     // Private processing loop
 
     private async Task ProcessingLoopAsync()
