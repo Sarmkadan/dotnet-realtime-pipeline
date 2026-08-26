@@ -17,6 +17,47 @@ using System.Threading.Tasks;
 public sealed class RetryHelper
 {
     /// <summary>
+    /// Gets or sets the maximum number of attempts.
+    /// </summary>
+    public int MaxAttempts { get; set; } = 3;
+
+    /// <summary>
+    /// Gets or sets the initial delay between retries in milliseconds.
+    /// </summary>
+    public int InitialDelayMs { get; set; } = 100;
+
+    /// <summary>
+    /// Gets or sets the maximum delay between retries in milliseconds.
+    /// </summary>
+    public int MaxDelayMs { get; set; } = 30000;
+
+    /// <summary>
+    /// Gets or sets whether to use jitter in backoff.
+    /// </summary>
+    public bool UseJitter { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the list of exception types that are retryable.
+    /// </summary>
+    public List<Type> RetryableExceptions { get; set; } = new()
+    {
+        typeof(TimeoutException),
+        typeof(HttpRequestException),
+        typeof(OperationCanceledException),
+        typeof(InvalidOperationException)
+    };
+
+    /// <summary>
+    /// Gets or sets the total number of attempts made.
+    /// </summary>
+    public int TotalAttempts { get; set; } = 0;
+
+    /// <summary>
+    /// Returns a string representation of the retry helper configuration.
+    /// </summary>
+    public override string ToString() => $"RetryHelper {{ MaxAttempts = {MaxAttempts}, InitialDelayMs = {InitialDelayMs}, MaxDelayMs = {MaxDelayMs}, UseJitter = {UseJitter}, RetryableExceptions = {RetryableExceptions}, TotalAttempts = {TotalAttempts} }}";
+
+    /// <summary>
     /// Executes an operation with exponential backoff retry strategy.
     /// </summary>
     public static async Task<T> RetryAsync<T>(
