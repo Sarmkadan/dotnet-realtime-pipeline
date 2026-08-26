@@ -315,6 +315,40 @@ public sealed class WindowingService
         return summary;
     }
 
+    public override string ToString()
+    {
+        long windowId = _nextWindowId - 1;
+        int totalDataPointCount = 0;
+        double totalSum = 0d;
+        double overallMin = double.MaxValue;
+        double overallMax = double.MinValue;
+        bool hasWindows = false;
+
+        foreach (var window in _activeWindows.Values)
+        {
+            hasWindows = true;
+            int count = window.GetDataPointCount();
+            totalDataPointCount += count;
+            totalSum += window.CalculateSum();
+
+            double windowMin = window.CalculateMin();
+            double windowMax = window.CalculateMax();
+
+            if (windowMin < overallMin) overallMin = windowMin;
+            if (windowMax > overallMax) overallMax = windowMax;
+        }
+
+        if (!hasWindows)
+        {
+            overallMin = 0;
+            overallMax = 0;
+        }
+
+        double average = totalDataPointCount > 0 ? totalSum / totalDataPointCount : 0d;
+
+        return $"WindowingService {{ WindowId = {windowId}, DataPointCount = {totalDataPointCount}, Sum = {totalSum}, Average = {average}, Min = {overallMin}, Max = {overallMax} }}";
+    }
+
     // Private helper methods
 
     private Dictionary<string, object> AggregateTumblingWindow(WindowEvent window)
