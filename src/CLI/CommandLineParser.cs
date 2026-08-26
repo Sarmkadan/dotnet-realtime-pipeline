@@ -127,6 +127,14 @@ public sealed class CommandLineParser
         RegisterCommand("export", () => new ExportCommand());
         RegisterCommand("visualize", () => new VisualizeCommand());
     }
+
+    /// <summary>
+    /// Returns a concise representation of the parser and its registered commands.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"CommandLineParser {{ RegisteredCommands = {string.Join(", ", _commandRegistry.Keys)} }}";
+    }
 }
 
 /// <summary>
