@@ -102,6 +102,8 @@ public sealed class BackpressureContext
         LastUpdatedAt = DateTime.UtcNow;
     }
 
+    public override string ToString() => $"BackpressureContext {{ ContextId = {ContextId}, PipelineStageName = {PipelineStageName}, BufferSize = {BufferSize}, MaxBufferCapacity = {MaxBufferCapacity}, IsBackpressured = {IsBackpressured}, BackpressureStartTimeMs = {BackpressureStartTimeMs} }}";
+
     /// <summary>
     /// Gets the current buffer fill percentage (0-100).
     /// </summary>
