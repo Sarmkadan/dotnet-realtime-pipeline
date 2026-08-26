@@ -217,4 +217,9 @@ public sealed class SlidingWindowResult
 
     public DateTime EmittedAt { get; set; }
     public Dictionary<string, object> AggregatedData { get; set; } = new();
+
+    public override string ToString()
+    {
+        return $"SlidingWindowResult {{ WindowId = {WindowId}, WindowStartMs = {WindowStartMs}, WindowEndMs = {WindowEndMs}, WindowSizeMs = {WindowSizeMs}, StepIntervalMs = {StepIntervalMs}, DataPointCount = {DataPointCount} }}";
+    }
 }
