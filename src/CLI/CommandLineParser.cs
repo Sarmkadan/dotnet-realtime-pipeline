@@ -156,6 +156,11 @@ public abstract class ParsedCommand
         return Options.ContainsKey(name);
     }
 
+    public override string ToString()
+    {
+        return $"ParsedCommand {{ Verb = {Verb}, Options = {Options}, RequiredOptions = {RequiredOptions}, IsValid = {IsValid}, ErrorMessage = {ErrorMessage} }}";
+    }
+
     public abstract Task<int> ExecuteAsync();
 }
 
