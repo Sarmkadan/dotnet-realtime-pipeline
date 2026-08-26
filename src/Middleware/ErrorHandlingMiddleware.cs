@@ -203,6 +203,12 @@ public class ErrorResponse
     /// Gets or sets the timestamp when the error occurred.
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Returns a concise string representation of the error response.
+    /// </summary>
+    public override string ToString() =>
+        $"ErrorResponse {{ ErrorCode = {ErrorCode}, Message = {Message}, IsRecoverable = {IsRecoverable}, Details = {Details}, Timestamp = {Timestamp:O} }}";
 }
 
 /// <summary>
@@ -220,6 +226,12 @@ public sealed class ErrorResponse<T> : ErrorResponse
     /// Gets or sets the data payload.
     /// </summary>
     public T Data { get; set; }
+
+    /// <summary>
+    /// Returns a concise string representation of the error response, including the data payload.
+    /// </summary>
+    public override string ToString() =>
+        $"ErrorResponse<{typeof(T).Name}> {{ ErrorCode = {ErrorCode}, Message = {Message}, IsRecoverable = {IsRecoverable}, Details = {Details}, Timestamp = {Timestamp:O}, Success = {Success}, Data = {Data} }}";
 }
 
 /// <summary>
