@@ -146,6 +146,17 @@ public sealed class SlidingWindowAggregator
     public IReadOnlyList<SlidingWindowResult> FlushDueWindows()
         => FlushDueWindows(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
+    /// <summary>
+    /// Returns a concise representation of the aggregator's current state.
+    /// </summary>
+    public override string ToString()
+    {
+        long windowStartMs = _lastEmitBoundaryMs >= 0 ? _lastEmitBoundaryMs - _windowSizeMs : 0;
+        long windowEndMs   = _lastEmitBoundaryMs >= 0 ? _lastEmitBoundaryMs : 0;
+
+        return $"SlidingWindowAggregator {{ WindowId = {_nextWindowId}, WindowStartMs = {windowStartMs}, WindowEndMs = {windowEndMs}, WindowSizeMs = {_windowSizeMs}, StepIntervalMs = {_stepIntervalMs}, DataPointCount = {_buffer.Count} }}";
+    }
+
     // Builds an aggregated result for a single window.
     private SlidingWindowResult BuildResult(long startMs, long endMs, List<DataPoint> points)
     {
