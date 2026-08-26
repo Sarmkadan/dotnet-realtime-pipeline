@@ -113,6 +113,8 @@ public sealed class MetricAggregation
         ComputedAt = DateTime.UtcNow;
     }
 
+    public override string ToString() => $"MetricAggregation {{ MetricId = {MetricId}, TimeWindowStartMs = {TimeWindowStartMs}, TimeWindowEndMs = {TimeWindowEndMs}, MetricType = {MetricType}, TotalItemsProcessed = {TotalItemsProcessed}, TotalItemsFailed = {TotalItemsFailed} }}";
+
     /// <summary>
     /// Calculates the throughput (items/second) for this window.
     /// </summary>
