@@ -11,12 +11,19 @@ using Xunit;
 
 namespace DotNetRealtimePipeline.Tests;
 
+/// <summary>
+/// Test class for PipelineEventPublisherJsonExtensions.
+/// </summary>
 public class PipelineEventPublisherJsonExtensionsTests
 {
     private readonly PipelineEventPublisher _publisher;
     private readonly Mock<ILogger<PipelineEventPublisherJsonExtensionsTests>> _loggerMock;
     private readonly ILogger<PipelineEventPublisherJsonExtensionsTests> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineEventPublisherJsonExtensionsTests"/> class.
+    /// Sets up mock logger and publisher for testing.
+    /// </summary>
     public PipelineEventPublisherJsonExtensionsTests()
     {
         var loggerMock = new Mock<ILogger<PipelineEventPublisher>>();
@@ -26,6 +33,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         _logger = _loggerMock.Object;
     }
 
+    /// <summary>
+    /// Tests that ToJson() returns a non-empty JSON string when called on a valid publisher instance.
+    /// </summary>
     [Fact]
     public void ToJson_WithValidPublisher_ReturnsJsonString()
     {
@@ -49,6 +59,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that ToJson(indented: true) returns formatted JSON with newlines.
+    /// </summary>
     [Fact]
     public void ToJson_WithIndentedTrue_ReturnsFormattedJson()
     {
@@ -72,6 +85,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that ToJson(indented: false) returns compact JSON without newlines.
+    /// </summary>
     [Fact]
     public void ToJson_WithIndentedFalse_ReturnsCompactJson()
     {
@@ -95,6 +111,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that ToJson() throws ArgumentNullException when called on a null publisher.
+    /// </summary>
     [Fact]
     public void ToJson_WithNullPublisher_ThrowsArgumentNullException()
     {
@@ -120,6 +139,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that FromJson() returns a PipelineEventPublisher instance when given valid JSON.
+    /// </summary>
     [Fact]
     public void FromJson_WithValidJson_ReturnsPublisherInstance()
     {
@@ -146,6 +168,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that FromJson() throws ArgumentNullException when given null JSON.
+    /// </summary>
     [Fact]
     public void FromJson_WithNullJson_ThrowsArgumentNullException()
     {
@@ -171,6 +196,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that FromJson() returns null when given an empty string.
+    /// </summary>
     [Fact]
     public void FromJson_WithEmptyString_ReturnsNull()
     {
@@ -196,6 +224,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that FromJson() returns null when given a whitespace-only string.
+    /// </summary>
     [Fact]
     public void FromJson_WithWhitespaceString_ReturnsNull()
     {
@@ -221,6 +252,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that FromJson() throws JsonException when given invalid JSON.
+    /// </summary>
     [Fact]
     public void FromJson_WithInvalidJson_ThrowsJsonException()
     {
@@ -246,6 +280,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that TryFromJson() returns true and outputs a PipelineEventPublisher when given valid JSON.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithValidJson_ReturnsTrueAndPublisher()
     {
@@ -274,6 +311,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that TryFromJson() throws ArgumentNullException when given null JSON.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithNullJson_ThrowsArgumentNullException()
     {
@@ -300,6 +340,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that TryFromJson() returns false and null when given an empty string.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithEmptyString_ReturnsFalseAndNull()
     {
@@ -327,6 +370,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that TryFromJson() returns false and null when given a whitespace-only string.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithWhitespaceString_ReturnsFalseAndNull()
     {
@@ -354,6 +400,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that TryFromJson() returns false and null when given invalid JSON.
+    /// </summary>
     [Fact]
     public void TryFromJson_WithInvalidJson_ReturnsFalseAndNull()
     {
@@ -381,6 +430,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that serializing and deserializing a publisher preserves its functionality.
+    /// </summary>
     [Fact]
     public void Roundtrip_SerializationDeserialization_PreservesPublisher()
     {
@@ -410,6 +462,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that serializing and deserializing using TryFromJson preserves publisher functionality.
+    /// </summary>
     [Fact]
     public void Roundtrip_SerializationTryFromJson_PreservesPublisher()
     {
@@ -438,6 +493,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that the JSON output uses camelCase naming policy for properties.
+    /// </summary>
     [Fact]
     public void JsonFormat_UsesCamelCaseNamingPolicy()
     {
@@ -465,6 +523,9 @@ public class PipelineEventPublisherJsonExtensionsTests
         }
     }
 
+    /// <summary>
+    /// Tests that the JSON output ignores null values.
+    /// </summary>
     [Fact]
     public void JsonFormat_IgnoresNullValues()
     {
