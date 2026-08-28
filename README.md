@@ -95,3 +95,25 @@ public void Ok_CreatesSuccessfulResponseWithData_Example()
     Assert.Equal(200, result.StatusCode);
 }
 ```
+
+## RateLimitingMiddlewareConcurrencyTests
+
+The RateLimitingMiddlewareConcurrencyTests class validates the thread-safety and correctness of the RateLimitingMiddleware under concurrent access.
+It ensures that the rate limiter does not exceed its limit, that properties are thread-safe, and that concurrent operations on different identifiers do not interfere.
+
+Example usage:
+```csharp
+// Create a rate limiter that allows 10 tokens per second with a max burst of 10.
+var limiter = new RateLimitingMiddleware(tokensPerSecond: 10, maxBurstSize: 10);
+string identifier = "my-api";
+
+// Try to acquire a token (returns true if allowed, false if rate limited).
+bool allowed = limiter.TryAcquire(identifier);
+
+// Get current status (available tokens, capacity, reset time, etc.)
+var status = limiter.GetStatus(identifier);
+int availableTokens = status.AvailableTokens;
+
+// Reset the limiter for a specific identifier (e.g., after a configuration change).
+limiter.Reset(identifier);
+```
