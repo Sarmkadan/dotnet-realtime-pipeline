@@ -169,3 +169,19 @@ tests.AggregationCalculationsAreCorrect();
 tests.TrendCalculationIsCorrect();
 tests.WindowMetadataIsCorrect();
 ```
+
+## ApiEndpointHandlerTests
+
+The `ApiEndpointHandlerTests` class is an xUnit test fixture that verifies single-point and batch ingestion responses for successful, rejected, invalid, and exceptional requests. It also checks the public response and batch-result properties; xUnit discovers these methods automatically, while direct invocation is useful when debugging a specific case.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new ApiEndpointHandlerTests();
+
+await tests.IngestAsync_WithValidDataPoint_ReturnsSuccessResponse();
+await tests.IngestBatchAsync_WithValidBatch_ReturnsSuccessResponseWithBatchResults();
+tests.ApiResponse_StatusCodeProperty_ReturnsCorrectValue();
+tests.BatchIngestResult_TotalCountProperty_ReturnsCorrectValue();
+```
