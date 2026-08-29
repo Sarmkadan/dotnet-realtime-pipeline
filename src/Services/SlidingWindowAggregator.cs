@@ -157,6 +157,41 @@ public sealed class SlidingWindowAggregator
         return $"SlidingWindowAggregator {{ WindowId = {_nextWindowId}, WindowStartMs = {windowStartMs}, WindowEndMs = {windowEndMs}, WindowSizeMs = {_windowSizeMs}, StepIntervalMs = {_stepIntervalMs}, DataPointCount = {_buffer.Count} }}";
     }
 
+    /// <summary>
+    /// Computes the given percentile (0-100) over the values currently inside the sliding window (last <see cref="WindowSizeMs"/> milliseconds).
+    /// </summary>
+    /// <param name="percentile">The percentile to compute (0-100).</param>
+    /// <returns>The percentile value, or 0 if the window is empty.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="percentile"/> is less than 0 or greater than 100.</exception>
+    public double GetPercentile(double percentile)
+    {
+        if (percentile < 0 || percentile > 100)
+            throw new ArgumentOutOfRangeException(nameof(percentile), "Percentile must be between 0 and 100.");
+
+        long currentTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        long windowStart = currentTimeMs - _windowSizeMs;
+        long windowEnd   = currentTimeMs;
+
+        var pointsInWindow = _buffer
+            .Where(dp => dp.Timestamp >= windowStart && dp.Timestamp < windowEnd)
+            .ToList();
+
+        if (pointsInWindow.Count == 0)
+            return 0d;
+
+        double[] values = pointsInWindow.Select(p => p.Value).ToArray();
+        Array.Sort(values);
+        int n = values.Length;
+        double index = (percentile / 100.0) * (n - 1);
+        int k = (int)Math.Floor(index);
+        double d = index - k;
+
+        if (k >= n - 1)
+            return values[n - 1];
+
+        return values[k] + d * (values[k + 1] - values[k]);
+    }
+
     // Builds an aggregated result for a single window.
     private SlidingWindowResult BuildResult(long startMs, long endMs, List<DataPoint> points)
     {
