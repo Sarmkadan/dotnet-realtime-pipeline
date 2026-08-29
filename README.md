@@ -117,3 +117,18 @@ int availableTokens = status.AvailableTokens;
 // Reset the limiter for a specific identifier (e.g., after a configuration change).
 limiter.Reset(identifier);
 ```
+
+## ApiEndpointHandlerValidationTests
+
+The ApiEndpointHandlerValidationTests class is an xUnit test fixture that verifies validation behavior for API responses, batch ingestion results, and pipeline status information. It covers valid and invalid models as well as the exceptions raised for invalid or null values; xUnit normally discovers these public test methods automatically, but they can also be invoked directly when debugging a specific scenario.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new ApiEndpointHandlerValidationTests();
+
+tests.Validate_ApiResponse_Valid_ReturnsEmptyList();
+tests.Validate_BatchIngestResult_Invalid_ReturnsErrors();
+tests.EnsureValid_PipelineStatusInfo_ThrowsWhenInvalid();
+```
