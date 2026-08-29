@@ -79,6 +79,23 @@ if (PipelineEventPublisherJsonExtensions.TryFromJson(json, out var result))
 }
 ```
 
+## PipelineEventPublisherValidationTests
+
+The `PipelineEventPublisherValidationTests` class is an xUnit test fixture that verifies the publisher validation extension methods, including successful validation, null handling, exception behavior, and read-only validation results. xUnit discovers its public test methods automatically, while direct invocation can be useful when debugging a particular validation scenario.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new PipelineEventPublisherValidationTests();
+
+tests.Validate_WithValidPublisher_ReturnsEmptyList();
+tests.IsValid_WithNullPublisher_ThrowsArgumentNullException();
+tests.EnsureValid_WithInvalidPublisher_ThrowsArgumentException();
+tests.Validate_ReturnsReadOnlyList();
+tests.Methods_AreExtensionMethodsForPipelineEventPublisher();
+```
+
 ## ApiEndpointHandlerExtensionsTests
 
 The ApiEndpointHandlerExtensionsTests class verifies that the ApiEndpointHandlerExtensions class correctly manages API response construction, ensuring that successful results, error responses, and paginated outputs are generated as expected. It includes comprehensive test coverage for edge cases, including null handling and invalid input parameters, guaranteeing reliability across all response scenarios.
