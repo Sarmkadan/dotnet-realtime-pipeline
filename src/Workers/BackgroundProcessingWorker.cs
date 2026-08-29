@@ -70,9 +70,9 @@ public sealed class BackgroundProcessingWorker : IDisposable
 			{
 				await _workerTask;
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				_logger.LogInformation("Background worker stopped");
+				LogEvent("INFO", "Background worker stopped", ex);
 			}
 		}
 
@@ -106,13 +106,14 @@ public sealed class BackgroundProcessingWorker : IDisposable
 					// Allow other tasks to run
 					await Task.Delay(100, cancellationToken);
 				}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
+				LogEvent("INFO", "Background processing canceled", ex);
 				break;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error in background processing loop");
+				LogEvent("ERROR", "Error in background processing loop", ex);
 				await Task.Delay(1000, cancellationToken);
 			}
 		}
@@ -133,15 +134,22 @@ public sealed class BackgroundProcessingWorker : IDisposable
 			{
 				_workerTask?.Wait();
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				// Expected during shutdown.
+				LogEvent("INFO", "Background worker canceled during shutdown", ex);
 			}
 
 			_isRunning = false;
 		}
 
 		_cancellationTokenSource.Dispose();
+	}
+
+	private static void LogEvent(string level, string message, Exception? ex = null)
+	{
+		var exceptionMessage = ex?.Message.Replace('\r', ' ').Replace('\n', ' ');
+		var exceptionDetail = ex is null ? string.Empty : $" | {ex.GetType().Name}: {exceptionMessage}";
+		Console.WriteLine($"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ} [{level}] {nameof(BackgroundProcessingWorker)}: {message}{exceptionDetail}");
 	}
 }
 
@@ -205,9 +213,9 @@ public sealed class MetricsAggregationWorker : IDisposable
 			{
 				await _workerTask;
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				_logger.LogInformation("Metrics aggregation worker stopped");
+				LogEvent("INFO", "Metrics aggregation worker stopped", ex);
 			}
 		}
 
@@ -240,13 +248,14 @@ public sealed class MetricsAggregationWorker : IDisposable
 
 					await Task.Delay(_intervalMs, cancellationToken);
 				}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
+				LogEvent("INFO", "Metrics aggregation canceled", ex);
 				break;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error during metrics aggregation");
+				LogEvent("ERROR", "Error during metrics aggregation", ex);
 			}
 		}
 	}
@@ -266,15 +275,22 @@ public sealed class MetricsAggregationWorker : IDisposable
 			{
 				_workerTask?.Wait();
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				// Expected during shutdown.
+				LogEvent("INFO", "Metrics aggregation worker canceled during shutdown", ex);
 			}
 
 			_isRunning = false;
 		}
 
 		_cancellationTokenSource.Dispose();
+	}
+
+	private static void LogEvent(string level, string message, Exception? ex = null)
+	{
+		var exceptionMessage = ex?.Message.Replace('\r', ' ').Replace('\n', ' ');
+		var exceptionDetail = ex is null ? string.Empty : $" | {ex.GetType().Name}: {exceptionMessage}";
+		Console.WriteLine($"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ} [{level}] {nameof(MetricsAggregationWorker)}: {message}{exceptionDetail}");
 	}
 }
 
@@ -338,9 +354,9 @@ public sealed class HealthCheckWorker : IDisposable
 			{
 				await _workerTask;
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				_logger.LogInformation("Health check worker stopped");
+				LogEvent("INFO", "Health check worker stopped", ex);
 			}
 		}
 
@@ -367,13 +383,14 @@ public sealed class HealthCheckWorker : IDisposable
 
 					await Task.Delay(_intervalMs, cancellationToken);
 				}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
+				LogEvent("INFO", "Health check canceled", ex);
 				break;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error during health check");
+				LogEvent("ERROR", "Error during health check", ex);
 			}
 		}
 	}
@@ -393,15 +410,22 @@ public sealed class HealthCheckWorker : IDisposable
 			{
 				_workerTask?.Wait();
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException ex)
 			{
-				// Expected during shutdown.
+				LogEvent("INFO", "Health check worker canceled during shutdown", ex);
 			}
 
 			_isRunning = false;
 		}
 
 		_cancellationTokenSource.Dispose();
+	}
+
+	private static void LogEvent(string level, string message, Exception? ex = null)
+	{
+		var exceptionMessage = ex?.Message.Replace('\r', ' ').Replace('\n', ' ');
+		var exceptionDetail = ex is null ? string.Empty : $" | {ex.GetType().Name}: {exceptionMessage}";
+		Console.WriteLine($"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss.fffZ} [{level}] {nameof(HealthCheckWorker)}: {message}{exceptionDetail}");
 	}
 }
 
