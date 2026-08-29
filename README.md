@@ -132,3 +132,19 @@ tests.Validate_ApiResponse_Valid_ReturnsEmptyList();
 tests.Validate_BatchIngestResult_Invalid_ReturnsErrors();
 tests.EnsureValid_PipelineStatusInfo_ThrowsWhenInvalid();
 ```
+
+## BatchProcessorTests
+
+The `BatchProcessorTests` class is an xUnit test fixture that verifies generic and data-point batch processing, including batching boundaries, parallel execution, progress callbacks, empty input, and failure handling. It also checks the available `BatchProcessingException` constructors; xUnit discovers these public test methods automatically, though they can be called directly when debugging.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new BatchProcessorTests();
+
+await tests.ProcessAsync_AllItemsSucceed_ReturnsAllResults();
+tests.CreateBatches_ItemsNotDivisibleByBatchSize_ReturnsPartialFinalBatch();
+await tests.DataPointBatchProcessor_ProcessBatchAsync_AllItemsSucceed_ReturnsAllResults();
+tests.BatchProcessingException_ConstructsWithMessageAndInnerException();
+```
