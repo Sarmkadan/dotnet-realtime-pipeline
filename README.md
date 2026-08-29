@@ -148,3 +148,24 @@ tests.CreateBatches_ItemsNotDivisibleByBatchSize_ReturnsPartialFinalBatch();
 await tests.DataPointBatchProcessor_ProcessBatchAsync_AllItemsSucceed_ReturnsAllResults();
 tests.BatchProcessingException_ConstructsWithMessageAndInnerException();
 ```
+
+## SlidingWindowAggregatorTests
+
+The `SlidingWindowAggregatorTests` class is an xUnit test fixture that verifies sliding-window aggregation, eviction, empty and single-value windows, out-of-order timestamps, multiple-window emission, trend calculations, and window metadata. xUnit discovers its public test methods automatically, though they can also be invoked directly when debugging the aggregator's behavior.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new SlidingWindowAggregatorTests();
+
+tests.ValuesWithinWindowAggregateCorrectly();
+tests.ValuesOlderThanWindowAreEvictedFromAggregate();
+tests.EmptyWindowResult();
+tests.SingleValueInWindow();
+tests.OutOfOrderTimestampHandling();
+tests.MultipleWindowsEmitted();
+tests.AggregationCalculationsAreCorrect();
+tests.TrendCalculationIsCorrect();
+tests.WindowMetadataIsCorrect();
+```
