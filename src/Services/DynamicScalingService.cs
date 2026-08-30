@@ -22,6 +22,16 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class DynamicScalingService
 {
+    private const int DefaultMinConsumers = 1;
+    private const int DefaultMaxConsumers = 16;
+    private const double DefaultScaleUpThresholdPercent = 75.0;
+    private const double DefaultScaleDownThresholdPercent = 30.0;
+    private const int DefaultCooldownSeconds = 15;
+    private const int MinimumConsumerCount = 1;
+    private const int MinimumCooldownSeconds = 1;
+    private const int ConsumerScalingStep = 1;
+    private const double ScaleDownMaxBackpressureFrequency = 0.5;
+
     private readonly BackpressureService _backpressureService;
     private readonly PipelineConfig _config;
     private readonly ILogger<DynamicScalingService> _logger;
@@ -49,20 +59,20 @@ public sealed class DynamicScalingService
         BackpressureService backpressureService,
         PipelineConfig config,
         ILogger<DynamicScalingService> logger,
-        int minConsumers = 1,
-        int maxConsumers = 16,
-        double scaleUpThresholdPercent = 75.0,
-        double scaleDownThresholdPercent = 30.0,
-        int cooldownSeconds = 15)
+        int minConsumers = DefaultMinConsumers,
+        int maxConsumers = DefaultMaxConsumers,
+        double scaleUpThresholdPercent = DefaultScaleUpThresholdPercent,
+        double scaleDownThresholdPercent = DefaultScaleDownThresholdPercent,
+        int cooldownSeconds = DefaultCooldownSeconds)
     {
         _backpressureService = backpressureService ?? throw new ArgumentNullException(nameof(backpressureService));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _minConsumers = Math.Max(1, minConsumers);
-        _maxConsumers = Math.Max(_minConsumers + 1, maxConsumers);
+        _minConsumers = Math.Max(MinimumConsumerCount, minConsumers);
+        _maxConsumers = Math.Max(_minConsumers + ConsumerScalingStep, maxConsumers);
         _scaleUpThresholdPercent = scaleUpThresholdPercent;
         _scaleDownThresholdPercent = scaleDownThresholdPercent;
-        _cooldown = TimeSpan.FromSeconds(Math.Max(1, cooldownSeconds));
+        _cooldown = TimeSpan.FromSeconds(Math.Max(MinimumCooldownSeconds, cooldownSeconds));
             _logger.LogInformation("Initializing DynamicScalingService with minConsumers={minConsumers}, maxConsumers={maxConsumers}, scaleUpThresholdPercent={scaleUpThresholdPercent}, scaleDownThresholdPercent={scaleDownThresholdPercent}", minConsumers, maxConsumers, scaleUpThresholdPercent, scaleDownThresholdPercent);
     }
 
@@ -170,13 +180,13 @@ public sealed class DynamicScalingService
                 Direction = ScalingDirection.Up,
                 Reason = $"Buffer at {fill:F1}% exceeds scale-up threshold ({_scaleUpThresholdPercent}%)",
                 FromConsumers = current,
-                ToConsumers = current + 1,
+                ToConsumers = current + ConsumerScalingStep,
                 BufferFillPercent = fill,
                 BackpressureFrequency = freq
             };
         }
 
-        if (fill <= _scaleDownThresholdPercent && freq < 0.5 && current > _minConsumers)
+        if (fill <= _scaleDownThresholdPercent && freq < ScaleDownMaxBackpressureFrequency && current > _minConsumers)
         {
             return new ScalingDecision
             {
@@ -184,7 +194,7 @@ public sealed class DynamicScalingService
                 Direction = ScalingDirection.Down,
                 Reason = $"Buffer at {fill:F1}% is below scale-down threshold ({_scaleDownThresholdPercent}%)",
                 FromConsumers = current,
-                ToConsumers = current - 1,
+                ToConsumers = current - ConsumerScalingStep,
                 BufferFillPercent = fill,
                 BackpressureFrequency = freq
             };
