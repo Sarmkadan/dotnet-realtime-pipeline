@@ -43,7 +43,6 @@ public sealed class RetryHelper
     {
         typeof(TimeoutException),
         typeof(HttpRequestException),
-        typeof(OperationCanceledException),
         typeof(InvalidOperationException)
     };
 
@@ -75,6 +74,10 @@ public sealed class RetryHelper
             {
                 return await operation();
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex) when (attempt < maxAttempts - 1 && (shouldRetry?.Invoke(ex) ?? IsRetryableException(ex)))
             {
                 attempt++;
@@ -102,6 +105,10 @@ public sealed class RetryHelper
             {
                 return operation();
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex) when (attempt < maxAttempts - 1 && (shouldRetry?.Invoke(ex) ?? IsRetryableException(ex)))
             {
                 attempt++;
@@ -118,7 +125,6 @@ public sealed class RetryHelper
     {
         return ex is TimeoutException
             or HttpRequestException
-            or OperationCanceledException
             or InvalidOperationException;
     }
 }
@@ -213,7 +219,6 @@ public sealed class RetryPolicy
     {
         var attempt = 0;
         var delay = InitialDelayMs;
-        var random = new Random();
 
         while (true)
         {
@@ -221,16 +226,20 @@ public sealed class RetryPolicy
             {
                 return await operation();
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex) when (attempt < MaxAttempts - 1 && IsRetryableException(ex))
             {
                 attempt++;
+                delay = (int)Math.Min((long)delay * 2, MaxDelayMs);
 
                 if (UseJitter)
                 {
-                    delay = (int)(delay * (0.5 + random.NextDouble() * 0.5));
+                    delay = (int)(delay * (0.5 + Random.Shared.NextDouble() * 0.5));
                 }
 
-                delay = Math.Min(delay * 2, MaxDelayMs);
                 await Task.Delay(delay);
             }
         }
@@ -241,7 +250,7 @@ public sealed class RetryPolicy
         if (RetryableExceptions.Count == 0)
             return true;
 
-        return RetryableExceptions.Any(t => t.IsInstanceOfType(ex));
+        return RetryableExceptions.Any(t => t.IsAssignableFrom(ex.GetType()));
     }
 }
 
