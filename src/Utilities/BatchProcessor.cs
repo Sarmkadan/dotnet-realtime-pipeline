@@ -98,6 +98,7 @@ public sealed class BatchProcessor<TInput, TOutput>
     /// </summary>
     public int GetBatchCount(int itemCount)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(itemCount);
         return (itemCount + _batchSize - 1) / _batchSize;
     }
 }
@@ -110,6 +111,8 @@ public sealed class BatchProcessingException : Exception
     public BatchProcessingException(string message, Exception innerException)
         : base(message, innerException)
     {
+        ArgumentException.ThrowIfNullOrEmpty(message);
+        ArgumentNullException.ThrowIfNull(innerException);
     }
 }
 
