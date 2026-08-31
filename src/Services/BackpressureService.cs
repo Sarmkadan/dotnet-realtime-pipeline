@@ -32,7 +32,7 @@ public sealed class BackpressureService
     /// </summary>
     public BackpressureContext CreateContext(string stageName, long maxBufferCapacity)
     {
-        ArgumentException.ThrowIfNullOrEmpty(nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
         if (maxBufferCapacity <= 0)
             throw new ArgumentException("Max capacity must be > 0", nameof(maxBufferCapacity));
 
@@ -56,6 +56,8 @@ public sealed class BackpressureService
     /// </summary>
     public BackpressureContext? GetContext(string stageName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+
         lock (_lockObject)
         {
             _contexts.TryGetValue(stageName, out var context);
@@ -68,8 +70,7 @@ public sealed class BackpressureService
     /// </summary>
     public bool TryAddToBuffer(string stageName, long itemCount)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         lock (_lockObject)
         {
@@ -92,8 +93,7 @@ public sealed class BackpressureService
     /// </summary>
     public void RemoveFromBuffer(string stageName, long itemCount)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         lock (_lockObject)
         {
@@ -112,8 +112,7 @@ public sealed class BackpressureService
         BackpressureStrategy strategy,
         long timeoutMs)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         lock (_lockObject)
         {
@@ -169,6 +168,8 @@ public sealed class BackpressureService
     /// </summary>
     public bool IsBackpressured(string stageName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+
         lock (_lockObject)
         {
             if (!_contexts.TryGetValue(stageName, out var context))
@@ -183,8 +184,7 @@ public sealed class BackpressureService
     /// </summary>
     public bool TryRegisterConsumer(string stageName)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         lock (_lockObject)
         {
@@ -200,8 +200,7 @@ public sealed class BackpressureService
     /// </summary>
     public void UnregisterConsumer(string stageName)
     {
-        if (string.IsNullOrWhiteSpace(stageName))
-            throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
 
         lock (_lockObject)
         {
@@ -256,6 +255,8 @@ public sealed class BackpressureService
     /// </summary>
     public void ResetBackpressure(string stageName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+
         lock (_lockObject)
         {
             if (_contexts.TryGetValue(stageName, out var context))
@@ -272,6 +273,8 @@ public sealed class BackpressureService
     /// </summary>
     public long GetDroppedItemCount(string stageName)
     {
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+
         lock (_lockObject)
         {
             if (!_contexts.TryGetValue(stageName, out var context))
