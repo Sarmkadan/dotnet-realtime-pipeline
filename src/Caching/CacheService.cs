@@ -10,6 +10,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -53,19 +54,19 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
             if (entry.IsExpired)
             {
                 _cache.TryRemove(key, out _);
-                _misses++;
+                Interlocked.Increment(ref _misses);
                 value = default;
                 return false;
             }
 
             entry.LastAccessTime = DateTime.UtcNow;
-            entry.AccessCount++;
-            _hits++;
+            entry.IncrementAccessCount();
+            Interlocked.Increment(ref _hits);
             value = entry.Value;
             return true;
         }
 
-        _misses++;
+        Interlocked.Increment(ref _misses);
         value = default;
         return false;
     }
@@ -119,8 +120,8 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     public void Clear()
     {
         _cache.Clear();
-        _hits = 0;
-        _misses = 0;
+        Interlocked.Exchange(ref _hits, 0);
+        Interlocked.Exchange(ref _misses, 0);
     }
 
     /// <summary>
@@ -128,13 +129,15 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     /// </summary>
     public CacheStatistics GetStatistics()
     {
-        var total = _hits + _misses;
-        var hitRate = total > 0 ? (_hits * 100.0) / total : 0;
+        var hits = Interlocked.Read(ref _hits);
+        var misses = Interlocked.Read(ref _misses);
+        var total = hits + misses;
+        var hitRate = total > 0 ? (hits * 100.0) / total : 0;
 
         return new CacheStatistics
         {
-            TotalHits = _hits,
-            TotalMisses = _misses,
+            TotalHits = hits,
+            TotalMisses = misses,
             HitRate = hitRate,
             CurrentSize = _cache.Count,
             MaxCapacity = _maxCapacity,
@@ -220,13 +223,24 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
 
     private class CacheEntry
     {
+        private long _accessCount;
+
         public TValue Value { get; set; }
         public DateTime CreatedTime { get; set; }
         public DateTime LastAccessTime { get; set; }
         public DateTime ExpirationTime { get; set; }
-        public long AccessCount { get; set; }
+        public long AccessCount
+        {
+            get => Interlocked.Read(ref _accessCount);
+            set => Interlocked.Exchange(ref _accessCount, value);
+        }
 
         public bool IsExpired => DateTime.UtcNow > ExpirationTime;
+
+        public void IncrementAccessCount()
+        {
+            Interlocked.Increment(ref _accessCount);
+        }
     }
 }
 
