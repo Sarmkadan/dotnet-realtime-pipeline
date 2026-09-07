@@ -286,3 +286,49 @@ Console.WriteLine($"Applied={response.Applied}, Fill={response.BufferFillPercent
 backpressure.RemoveFromBuffer("enrichment", 201); // 59.9%, below the low-water mark
 Console.WriteLine($"Active={backpressure.IsBackpressured("enrichment")}");
 ```
+
+## PipelineConfigurationBuilder
+
+`PipelineConfigurationBuilder` creates a `PipelineConfig` with configuration ID `1` from the required, non-empty pipeline name and version passed to its constructor. Its fluent methods are:
+
+- `WithBufferConfiguration(long maxBufferSize, long flushIntervalMs, int maxConcurrentConsumers)` sets buffer capacity, flush interval, and consumer concurrency.
+- `WithWindowingConfiguration(long windowSizeMs, long windowSlideMs, string windowType)` sets the window duration, slide, and non-empty window type.
+- `WithPerformanceConfiguration(int maxRetries, long retryDelayMs, long processingTimeoutMs, double backpressureTriggerThreshold)` sets retry, timeout, and backpressure values.
+- `WithQualityConfiguration(int minDataQualityThreshold, bool validateOnIngestion, bool enableMetricsCollection)` sets quality validation and metrics options.
+- `WithStage(string stageName, string stageType)` adds a stage with a non-empty name and type.
+- `WithCustomSetting(string key, object value)` adds or replaces a non-null custom setting under a non-empty key.
+- `WithHighPerformanceDefaults()` sets buffer size `100000`, flush interval `500` ms, `16` consumers, window size `1000` ms, window slide `500` ms, `2` retries, and retry delay `50` ms.
+- `WithLowLatencyDefaults()` sets buffer size `5000`, flush interval `100` ms, `2` consumers, window size `1000` ms, window slide `100` ms, and processing timeout `5000` ms.
+- `WithHighReliabilityDefaults()` sets buffer size `50000`, flush interval `2000` ms, `4` consumers, `5` retries, retry delay `500` ms, minimum data quality `85`, and ingestion validation enabled.
+- `Build()` adds default stages when no stages were supplied, validates the configuration, and returns the `PipelineConfig`; invalid values cause an `InvalidOperationException`.
+
+The builder also provides `Activate()` and `Deactivate()` to set `IsActive`. Before fluent overrides, the underlying `PipelineConfig` defaults are a buffer size of `10000`, a `1000` ms flush interval, `4` consumers, a `5000` ms tumbling window sliding every `1000` ms, `3` retries with a `100` ms delay, a `30000` ms processing timeout, an `80.0` backpressure threshold, a minimum data quality of `70`, ingestion validation and metrics collection enabled, and an active configuration. Any property not changed by a preset retains this underlying default (or a value set earlier in the chain).
+
+If no `WithStage` call is made, `Build()` adds `Ingestion` (`SOURCE`), `Validation` (`FILTER`), `Transformation` (`TRANSFORM`), `Windowing` (`WINDOW`), `Aggregation` (`AGGREGATE`), and `Output` (`SINK`) in that order.
+
+```csharp
+using DotNetRealtimePipeline.Configuration;
+using DotNetRealtimePipeline.Domain.Models;
+
+PipelineConfig config = new PipelineConfigurationBuilder("telemetry", "1.0.0")
+    .WithBufferConfiguration(
+        maxBufferSize: 25_000,
+        flushIntervalMs: 500,
+        maxConcurrentConsumers: 8)
+    .WithWindowingConfiguration(
+        windowSizeMs: 10_000,
+        windowSlideMs: 2_000,
+        windowType: "SLIDING")
+    .WithPerformanceConfiguration(
+        maxRetries: 4,
+        retryDelayMs: 250,
+        processingTimeoutMs: 20_000,
+        backpressureTriggerThreshold: 75.0)
+    .WithQualityConfiguration(
+        minDataQualityThreshold: 80,
+        validateOnIngestion: true,
+        enableMetricsCollection: true)
+    .WithCustomSetting("region", "us-east")
+    .Activate()
+    .Build();
+```
