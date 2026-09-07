@@ -332,3 +332,57 @@ PipelineConfig config = new PipelineConfigurationBuilder("telemetry", "1.0.0")
     .Activate()
     .Build();
 ```
+
+## DeadLetterQueue
+
+`DeadLetterQueue` is a thread-safe, in-memory queue for data points that failed pipeline processing. Its constructor accepts `maxCapacity` (default `1000`) and `defaultMaxRetries` (default `3`); capacity must be positive and the retry limit cannot be negative. The default retry limit is copied to each new entry.
+
+- `EnqueueAsync(dataPoint, stageName, failureReason, exception, attemptsMade)` adds a pending entry and records its failure context. The exception is optional and `attemptsMade` defaults to `1`.
+- `PeekAsync(maxCount)` returns the oldest entries first without changing them; `maxCount` defaults to `100`.
+- `DequeueForRetryAsync(maxCount)` selects up to `maxCount` retryable entries, oldest first. It does not remove them: each returned entry has its retry count incremented, its last-retry time updated, and its status changed to `InRetry`. The default batch size is `10`.
+- `ReplayAsync(filter)` resets every matching entry to `Pending`, clears its retry count and resolution details, and returns the number reset. The filter can select entries by stage, exception type, status, or any other entry property.
+- `AcknowledgeSuccessAsync(entryId)` removes a successfully reprocessed entry and increments the lifetime resolved count. `AcknowledgeFailureAsync(entryId, finalReason)` retains the entry as `PermanentFailure` with the reason and resolution time. Both operations are no-ops for an unknown ID.
+- `GetStatsAsync()` reports current total, pending, in-retry, and permanent-failure counts, plus the number successfully resolved since the queue was created and the UTC generation time. The `Count` property returns the current number of stored entries.
+
+When an enqueue occurs at capacity, the queue first removes all entries already marked `Resolved` or `PermanentFailure`. If it is still full, it removes the oldest remaining entry before adding the new one. Eviction is therefore automatic and can discard an unresolved entry when no resolved or permanently failed entries are available.
+
+```csharp
+using DotNetRealtimePipeline.DeadLetter;
+using DotNetRealtimePipeline.Domain.Models;
+
+var queue = new DeadLetterQueue(maxCapacity: 1_000, defaultMaxRetries: 3);
+var point = new DataPoint(
+    id: 42,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 18.7,
+    source: "sensor-a");
+
+await queue.EnqueueAsync(
+    point,
+    stageName: "validation",
+    failureReason: "Reading was outside the accepted range",
+    exception: new InvalidOperationException("Invalid reading"),
+    attemptsMade: 2);
+
+IReadOnlyList<DeadLetterEntry> waiting = await queue.PeekAsync(maxCount: 20);
+IReadOnlyList<DeadLetterEntry> retryBatch = await queue.DequeueForRetryAsync(maxCount: 10);
+
+foreach (DeadLetterEntry entry in retryBatch)
+{
+    bool reprocessed = entry.DataPoint.Value >= 0;
+
+    if (reprocessed)
+        await queue.AcknowledgeSuccessAsync(entry.EntryId);
+    else
+        await queue.AcknowledgeFailureAsync(entry.EntryId, "Manual review required");
+}
+
+int replayed = await queue.ReplayAsync(entry =>
+    entry.FailureStageName == "validation" &&
+    entry.Status == DeadLetterStatus.PermanentFailure);
+
+DeadLetterQueueStats stats = await queue.GetStatsAsync();
+Console.WriteLine(
+    $"Stored={stats.TotalEntries}, Pending={stats.PendingEntries}, " +
+    $"InRetry={stats.InRetryEntries}, Resolved={stats.TotalResolved}, Replayed={replayed}");
+```
