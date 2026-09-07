@@ -252,3 +252,37 @@ foreach (SlidingWindowResult window in aggregator.FlushDueWindows(now))
 // Uses DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() internally.
 IReadOnlyList<SlidingWindowResult> laterWindows = aggregator.FlushDueWindows();
 ```
+
+## BackpressureService
+
+`BackpressureService` keeps an in-memory `BackpressureContext` for each pipeline stage. Register a stage with `CreateContext(stageName, maxBufferCapacity)`; stage names must be non-empty, capacities must be positive, and duplicate names are rejected. Each new context receives a sequential ID and allows four concurrent consumers by default. `GetContext` returns the registered context or `null`, while `Clear` removes every registration.
+
+Buffer accounting is item-based. `TryAddToBuffer` increases `BufferSize` when the requested count fits. If it would exceed `MaxBufferCapacity`, the buffer is left unchanged, the full requested count is added to `DroppedItemCount`, backpressure is activated, and the method returns `false`. `RemoveFromBuffer` subtracts items without allowing the size to fall below zero. `GetBufferStatus`, `GetDroppedItemCount`, and `GetSystemStatus` expose per-stage sizes, loss, and aggregate status. Consumer concurrency is tracked separately through `TryRegisterConsumer` and `UnregisterConsumer`.
+
+The threshold constants are `PipelineConstants.BackpressureHighWaterMark` (80%), `PipelineConstants.BackpressureLowWaterMark` (60%), and `PipelineConstants.BackpressureCriticalMark` (95%). `ApplyBackpressureAsync` activates at or above the 80% high-water value through the default threshold of `BackpressureContext.ShouldApplyBackpressure()`; a rejected over-capacity add also activates backpressure. Removing items deactivates it only when fill falls below the 60% low-water value. Those context methods currently express 80 and 60 as their own numeric defaults, while `GetSystemStatus` directly references `BackpressureHighWaterMark` and marks the system backpressured when average fill is strictly above it. The critical mark is a shared reference value but is not used by `BackpressureService` to change state or select a strategy.
+
+Activation records the start time and appends it to `BackpressureEventTimestamps` (retaining the latest 100 timestamps); deactivation adds the elapsed duration to `TotalBackpressureTimeMs`. The service itself declares and raises no CLR events. Callers can observe state through `IsBackpressured`, `GetContext`, and `GetSystemStatus`. `ResetBackpressure` deactivates a known stage and clears its buffer, but preserves its dropped-item count and accumulated duration.
+
+```csharp
+using DotNetRealtimePipeline.Constants;
+using DotNetRealtimePipeline.Domain.Enums;
+using DotNetRealtimePipeline.Services;
+
+var backpressure = new BackpressureService();
+backpressure.CreateContext("enrichment", maxBufferCapacity: 1_000);
+
+backpressure.TryAddToBuffer("enrichment", 800);
+var response = await backpressure.ApplyBackpressureAsync(
+    "enrichment",
+    BackpressureStrategy.Throttle,
+    timeoutMs: 250);
+
+Console.WriteLine(
+    $"High={PipelineConstants.BackpressureHighWaterMark}%, " +
+    $"Low={PipelineConstants.BackpressureLowWaterMark}%, " +
+    $"Critical={PipelineConstants.BackpressureCriticalMark}%");
+Console.WriteLine($"Applied={response.Applied}, Fill={response.BufferFillPercent:F1}%");
+
+backpressure.RemoveFromBuffer("enrichment", 201); // 59.9%, below the low-water mark
+Console.WriteLine($"Active={backpressure.IsBackpressured("enrichment")}");
+```
