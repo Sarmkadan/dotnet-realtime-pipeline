@@ -202,3 +202,53 @@ await tests.IngestBatchAsync_WithValidBatch_ReturnsSuccessResponseWithBatchResul
 tests.ApiResponse_StatusCodeProperty_ReturnsCorrectValue();
 tests.BatchIngestResult_TotalCountProperty_ReturnsCorrectValue();
 ```
+
+## SlidingWindowAggregator
+
+`SlidingWindowAggregator` produces overlapping aggregates from timestamped `DataPoint` values. Its constructor accepts `windowSizeMs`, the duration of every window in milliseconds, and `stepIntervalMs`, the slide between successive window boundaries. Both values must be positive, and the slide cannot exceed the window size; setting them equal produces tumbling windows. The implementation has no configurable timestamp-extractor constructor parameter: it reads each point's Unix-millisecond timestamp directly from `DataPoint.Timestamp`.
+
+- `Add(DataPoint)` adds one non-null point. Points may arrive out of timestamp order; the buffer is kept sorted.
+- `AddRange(IEnumerable<DataPoint>)` adds a non-null sequence using the same behavior and validation as `Add`.
+- `FlushDueWindows(long currentTimeMs)` emits every not-yet-emitted window whose step boundary is at or before the supplied Unix-millisecond time. A window contains points whose timestamps are greater than or equal to its start and less than its end. Old points are pruned after flushing.
+- `FlushDueWindows()` performs the same operation using the current UTC Unix-millisecond time.
+- `GetPercentile(double percentile)` calculates a percentile from values in the current UTC-time window. The percentile must be from `0` through `100`; the method returns `0` for an empty window and linearly interpolates between adjacent sorted values when necessary.
+
+Each `SlidingWindowResult` exposes:
+
+- `WindowId`: a sequential result identifier.
+- `WindowStartMs` and `WindowEndMs`: the start-inclusive, end-exclusive Unix-millisecond bounds.
+- `WindowSizeMs` and `StepIntervalMs`: the configured window size and slide.
+- `DataPointCount`: the number of points in the window.
+- `Average`, `Sum`, `Min`, and `Max`: value aggregates, each `0` when the window is empty.
+- `Trend`: the second-half average minus the first-half average, or `0` when fewer than two points are present.
+- `EmittedAt`: the UTC time when the result was created.
+- `AggregatedData`: a dictionary containing the window type and aggregate metadata (`WindowType`, `Average`, `Sum`, `Min`, `Max`, `Count`, `Trend`, `WindowSizeMs`, and `StepIntervalMs`).
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+
+long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+var aggregator = new SlidingWindowAggregator(
+    windowSizeMs: 10_000,
+    stepIntervalMs: 2_000);
+
+aggregator.Add(new DataPoint(1, now - 3_000, 12.5, "sensor-a"));
+aggregator.AddRange(new[]
+{
+    new DataPoint(2, now - 2_000, 15.0, "sensor-a"),
+    new DataPoint(3, now - 1_000, 17.5, "sensor-a")
+});
+
+double p95 = aggregator.GetPercentile(95);
+
+foreach (SlidingWindowResult window in aggregator.FlushDueWindows(now))
+{
+    Console.WriteLine(
+        $"Window {window.WindowId}: {window.DataPointCount} points, " +
+        $"average {window.Average}, p95 at flush time {p95}");
+}
+
+// Uses DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() internally.
+IReadOnlyList<SlidingWindowResult> laterWindows = aggregator.FlushDueWindows();
+```
