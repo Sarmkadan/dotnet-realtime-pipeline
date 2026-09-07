@@ -386,3 +386,52 @@ Console.WriteLine(
     $"Stored={stats.TotalEntries}, Pending={stats.PendingEntries}, " +
     $"InRetry={stats.InRetryEntries}, Resolved={stats.TotalResolved}, Replayed={replayed}");
 ```
+
+## PipelineOrchestrator
+
+`PipelineOrchestrator` coordinates ingestion, processing, windowing, backpressure, queries, and metrics for a configured pipeline.
+
+- `StartAsync()` starts the processing loop and creates backpressure contexts for the configured stages. Calling it while the pipeline is already running has no effect.
+- `StopAsync()` gracefully stops the pipeline by calling `DrainAsync` with a five-second timeout.
+- `DrainAsync(TimeSpan timeout)` immediately stops new ingestion, waits for queued items to be processed up to the positive timeout, discards any items still queued, flushes active windows, captures a final health report, and returns a `DrainResult` with processed, failed, dropped, and flushed counts plus timeout status.
+- `DisposeAsync()` performs the same five-second drain when the pipeline has not already been stopped or drained, then suppresses finalization. Repeated disposal has no effect.
+- `IngestDataPointAsync(DataPoint dataPoint)` requires a running pipeline and enqueues one point when the ingestion backpressure buffer accepts it. It returns `false` after applying backpressure when capacity is unavailable.
+- `ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)` submits each point through `IngestDataPointAsync` and returns a `BatchProcessingResult` containing successful and failed acceptance counts.
+- `GetStatus()` returns a `PipelineStatus` snapshot with running state, lifetime processed and failed totals, queued item count, configuration identity, backpressure status, and a UTC timestamp. Call `GetSummary()` on that returned `PipelineStatus` for its compact status string.
+- `GetHealthReportAsync()` generates the current metrics health report.
+- `GetThroughput()` returns pipeline-wide events per second; `GetThroughput(string stageName)` returns events per second for one stage.
+- `GetPerformanceTrendAsync()` analyzes the recorded metrics and returns a `PerformanceTrend`.
+
+The orchestrator is registered by the library's service collection setup, so an application can resolve and use it through dependency injection:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+await using PipelineOrchestrator pipeline =
+    serviceProvider.GetRequiredService<PipelineOrchestrator>();
+
+await pipeline.StartAsync();
+
+await pipeline.IngestDataPointAsync(new DataPoint(
+    id: 1,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 21.5,
+    source: "sensor-a"));
+
+BatchProcessingResult batch = await pipeline.ProcessBatchDataPointsAsync(
+    new List<DataPoint>
+    {
+        new(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.0, "sensor-a"),
+        new(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 19.8, "sensor-b")
+    });
+
+PipelineStatus status = pipeline.GetStatus();
+Console.WriteLine(status.GetSummary());
+Console.WriteLine($"Throughput: {pipeline.GetThroughput():F2} events/sec");
+
+HealthReport health = await pipeline.GetHealthReportAsync();
+PerformanceTrend trend = await pipeline.GetPerformanceTrendAsync();
+DrainResult drain = await pipeline.DrainAsync(TimeSpan.FromSeconds(10));
+```
