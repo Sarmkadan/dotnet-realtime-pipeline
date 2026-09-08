@@ -30,6 +30,12 @@ public sealed class BackpressureService
     /// <summary>
     /// Creates a backpressure context for a pipeline stage.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="maxBufferCapacity">The maximum number of items the stage buffer can hold.</param>
+    /// <returns>The newly created backpressure context.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty, or <paramref name="maxBufferCapacity"/> is not greater than zero.</exception>
+    /// <exception cref="InvalidOperationException">A context already exists for <paramref name="stageName"/>.</exception>
     public BackpressureContext CreateContext(string stageName, long maxBufferCapacity)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -54,6 +60,10 @@ public sealed class BackpressureService
     /// <summary>
     /// Gets the backpressure context for a stage.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <returns>The context for the stage, or <see langword="null"/> if no context is registered.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
     public BackpressureContext? GetContext(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -68,6 +78,12 @@ public sealed class BackpressureService
     /// <summary>
     /// Attempts to add items to a stage's buffer.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="itemCount">The number of items to add.</param>
+    /// <returns><see langword="true"/> if the items were added; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
+    /// <exception cref="ResourceNotFoundException">No context is registered for <paramref name="stageName"/>.</exception>
     public bool TryAddToBuffer(string stageName, long itemCount)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -91,6 +107,11 @@ public sealed class BackpressureService
     /// <summary>
     /// Removes items from a stage's buffer.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="itemCount">The number of items to remove.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
+    /// <exception cref="ResourceNotFoundException">No context is registered for <paramref name="stageName"/>.</exception>
     public void RemoveFromBuffer(string stageName, long itemCount)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -107,6 +128,13 @@ public sealed class BackpressureService
     /// <summary>
     /// Applies backpressure strategy based on current buffer state.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="strategy">The backpressure strategy to apply.</param>
+    /// <param name="timeoutMs">The maximum delay, in milliseconds, requested for the strategy.</param>
+    /// <returns>A task whose result describes whether and how backpressure was applied.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
+    /// <exception cref="ResourceNotFoundException">No context is registered for <paramref name="stageName"/>.</exception>
     public async Task<BackpressureResponse> ApplyBackpressureAsync(
         string stageName,
         BackpressureStrategy strategy,
@@ -166,6 +194,10 @@ public sealed class BackpressureService
     /// <summary>
     /// Checks if backpressure is active for a stage.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <returns><see langword="true"/> if backpressure is active; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
     public bool IsBackpressured(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -182,6 +214,11 @@ public sealed class BackpressureService
     /// <summary>
     /// Gets a consumer slot if available.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <returns><see langword="true"/> if a consumer slot was registered; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
+    /// <exception cref="ResourceNotFoundException">No context is registered for <paramref name="stageName"/>.</exception>
     public bool TryRegisterConsumer(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -198,6 +235,9 @@ public sealed class BackpressureService
     /// <summary>
     /// Releases a consumer slot.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
     public void UnregisterConsumer(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -214,6 +254,7 @@ public sealed class BackpressureService
     /// <summary>
     /// Gets the aggregated backpressure status across all stages.
     /// </summary>
+    /// <returns>The aggregated backpressure status.</returns>
     public BackpressureSystemStatus GetSystemStatus()
     {
         lock (_lockObject)
@@ -253,6 +294,9 @@ public sealed class BackpressureService
     /// <summary>
     /// Resets backpressure for a stage.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
     public void ResetBackpressure(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -271,6 +315,10 @@ public sealed class BackpressureService
     /// Gets the dropped item count for a specific stage.
     /// A non-zero value means data was silently lost due to buffer overflow.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <returns>The number of dropped items, or zero if no context is registered for the stage.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stageName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stageName"/> is empty.</exception>
     public long GetDroppedItemCount(string stageName)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -287,6 +335,7 @@ public sealed class BackpressureService
     /// <summary>
     /// Gets the current buffer fill level for every registered stage.
     /// </summary>
+    /// <returns>A dictionary that maps each stage name to its current buffer size.</returns>
     public Dictionary<string, long> GetBufferStatus()
     {
         lock (_lockObject)
@@ -328,9 +377,24 @@ public sealed class BackpressureService
 /// </summary>
 public sealed class BackpressureResponse
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether backpressure was applied.
+    /// </summary>
     public bool Applied { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason for the response.
+    /// </summary>
     public string Reason { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the buffer fill percentage.
+    /// </summary>
     public double BufferFillPercent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the backpressure strategy used.
+    /// </summary>
     public string StrategyUsed { get; set; } = "";
 }
 
@@ -339,11 +403,34 @@ public sealed class BackpressureResponse
 /// </summary>
 public sealed class BackpressureSystemStatus
 {
+    /// <summary>
+    /// Gets or sets the total number of registered stages.
+    /// </summary>
     public int TotalStages { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of stages under backpressure.
+    /// </summary>
     public int BackpressuredStages { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average buffer fill percentage across registered stages.
+    /// </summary>
     public double AverageBufferFillPercent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total time, in milliseconds, spent under backpressure across all stages.
+    /// </summary>
     public long TotalBackpressureTimeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the system is under backpressure.
+    /// </summary>
     public bool IsSystemBackpressured { get; set; }
+
+    /// <summary>
+    /// Gets or sets the time at which the status was generated.
+    /// </summary>
     public DateTime Timestamp { get; set; }
 
     /// <summary>
@@ -352,6 +439,10 @@ public sealed class BackpressureSystemStatus
     /// </summary>
     public long TotalDroppedItems { get; set; }
 
+    /// <summary>
+    /// Gets the health status derived from the system backpressure state and average buffer fill percentage.
+    /// </summary>
+    /// <returns>The current health status.</returns>
     public string GetHealthStatus()
     {
         if (IsSystemBackpressured) return "CRITICAL";
