@@ -154,6 +154,7 @@ public static class WindowEventValidation
     /// <returns>True if the duration is within bounds; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="maxDurationMs"/> or <paramref name="minDurationMs"/> are negative.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="minDurationMs"/> is greater than <paramref name="maxDurationMs"/>.</exception>
     public static bool IsDurationValid(
         this WindowEvent value,
         long maxDurationMs = 86400000, // 24 hours in milliseconds
