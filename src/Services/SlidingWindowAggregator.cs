@@ -54,6 +54,10 @@ public sealed class SlidingWindowAggregator
     /// How often a new window is emitted. Must be &gt; 0 and &lt;= <paramref name="windowSizeMs"/>.
     /// When equal to <paramref name="windowSizeMs"/> the behaviour matches a tumbling window.
     /// </param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="windowSizeMs"/> or <paramref name="stepIntervalMs"/> is not positive,
+    /// or when <paramref name="stepIntervalMs"/> exceeds <paramref name="windowSizeMs"/>.
+    /// </exception>
     public SlidingWindowAggregator(long windowSizeMs, long stepIntervalMs)
     {
         if (windowSizeMs <= 0)
@@ -275,7 +279,7 @@ public sealed class SlidingWindowResult
     public int DataPointCount { get; set; }
     /// <summary>
     /// Average value of data points in the window.
-    /// </>
+    /// </summary>
     public double Average { get; set; }
     /// <summary>
     /// Sum of values of data points in the window.
