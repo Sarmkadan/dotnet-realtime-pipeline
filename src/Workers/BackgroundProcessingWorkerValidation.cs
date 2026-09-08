@@ -33,6 +33,7 @@ public static class BackgroundProcessingWorkerValidation
     /// </summary>
     /// <param name="value">The worker instance to check.</param>
     /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this BackgroundProcessingWorker value)
     {
         return value.Validate().Count == 0;
@@ -83,6 +84,8 @@ public static class BackgroundProcessingWorkerValidation
     /// </summary>
     /// <param name="value">The worker instance to check.</param>
     /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access the private interval field.</exception>
     public static bool IsValid(this MetricsAggregationWorker value)
     {
         return value.Validate().Count == 0;
@@ -94,6 +97,7 @@ public static class BackgroundProcessingWorkerValidation
     /// <param name="value">The worker instance to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access the private interval field.</exception>
     public static void EnsureValid(this MetricsAggregationWorker value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -133,6 +137,8 @@ public static class BackgroundProcessingWorkerValidation
     /// </summary>
     /// <param name="value">The worker instance to check.</param>
     /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access the private interval field.</exception>
     public static bool IsValid(this HealthCheckWorker value)
     {
         return value.Validate().Count == 0;
@@ -144,6 +150,7 @@ public static class BackgroundProcessingWorkerValidation
     /// <param name="value">The worker instance to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if reflection fails to access the private interval field.</exception>
     public static void EnsureValid(this HealthCheckWorker value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -174,6 +181,7 @@ public static class BackgroundProcessingWorkerValidation
     /// </summary>
     /// <param name="value">The coordinator instance to check.</param>
     /// <returns>True if valid; otherwise false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static bool IsValid(this WorkerCoordinator value)
     {
         return value.Validate().Count == 0;
