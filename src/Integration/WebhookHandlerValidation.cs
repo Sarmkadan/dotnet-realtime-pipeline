@@ -44,6 +44,7 @@ public static class WebhookHandlerValidation
     /// Ensures that a <see cref="WebhookHandler"/> instance is valid.
     /// </summary>
     /// <param name="value">The webhook handler to validate.</param>
+    /// <returns>No value is returned.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="value"/> is not valid.</exception>
     public static void EnsureValid(this WebhookHandler? value)
@@ -151,6 +152,7 @@ public static class WebhookHandlerValidation
     /// Ensures that a <see cref="WebhookSubscription"/> instance is valid.
     /// </summary>
     /// <param name="subscription">The webhook subscription to validate.</param>
+    /// <returns>No value is returned.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="subscription"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="subscription"/> is not valid.</exception>
     public static void EnsureValid(this WebhookSubscription? subscription)
@@ -233,6 +235,7 @@ public static class WebhookHandlerValidation
     /// Ensures that a <see cref="WebhookPayload"/> instance is valid.
     /// </summary>
     /// <param name="payload">The webhook payload to validate.</param>
+    /// <returns>No value is returned.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="payload"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown if <paramref name="payload"/> is not valid.</exception>
     public static void EnsureValid(this WebhookPayload? payload)
@@ -288,6 +291,7 @@ public static class InboundWebhookHandlerValidation
     /// Ensures that an <see cref="InboundWebhookHandler"/> instance is valid.
     /// </summary>
     /// <param name="value">The inbound webhook handler to validate.</param>
+    /// <returns>No value is returned.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
     public static void EnsureValid(this InboundWebhookHandler? value)
     {
