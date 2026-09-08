@@ -21,9 +21,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
     private readonly Dictionary<long, DataPoint> _dataPoints = new();
     private readonly object _lockObject = new();
 
-    /// <summary>
-    /// Retrieves a data point by ID.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<DataPoint?> GetByIdAsync(long id)
     {
         lock (_lockObject)
@@ -33,9 +31,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves all data points from a specific source.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<List<DataPoint>> GetBySourceAsync(string source)
     {
         if (string.IsNullOrWhiteSpace(source))
@@ -51,9 +47,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves data points within a time range.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<List<DataPoint>> GetByTimeRangeAsync(long startMs, long endMs)
     {
         if (startMs > endMs)
@@ -70,9 +64,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves data points meeting or exceeding a quality threshold.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<List<DataPoint>> GetByQualityThresholdAsync(int minQuality)
     {
         if (minQuality < 0 || minQuality > 100)
@@ -89,9 +81,8 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Creates a new data point.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="dataPoint"/> is <see langword="null"/>.</exception>
     public Task<DataPoint> CreateAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -107,9 +98,8 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Updates an existing data point.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="dataPoint"/> is <see langword="null"/>.</exception>
     public Task<DataPoint> UpdateAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -125,9 +115,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Deletes a data point by ID.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<bool> DeleteAsync(long id)
     {
         lock (_lockObject)
@@ -136,9 +124,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Gets the total count of data points.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<int> CountAsync()
     {
         lock (_lockObject)
@@ -147,9 +133,7 @@ public sealed class InMemoryDataPointRepository : IDataPointRepository
         }
     }
 
-    /// <summary>
-    /// Gets a paginated list of data points.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<List<DataPoint>> GetPagedAsync(int pageNumber, int pageSize)
     {
         if (pageNumber < 1) throw new ArgumentException("Page number must be >= 1", nameof(pageNumber));
