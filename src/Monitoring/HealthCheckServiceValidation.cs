@@ -45,6 +45,7 @@ public static class HealthCheckServiceValidation
     /// Ensures that a <see cref="HealthCheckService"/> instance is valid, throwing an exception if it is not.
     /// </summary>
     /// <param name="value">The health check service to validate.</param>
+    /// <returns>This method does not return a value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when the instance is not valid, containing a list of validation problems.</exception>
     public static void EnsureValid(this HealthCheckService value)
@@ -109,6 +110,7 @@ public static class HealthCheckServiceValidation
     /// Ensures that a <see cref="ComponentHealth"/> instance is valid, throwing an exception if it is not.
     /// </summary>
     /// <param name="value">The component health to validate.</param>
+    /// <returns>This method does not return a value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when the instance is not valid, containing a list of validation problems.</exception>
     public static void EnsureValid(this ComponentHealth value)
@@ -194,6 +196,7 @@ public static class HealthCheckServiceValidation
     /// Ensures that a <see cref="SystemHealthReport"/> instance is valid, throwing an exception if it is not.
     /// </summary>
     /// <param name="value">The system health report to validate.</param>
+    /// <returns>This method does not return a value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when the instance is not valid, containing a list of validation problems.</exception>
     public static void EnsureValid(this SystemHealthReport value)
@@ -259,6 +262,7 @@ public static class HealthCheckServiceValidation
     /// Ensures that a <see cref="QuickHealthStatus"/> instance is valid, throwing an exception if it is not.
     /// </summary>
     /// <param name="value">The quick health status to validate.</param>
+    /// <returns>This method does not return a value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when the instance is not valid, containing a list of validation problems.</exception>
     public static void EnsureValid(this QuickHealthStatus value)
@@ -278,6 +282,7 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The component status to validate.</param>
     /// <returns>A list of human-readable validation problems; empty if the value is valid.</returns>
+    /// <exception cref="Exception">No exceptions are thrown by this method.</exception>
     public static IReadOnlyList<string> Validate(this ComponentStatus value)
     {
         // ComponentStatus is an enum with valid values, so no validation needed
@@ -289,6 +294,7 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The component status to check.</param>
     /// <returns><c>true</c> since all ComponentStatus enum values are valid.</returns>
+    /// <exception cref="Exception">No exceptions are thrown by this method.</exception>
     public static bool IsValid(this ComponentStatus value) => true;
 
     /// <summary>
@@ -296,6 +302,7 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The system health to validate.</param>
     /// <returns>A list of human-readable validation problems; empty if the value is valid.</returns>
+    /// <exception cref="Exception">No exceptions are thrown by this method.</exception>
     public static IReadOnlyList<string> Validate(this SystemHealth value)
     {
         // SystemHealth is an enum with valid values, so no validation needed
@@ -307,5 +314,6 @@ public static class HealthCheckServiceValidation
     /// </summary>
     /// <param name="value">The system health to check.</param>
     /// <returns><c>true</c> since all SystemHealth enum values are valid.</returns>
+    /// <exception cref="Exception">No exceptions are thrown by this method.</exception>
     public static bool IsValid(this SystemHealth value) => true;
 }
