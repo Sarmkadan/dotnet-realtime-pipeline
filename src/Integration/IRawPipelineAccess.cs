@@ -54,6 +54,9 @@ public interface IRawPipelineAccess
     /// The returned instance is the pipe's live reader, not a snapshot. Only one
     /// caller may read from it at a time while the pipeline is running.
     /// </remarks>
+    /// <returns>
+    /// The live, shared <see cref="PipeReader"/> for the underlying pipe.
+    /// </returns>
     PipeReader AsPipeReader();
 
     /// <summary>
@@ -65,5 +68,8 @@ public interface IRawPipelineAccess
     /// The returned instance is the pipe's live writer, not a snapshot. Only one
     /// caller may write to it at a time while the pipeline is running.
     /// </remarks>
+    /// <returns>
+    /// The live, shared <see cref="PipeWriter"/> for the underlying pipe.
+    /// </returns>
     PipeWriter AsPipeWriter();
 }
