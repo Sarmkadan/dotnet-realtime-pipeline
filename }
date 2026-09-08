@@ -1,2 +1,10 @@
 
-This file includes 6 test methods covering the happy path and edge cases for each major public method in `BackgroundProcessingWorkerJsonExtensions`.
+## Interface
+
+`IRetryPolicy` defines the contract for retry implementations:
+- `MaxAttempts`: Returns the configured maximum attempts.
+- `IsTransient(Exception)`: Classifies an exception as retryable.
+- `GetBackoffDelay(int)`: Computes the delay for a given attempt number.
+- `ExecuteAsync<T>(Func<int, Task<T>>, CancellationToken)`: Runs the operation with retry logic.
+
+The `RetryResult<T>` class wraps the outcome of `ExecuteAsync`, exposing `Succeeded`, `Value`, `Attempts`, and `LastException` to allow callers to handle success or dead-letter routing appropriately.
