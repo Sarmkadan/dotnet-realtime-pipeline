@@ -35,12 +35,7 @@ public sealed class EventTimeExtractor : ITimestampExtractor
     /// </summary>
     public static EventTimeExtractor Instance { get; } = new();
 
-    /// <summary>
-    /// Extracts the event timestamp from a data point.
-    /// </summary>
-    /// <param name="dataPoint">The data point to extract timestamp from.</param>
-    /// <returns>The event timestamp in milliseconds (Unix timestamp).</returns>
-    /// <exception cref="ArgumentNullException">Thrown when dataPoint is null.</exception>
+    /// <inheritdoc/>
     public long ExtractTimestamp(DataPoint dataPoint)
     {
         ArgumentNullException.ThrowIfNull(dataPoint);
@@ -67,12 +62,7 @@ public sealed class CustomTimestampExtractor : ITimestampExtractor
         _timestampExtractor = timestampExtractor;
     }
 
-    /// <summary>
-    /// Extracts the event timestamp from a data point using the custom function.
-    /// </summary>
-    /// <param name="dataPoint">The data point to extract timestamp from.</param>
-    /// <returns>The event timestamp in milliseconds (Unix timestamp).</returns>
-    /// <exception cref="ArgumentNullException">Thrown when dataPoint is null.</exception>
+    /// <inheritdoc/>
     public long ExtractTimestamp(DataPoint dataPoint)
     {
         ArgumentNullException.ThrowIfNull(dataPoint);
