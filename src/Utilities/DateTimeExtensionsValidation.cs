@@ -75,6 +75,8 @@ public static class DateTimeExtensionsValidation
     /// <param name="windowSizeMs">The size of the time window in milliseconds to validate.</param>
     /// <param name="paramName">The name of the parameter being validated.</param>
     /// <returns>A list of validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paramName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="paramName"/> is empty.</exception>
     public static IReadOnlyList<string> Validate(this long timestampMs, long windowSizeMs, string paramName)
     {
         ArgumentException.ThrowIfNullOrEmpty(paramName);
@@ -111,6 +113,8 @@ public static class DateTimeExtensionsValidation
     /// <param name="windowSizeMs">The window size in milliseconds to check.</param>
     /// <param name="paramName">The name of the parameter being validated.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paramName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="paramName"/> is empty.</exception>
     public static bool IsValid(this long timestampMs, long windowSizeMs, string paramName) => Validate(timestampMs, windowSizeMs, paramName).Count == 0;
 
     /// <summary>
@@ -150,7 +154,8 @@ public static class DateTimeExtensionsValidation
     /// <param name="timestampMs">The timestamp in milliseconds to validate.</param>
     /// <param name="windowSizeMs">The window size in milliseconds to validate.</param>
     /// <param name="paramName">The name of the parameter being validated.</param>
-    /// <exception cref="ArgumentException">Thrown if the value is not valid.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="paramName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="paramName"/> is empty or when the window size is not valid.</exception>
     public static void EnsureValid(this long timestampMs, long windowSizeMs, string paramName)
     {
         ArgumentException.ThrowIfNullOrEmpty(paramName);
