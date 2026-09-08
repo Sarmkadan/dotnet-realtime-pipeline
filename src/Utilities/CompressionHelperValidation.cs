@@ -15,10 +15,10 @@ using System.Collections.Generic;
 public static class CompressionHelperValidation
 {
     /// <summary>
-    /// Validates a <see cref="CompressionHelper"/> instance.
+    /// Verifies that a <see cref="CompressionHelper"/> instance is not <see langword="null"/>.
     /// </summary>
     /// <param name="value">The compression helper instance to validate.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>An empty list when <paramref name="value"/> is not <see langword="null"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static IReadOnlyList<string> Validate(this CompressionHelper? value)
     {
@@ -28,24 +28,24 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Determines whether the specified <see cref="CompressionHelper"/> instance is valid.
+    /// Determines whether the specified <see cref="CompressionHelper"/> instance is not <see langword="null"/>.
     /// </summary>
     /// <param name="value">The compression helper instance to check.</param>
-    /// <returns>True if the instance is valid; otherwise, false.</returns>
+    /// <returns><see langword="true"/> when <paramref name="value"/> is not <see langword="null"/>; otherwise, <see langword="false"/>.</returns>
     public static bool IsValid(this CompressionHelper? value) => value is not null;
 
     /// <summary>
-    /// Ensures that the specified <see cref="CompressionHelper"/> instance is valid, throwing an exception if not.
+    /// Ensures that the specified <see cref="CompressionHelper"/> instance is not <see langword="null"/>.
     /// </summary>
     /// <param name="value">The compression helper instance to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     public static void EnsureValid(this CompressionHelper? value) => ArgumentNullException.ThrowIfNull(value);
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.CompressGzip"/> method.
+    /// Checks whether data supplied for Gzip compression is null or empty.
     /// </summary>
     /// <param name="data">The data to compress.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="data"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForCompressGzip(this string? data)
     {
         return string.IsNullOrEmpty(data)
@@ -54,10 +54,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.DecompressGzip"/> method.
+    /// Checks whether data supplied for Gzip decompression is null or empty.
     /// </summary>
     /// <param name="compressedData">The compressed data to decompress.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="compressedData"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForDecompressGzip(this byte[]? compressedData)
     {
         if (compressedData is null)
@@ -74,10 +74,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.CompressDeflate"/> method.
+    /// Checks whether data supplied for Deflate compression is null or empty.
     /// </summary>
     /// <param name="data">The data to compress.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="data"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForCompressDeflate(this string? data)
     {
         return string.IsNullOrEmpty(data)
@@ -86,10 +86,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.DecompressDeflate"/> method.
+    /// Checks whether data supplied for Deflate decompression is null or empty.
     /// </summary>
     /// <param name="compressedData">The compressed data to decompress.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="compressedData"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForDecompressDeflate(this byte[]? compressedData)
     {
         if (compressedData is null)
@@ -106,12 +106,11 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.CompressFileAsync"/> method.
+    /// Checks whether the input and output paths supplied for file compression are null or empty.
     /// </summary>
     /// <param name="inputPath">The path to the input file.</param>
     /// <param name="outputPath">The path to the output file.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
-    /// <exception cref="ArgumentException">Thrown when either path is null or empty.</exception>
+    /// <returns>Validation messages for each null or empty path; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForCompressFileAsync(
         this string? inputPath,
         string? outputPath)
@@ -132,12 +131,11 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.DecompressFileAsync"/> method.
+    /// Checks whether the input and output paths supplied for file decompression are null or empty.
     /// </summary>
     /// <param name="inputPath">The path to the input file.</param>
     /// <param name="outputPath">The path to the output file.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
-    /// <exception cref="ArgumentException">Thrown when either path is null or empty.</exception>
+    /// <returns>Validation messages for each null or empty path; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForDecompressFileAsync(
         this string? inputPath,
         string? outputPath)
@@ -158,10 +156,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionHelper.CalculateCompressionRatio"/> method.
+    /// Checks whether the original data supplied for compression-ratio calculation is null or empty.
     /// </summary>
     /// <param name="originalData">The original data to calculate ratio for.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="originalData"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForCalculateCompressionRatio(this string? originalData)
     {
         return string.IsNullOrEmpty(originalData)
@@ -170,10 +168,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionAnalyzer.AnalyzeCompression"/> method.
+    /// Checks whether data supplied for compression analysis is null or empty.
     /// </summary>
     /// <param name="data">The data to analyze.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="data"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForAnalyzeCompression(this string? data)
     {
         return string.IsNullOrEmpty(data)
@@ -182,10 +180,10 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="CompressionAnalyzer.CompareAlgorithms"/> method.
+    /// Checks whether data supplied for algorithm comparison is null or empty.
     /// </summary>
     /// <param name="data">The data to compare algorithms for.</param>
-    /// <returns>A list of validation messages; empty if valid.</returns>
+    /// <returns>A validation message when <paramref name="data"/> is null or empty; otherwise, an empty list.</returns>
     public static IReadOnlyList<string> ValidateForCompareAlgorithms(this string? data)
     {
         return string.IsNullOrEmpty(data)
@@ -194,15 +192,15 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Determines whether the specified data is valid for compression operations.
+    /// Determines whether the specified data is neither null nor empty according to both compression validators.
     /// </summary>
     /// <param name="data">The data to check.</param>
-    /// <returns>True if the data is valid for compression; otherwise, false.</returns>
+    /// <returns><see langword="true"/> when <paramref name="data"/> is neither null nor empty; otherwise, <see langword="false"/>.</returns>
     public static bool IsValidForCompression(this string? data)
         => ValidateForCompressGzip(data).Count == 0 && ValidateForCompressDeflate(data).Count == 0;
 
     /// <summary>
-    /// Ensures that the specified data is valid for compression operations, throwing an exception if not.
+    /// Ensures that the specified data is neither null nor empty according to both compression validators.
     /// </summary>
     /// <param name="data">The data to validate.</param>
     /// <exception cref="ArgumentException">Thrown when the data is not valid for compression.</exception>
@@ -220,15 +218,15 @@ public static class CompressionHelperValidation
     }
 
     /// <summary>
-    /// Determines whether the specified compressed data is valid for decompression operations.
+    /// Determines whether the specified compressed data is neither null nor empty according to both decompression validators.
     /// </summary>
     /// <param name="compressedData">The compressed data to check.</param>
-    /// <returns>True if the compressed data is valid; otherwise, false.</returns>
+    /// <returns><see langword="true"/> when <paramref name="compressedData"/> is neither null nor empty; otherwise, <see langword="false"/>.</returns>
     public static bool IsValidForDecompression(this byte[]? compressedData)
         => ValidateForDecompressGzip(compressedData).Count == 0 && ValidateForDecompressDeflate(compressedData).Count == 0;
 
     /// <summary>
-    /// Ensures that the specified compressed data is valid for decompression operations, throwing an exception if not.
+    /// Ensures that the specified compressed data is neither null nor empty according to both decompression validators.
     /// </summary>
     /// <param name="compressedData">The compressed data to validate.</param>
     /// <exception cref="ArgumentException">Thrown when the compressed data is not valid for decompression.</exception>
