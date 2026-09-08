@@ -71,6 +71,8 @@ public sealed class SlidingWindowAggregator
     /// <summary>
     /// Adds a data point to the internal buffer.
     /// </summary>
+    /// <param name="dataPoint">The data point to add.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dataPoint"/> is null.</exception>
     public void Add(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -87,6 +89,8 @@ public sealed class SlidingWindowAggregator
     /// <summary>
     /// Adds a batch of data points to the internal buffer.
     /// </summary>
+    /// <param name="dataPoints">The data points to add.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dataPoints"/> is null.</exception>
     public void AddRange(IEnumerable<DataPoint> dataPoints)
     {
         if (dataPoints is null) throw new ArgumentNullException(nameof(dataPoints));
@@ -143,6 +147,7 @@ public sealed class SlidingWindowAggregator
     /// <summary>
     /// Overload that uses the current UTC clock as <c>currentTimeMs</c>.
     /// </summary>
+    /// <returns>One <see cref="SlidingWindowResult"/> per step boundary crossed.</returns>
     public IReadOnlyList<SlidingWindowResult> FlushDueWindows()
         => FlushDueWindows(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
@@ -244,15 +249,45 @@ public sealed class SlidingWindowAggregator
 /// </summary>
 public sealed class SlidingWindowResult
 {
+    /// <summary>
+    /// Unique identifier for this window, incrementing with each emitted window.
+    /// </summary>
     public long WindowId { get; set; }
+    /// <summary>
+    /// Start timestamp of the window in milliseconds since Unix epoch.
+    /// </summary>
     public long WindowStartMs { get; set; }
+    /// <summary>
+    /// End timestamp of the window in milliseconds since Unix epoch.
+    /// </summary>
     public long WindowEndMs { get; set; }
+    /// <summary>
+    /// Size of the window in milliseconds.
+    /// </summary>
     public long WindowSizeMs { get; set; }
+    /// <summary>
+    /// Interval between successive window emissions in milliseconds.
+    /// </summary>
     public long StepIntervalMs { get; set; }
+    /// <summary>
+    /// Number of data points contained in this window.
+    /// </summary>
     public int DataPointCount { get; set; }
+    /// <summary>
+    /// Average value of data points in the window.
+    /// </>
     public double Average { get; set; }
+    /// <summary>
+    /// Sum of values of data points in the window.
+    /// </summary>
     public double Sum { get; set; }
+    /// <summary>
+    /// Minimum value among data points in the window.
+    /// </summary>
     public double Min { get; set; }
+    /// <summary>
+    /// Maximum value among data points in the window.
+    /// </summary>
     public double Max { get; set; }
 
     /// <summary>
@@ -261,7 +296,13 @@ public sealed class SlidingWindowResult
     /// </summary>
     public double Trend { get; set; }
 
+    /// <summary>
+    /// Timestamp when this window was emitted.
+    /// </summary>
     public DateTime EmittedAt { get; set; }
+    /// <summary>
+    /// Additional aggregated data associated with the window.
+    /// </summary>
     public Dictionary<string, object> AggregatedData { get; set; } = new();
 
     public override string ToString()
