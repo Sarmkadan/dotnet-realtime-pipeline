@@ -467,7 +467,9 @@ public sealed class DrainResult
 /// </summary>
 public sealed class BatchProcessingResult
 {
+    /// <summary>Gets the number of successfully processed data points in the batch.</summary>
     public int SuccessfulCount { get; set; }
+    /// <summary>Gets the number of failed data points in the batch.</summary>
     public int FailedCount { get; set; }
 }
 
@@ -476,15 +478,27 @@ public sealed class BatchProcessingResult
 /// </summary>
 public sealed class PipelineStatus
 {
+    /// <summary>Gets a value indicating whether the pipeline is currently running.</summary>
     public bool IsRunning { get; set; }
+    /// <summary>Gets the total number of data points successfully processed.</summary>
     public long TotalDataPointsProcessed { get; set; }
+    /// <summary>Gets the total number of data points that failed processing.</summary>
     public long TotalDataPointsFailed { get; set; }
+    /// <summary>Gets the number of items currently pending in the incoming queue.</summary>
     public int PendingItemsInQueue { get; set; }
+    /// <summary>Gets or sets the name of the pipeline configuration.</summary>
     public string ConfigurationName { get; set; } = "";
+    /// <summary>Gets or sets the version of the pipeline configuration.</summary>
     public string ConfigurationVersion { get; set; } = "";
+    /// <summary>Gets or sets the timestamp when the status was last updated.</summary>
     public DateTime Timestamp { get; set; }
+    /// <summary>Gets or sets the current backpressure system status.</summary>
     public BackpressureSystemStatus BackpressureStatus { get; set; } = new();
 
+    /// <summary>
+    /// Gets a short summary of the pipeline status.
+    /// </summary>
+    /// <returns>A formatted string summarizing the pipeline status.</returns>
     public string GetSummary()
     {
         return $"Pipeline[Running={IsRunning}, Processed={TotalDataPointsProcessed}, " +
