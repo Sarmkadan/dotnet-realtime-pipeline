@@ -23,8 +23,13 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
     private readonly object _lockObject = new();
 
     /// <summary>
-    /// Retrieves a metric aggregation by ID.
+    /// Initializes a new instance of the <see cref="InMemoryMetricsRepository"/> class.
     /// </summary>
+    public InMemoryMetricsRepository()
+    {
+    }
+
+    /// <inheritdoc/>
     public Task<MetricAggregation?> GetByIdAsync(long metricId)
     {
         lock (_lockObject)
@@ -34,9 +39,10 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves metrics within a time window.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="startMs"/> is greater than <paramref name="endMs"/>.
+    /// </exception>
     public Task<List<MetricAggregation>> GetByTimeRangeAsync(long startMs, long endMs)
     {
         if (startMs > endMs)
@@ -53,9 +59,10 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves all metrics of a specific type.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="metricType"/> is <see langword="null"/>, empty, or consists only of white-space characters.
+    /// </exception>
     public Task<List<MetricAggregation>> GetByTypeAsync(string metricType)
     {
         if (string.IsNullOrWhiteSpace(metricType))
@@ -72,9 +79,10 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Saves a metric aggregation to the repository.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="metric"/> is <see langword="null"/>.
+    /// </exception>
     public Task<MetricAggregation> SaveAsync(MetricAggregation metric)
     {
         if (metric is null) throw new ArgumentNullException(nameof(metric));
@@ -99,9 +107,7 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Deletes a metric by ID.
-    /// </summary>
+    /// <inheritdoc/>
     public Task<bool> DeleteAsync(long metricId)
     {
         lock (_lockObject)
@@ -114,9 +120,8 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves the most recent metric.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="InvalidOperationException">No metrics are available.</exception>
     public Task<MetricAggregation> GetLatestAsync()
     {
         lock (_lockObject)
@@ -129,9 +134,10 @@ public sealed class InMemoryMetricsRepository : IMetricsRepository
         }
     }
 
-    /// <summary>
-    /// Retrieves the last N metrics in reverse chronological order.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="count"/> is less than one.
+    /// </exception>
     public Task<List<MetricAggregation>> GetHistoryAsync(int count)
     {
         if (count < 1) throw new ArgumentException("Count must be >= 1", nameof(count));
