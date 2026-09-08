@@ -209,6 +209,7 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="policy">The retry policy to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="policy"/> is null.</exception>
     public static bool IsValid(this RetryPolicy policy)
     {
         return Validate(policy).Count == 0;
@@ -219,6 +220,7 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="stats">The retry statistics to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="stats"/> is null.</exception>
     public static bool IsValid(this RetryStatistics stats)
     {
         return Validate(stats).Count == 0;
@@ -229,6 +231,7 @@ public static class RetryHelperValidation
     /// </summary>
     /// <param name="e">The retry event to validate.</param>
     /// <returns>True if valid; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="e"/> is null.</exception>
     public static bool IsValid(this RetryEvent e)
     {
         return Validate(e).Count == 0;
