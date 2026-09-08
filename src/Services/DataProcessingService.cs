@@ -71,6 +71,9 @@ public sealed class DataProcessingService
     /// </summary>
     /// <param name="dataPoint">The <see cref="DataPoint"/> to be processed.</param>
     /// <returns>A task that represents the asynchronous operation, returning a <see cref="ProcessingResult"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="dataPoint"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidDataPointException">Thrown when the data point fails validation.</exception>
+    /// <exception cref="Exception">Thrown when an unexpected error occurs during processing.</exception>
     public async Task<ProcessingResult> ProcessDataPointAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
@@ -234,6 +237,7 @@ public sealed class DataProcessingService
     /// Gets statistics about data processing.
     /// </summary>
     /// <returns>A task that represents the asynchronous operation, returning a <see cref="DataProcessingStatistics"/> object.</returns>
+    /// <exception cref="Exception">Thrown when an error occurs while retrieving statistics from the repository.</exception>
     public async Task<DataProcessingStatistics> GetStatisticsAsync()
     {
         int totalCount = await _repository.CountAsync();
@@ -254,13 +258,37 @@ public sealed class DataProcessingService
 /// </summary>
 public sealed class DataQualityAnalysis
 {
+    /// <summary>
+    /// Gets or sets the total number of data points.
+    /// </summary>
     public int TotalPoints { get; set; }
+    /// <summary>
+    /// Gets or sets the count of high quality data points.
+    /// </summary>
     public int HighQualityCount { get; set; }
+    /// <summary>
+    /// Gets or sets the count of low quality data points.
+    /// </summary>
     public int LowQualityCount { get; set; }
+    /// <summary>
+    /// Gets or sets the average quality score.
+    /// </summary>
     public double AverageQuality { get; set; }
+    /// <summary>
+    /// Gets or sets the minimum quality score.
+    /// </summary>
     public int MinQuality { get; set; }
+    /// <summary>
+    /// Gets or sets the maximum quality score.
+    /// </summary>
     public int MaxQuality { get; set; }
+    /// <summary>
+    /// Gets or sets the count of unique sources.
+    /// </summary>
     public int UniqueSourceCount { get; set; }
+    /// <summary>
+    /// Gets or sets the quality score (integer representation of average quality).
+    /// </summary>
     public int QualityScore { get; set; }
     public double PassRate { get; set; }
 
@@ -272,7 +300,13 @@ public sealed class DataQualityAnalysis
 /// </summary>
 public sealed class DataProcessingStatistics
 {
+    /// <summary>
+    /// Gets or sets the total number of data points.
+    /// </summary>
     public int TotalDataPoints { get; set; }
+    /// <summary>
+    /// Gets or sets the configured maximum number of retries.
+    /// </summary>
     public int ConfiguredMaxRetries { get; set; }
     public int QualityThreshold { get; set; }
     public long ProcessingTimeoutMs { get; set; }
