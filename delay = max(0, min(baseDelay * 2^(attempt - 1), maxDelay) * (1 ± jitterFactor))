@@ -1,0 +1,5 @@
+
+*Note: The exponent is capped at `20` internally to prevent `double` overflow for extremely high attempt numbers.*
+
+## Usage Example
+
