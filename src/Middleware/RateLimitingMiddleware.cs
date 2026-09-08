@@ -20,17 +20,29 @@ public sealed class RateLimitingMiddleware
     private readonly int _tokensPerSecond;
     private readonly int _maxBurstSize;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RateLimitingMiddleware"/> class.
+    /// </summary>
+    /// <param name="tokensPerSecond">The number of tokens replenished per second.</param>
+    /// <param name="maxBurstSize">The maximum number of tokens the limiter can hold.</param>
     public RateLimitingMiddleware(int tokensPerSecond = 1000, int maxBurstSize = 5000)
     {
         _tokensPerSecond = tokensPerSecond;
         _maxBurstSize = maxBurstSize;
     }
 
+    /// <summary>
+    /// Returns a string that represents the current rate limiter configuration.
+    /// </summary>
+    /// <returns>A string representation of the rate limiter.</returns>
     public override string ToString() => $"RateLimitingMiddleware {{ AvailableTokens = {_tokensPerSecond}, Capacity = {_maxBurstSize}, ResetTime = {DateTime.UtcNow} }}";
 
     /// <summary>
     /// Checks if an operation is allowed under rate limits.
     /// </summary>
+    /// <param name="identifier">The identifier whose rate limit bucket is checked.</param>
+    /// <param name="tokensRequired">The number of tokens required by the operation.</param>
+    /// <returns><see langword="true"/> if the requested tokens are available; otherwise, <see langword="false"/>.</returns>
     public bool TryAcquire(string identifier, int tokensRequired = 1)
     {
         ArgumentException.ThrowIfNullOrEmpty(identifier);
@@ -41,6 +53,8 @@ public sealed class RateLimitingMiddleware
     /// <summary>
     /// Gets the current rate limit status for an identifier.
     /// </summary>
+    /// <param name="identifier">The identifier whose rate limit status is retrieved.</param>
+    /// <returns>The current rate limit status for the identifier.</returns>
     public RateLimitStatus GetStatus(string identifier)
     {
         ArgumentException.ThrowIfNullOrEmpty(identifier);
@@ -60,6 +74,7 @@ public sealed class RateLimitingMiddleware
     /// <summary>
     /// Resets rate limits for an identifier.
     /// </summary>
+    /// <param name="identifier">The identifier whose rate limit bucket is removed.</param>
     public void Reset(string identifier)
     {
         ArgumentException.ThrowIfNullOrEmpty(identifier);
@@ -69,6 +84,7 @@ public sealed class RateLimitingMiddleware
     /// <summary>
     /// Gets all rate limit statuses.
     /// </summary>
+    /// <returns>A dictionary that maps each identifier to its current rate limit status.</returns>
     public Dictionary<string, RateLimitStatus> GetAllStatuses()
     {
         var result = new Dictionary<string, RateLimitStatus>();
@@ -92,9 +108,24 @@ public sealed class RateLimitingMiddleware
 /// </summary>
 public sealed class RateLimitStatus
 {
+    /// <summary>
+    /// Gets or sets the number of tokens currently available.
+    /// </summary>
     public int AvailableTokens { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of tokens that can be held.
+    /// </summary>
     public int Capacity { get; set; }
+
+    /// <summary>
+    /// Gets or sets the time at which the next refill is expected.
+    /// </summary>
     public DateTime ResetTime { get; set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the available tokens are below half of capacity.
+    /// </summary>
     public bool IsLimited => AvailableTokens < Capacity / 2;
 }
 
@@ -190,6 +221,9 @@ public sealed class StageRateLimitingMiddleware
     /// <summary>
     /// Registers rate limits for a pipeline stage.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="itemsPerSecond">The number of items replenished per second.</param>
+    /// <param name="burstSize">The maximum number of items allowed in a burst.</param>
     public void RegisterStageLimit(string stageName, int itemsPerSecond, int burstSize)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -199,6 +233,9 @@ public sealed class StageRateLimitingMiddleware
     /// <summary>
     /// Checks if a stage allows new items.
     /// </summary>
+    /// <param name="stageName">The name of the pipeline stage.</param>
+    /// <param name="itemCount">The number of items to process.</param>
+    /// <returns><see langword="true"/> if the stage can process the items; otherwise, <see langword="false"/>.</returns>
     public bool CanProcessInStage(string stageName, int itemCount = 1)
     {
         ArgumentException.ThrowIfNullOrEmpty(stageName);
@@ -213,6 +250,7 @@ public sealed class StageRateLimitingMiddleware
     /// <summary>
     /// Gets rate limit status for all stages.
     /// </summary>
+    /// <returns>A dictionary that maps each stage name to its current rate limit status.</returns>
     public Dictionary<string, RateLimitStatus> GetStageLimitStatuses()
     {
         var result = new Dictionary<string, RateLimitStatus>();
