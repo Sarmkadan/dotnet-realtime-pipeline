@@ -39,6 +39,8 @@ public sealed class RawPipelineAccessor : IRawPipelineAccess, IDisposable
     /// Creates a <see cref="RawPipelineAccessor"/> with the supplied <paramref name="options"/>.
     /// Use custom options to tune pause/resume thresholds for back-pressure control.
     /// </summary>
+    /// <param name="options">The options used to configure the underlying pipe.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public RawPipelineAccessor(PipeOptions options)
     {
         if (options is null) throw new ArgumentNullException(nameof(options));
@@ -51,14 +53,10 @@ public sealed class RawPipelineAccessor : IRawPipelineAccess, IDisposable
     /// <inheritdoc/>
     public PipeWriter AsPipeWriter() => _pipe.Writer;
 
-    /// <summary>
-    /// Resets the underlying pipe, clearing any buffered data.
-    /// </summary>
+    /// <inheritdoc/>
     public void Reset() => _pipe.Reset();
 
-    /// <summary>
-    /// Disposes the underlying <see cref="Pipe"/> resources.
-    /// </summary>
+    /// <inheritdoc/>
     public void Dispose()
     {
         _pipe.Reader.Complete();
