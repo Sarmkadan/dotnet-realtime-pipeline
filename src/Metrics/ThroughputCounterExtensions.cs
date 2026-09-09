@@ -64,4 +64,16 @@ public static class ThroughputCounterExtensions
         ArgumentException.ThrowIfNullOrEmpty(stageName);
         return counter.GetThroughput(stageName).ToString("F2", CultureInfo.InvariantCulture);
     }
+
+    /// <summary>
+    /// Gets the throughput per minute.
+    /// </summary>
+    /// <param name="counter">The <see cref="ThroughputCounter"/> instance.</param>
+    /// <returns>The throughput multiplied by 60 (events per minute).</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="counter"/> is null.</exception>
+    public static double GetThroughputPerMinute(this ThroughputCounter counter)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        return counter.GetThroughput() * 60;
+    }
 }
