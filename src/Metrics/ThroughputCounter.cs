@@ -78,6 +78,16 @@ public sealed class ThroughputCounter : IPipelineMetrics
         return total / (double)_windowSeconds;
     }
 
+    /// <summary>
+    /// Returns a human-readable summary of the counter's current state.
+    /// </summary>
+    public override string ToString()
+    {
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"ThroughputCounter(window={_windowSeconds}s, global={GetThroughput():F2}/s, stages={_stageBuckets.Count})");
+    }
+
     // Clears a global bucket when it belongs to a previous rotation of the window.
     private void ClearStaleGlobalBucket(long bucketIndex)
     {
