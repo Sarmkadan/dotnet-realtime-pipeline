@@ -104,4 +104,15 @@ public sealed class RetryPolicyOptions
             _ => false
         };
     }
+
+    /// <summary>
+    /// Returns a single-line summary of the retry configuration: maximum attempts,
+    /// base delay, maximum delay and jitter factor.
+    /// </summary>
+    /// <returns>A string describing the retry policy options.</returns>
+    public override string ToString()
+    {
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        return $"MaxAttempts={MaxAttempts}, BaseDelay={BaseDelay}, MaxDelay={MaxDelay}, JitterFactor={JitterFactor.ToString("F2", invariant)}";
+    }
 }
