@@ -125,4 +125,30 @@ public static class ProcessingResultExtensions
 
         return result.ProcessingTimeMs > timeoutThresholdMs;
     }
+
+    /// <summary>
+    /// Gets the output value associated with the specified key, cast to the specified type, or a default value if the key is not present or the value cannot be cast to the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to cast the output value to.</typeparam>
+    /// <param name="result">The processing result to get the output value from.</param>
+    /// <param name="key">The key of the output value to get.</param>
+    /// <param name="defaultValue">The default value to return if the key is not present or the value cannot be cast to <typeparamref name="T"/>. Defaults to the default value of <typeparamref name="T"/>.</param>
+    /// <returns>The output value associated with the specified key, cast to <typeparamref name="T"/>, or <paramref name="defaultValue"/> if the key is not present or the value cannot be cast to <typeparamref name="T"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="result"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is null, empty, or consists only of white-space characters.</exception>
+    public static T GetOutputOrDefault<T>(this ProcessingResult result, string key, T defaultValue = default!)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new ArgumentException("Value cannot be null, empty, or consist only of white-space characters.", nameof(key));
+        }
+
+        if (result.OutputData.TryGetValue(key, out var value) && value is T typedValue)
+        {
+            return typedValue;
+        }
+
+        return defaultValue;
+    }
 }
