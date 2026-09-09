@@ -98,4 +98,18 @@ public static class DateTimeExtensions
             ? timestampMs - remainder
             : timestampMs + (windowSizeMs - remainder);
     }
+
+    /// <summary>
+    /// Determines whether the specified timestamp is within a given time window.
+    /// </summary>
+    /// <param name="timestampMs">The timestamp in milliseconds to check.</param>
+    /// <param name="windowStartMs">The start of the window in milliseconds.</param>
+    /// <param name="windowSizeMs">The size of the window in milliseconds. Must be greater than zero.</param>
+    /// <returns>true if the timestamp is within the window; otherwise, false.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when windowSizeMs is less than or equal to zero.</exception>
+    public static bool IsWithinWindow(this long timestampMs, long windowStartMs, long windowSizeMs)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(windowSizeMs, 0, nameof(windowSizeMs));
+        return timestampMs >= windowStartMs && timestampMs < windowStartMs + windowSizeMs;
+    }
 }
