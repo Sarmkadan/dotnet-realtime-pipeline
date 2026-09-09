@@ -88,4 +88,19 @@ public static class DeadLetterEntryExtensions
 		ArgumentNullException.ThrowIfNull(entry);
 		return entry.LastRetryAt ?? entry.EnqueuedAt;
 	}
+
+	/// <summary>
+	/// Gets the time elapsed since the entry was enqueued.
+	/// </summary>
+	/// <param name="entry">The <see cref="DeadLetterEntry"/> to inspect.</param>
+	/// <param name="nowUtc">Optional. The current UTC time to use for calculation. If null, uses <see cref="DateTime.UtcNow"/>.</param>
+	/// <returns>A <see cref="TimeSpan"/> representing the time since enqueued, or zero if the calculated time is negative.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when <paramref name="entry"/> is null.</exception>
+	public static TimeSpan GetAgeSinceEnqueued(this DeadLetterEntry entry, DateTime? nowUtc = null)
+	{
+		ArgumentNullException.ThrowIfNull(entry);
+		var now = nowUtc ?? DateTime.UtcNow;
+		var age = now - entry.EnqueuedAt;
+		return age < TimeSpan.Zero ? TimeSpan.Zero : age;
+	}
 }
