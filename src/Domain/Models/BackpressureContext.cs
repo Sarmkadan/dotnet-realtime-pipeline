@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.Domain.Models;
 
 using System;
 using System.Collections.Generic;
+using DotNetRealtimePipeline.Constants;
 
 /// <summary>
 /// Manages backpressure state and flow control for the pipeline.
@@ -15,6 +16,13 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class BackpressureContext
 {
+    private const double EmptyPercentage = 0d;
+    private const double PercentageMultiplier = 100d;
+    private const int MinimumEventsForFrequencyCalculation = 2;
+    private const double MillisecondsPerMinute = 60000d;
+    private const double HighLoadThresholdPercentage = 75d;
+    private const double ModerateLoadThresholdPercentage = 50d;
+
     /// <summary>
     /// Gets or sets the unique identifier for this backpressure context.
     /// </summary>
@@ -109,14 +117,14 @@ public sealed class BackpressureContext
     /// </summary>
     public double GetBufferFillPercentage()
     {
-        if (MaxBufferCapacity <= 0) return 0d;
-        return (BufferSize / (double)MaxBufferCapacity) * 100d;
+        if (MaxBufferCapacity <= 0) return EmptyPercentage;
+        return (BufferSize / (double)MaxBufferCapacity) * PercentageMultiplier;
     }
 
     /// <summary>
     /// Determines if backpressure should be applied based on buffer state.
     /// </summary>
-    public bool ShouldApplyBackpressure(double triggerThresholdPercent = 80)
+    public bool ShouldApplyBackpressure(double triggerThresholdPercent = PipelineConstants.DefaultBackpressureTriggerThreshold)
     {
         double fillPercent = GetBufferFillPercentage();
         return fillPercent >= triggerThresholdPercent;
@@ -231,14 +239,14 @@ public sealed class BackpressureContext
     /// </summary>
     public double GetBackpressureFrequency()
     {
-        if (BackpressureEventTimestamps.Count < 2)
-            return 0d;
+        if (BackpressureEventTimestamps.Count < MinimumEventsForFrequencyCalculation)
+            return EmptyPercentage;
 
         long[] timestamps = BackpressureEventTimestamps.ToArray();
         long timeSpanMs = timestamps[^1] - timestamps[0];
-        if (timeSpanMs <= 0) return 0d;
+        if (timeSpanMs <= 0) return EmptyPercentage;
 
-        double minutes = timeSpanMs / 60000d;
+        double minutes = timeSpanMs / MillisecondsPerMinute;
         return BackpressureEventTimestamps.Count / minutes;
     }
 
@@ -248,8 +256,8 @@ public sealed class BackpressureContext
     public string GetHealthStatus()
     {
         if (IsBackpressured) return "BACKPRESSURED";
-        if (GetBufferFillPercentage() > 75) return "HIGH_LOAD";
-        if (GetBufferFillPercentage() > 50) return "MODERATE_LOAD";
+        if (GetBufferFillPercentage() > HighLoadThresholdPercentage) return "HIGH_LOAD";
+        if (GetBufferFillPercentage() > ModerateLoadThresholdPercentage) return "MODERATE_LOAD";
         return "HEALTHY";
     }
 }
