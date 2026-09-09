@@ -17,19 +17,39 @@ using System.Threading.Tasks;
 public sealed class RetryHelper
 {
     /// <summary>
+    /// Default maximum number of attempts.
+    /// </summary>
+    private const int DefaultMaxAttempts = 3;
+
+    /// <summary>
+    /// Default initial delay between retries in milliseconds.
+    /// </summary>
+    private const int DefaultInitialDelayMs = 100;
+
+    /// <summary>
+    /// Backoff multiplier for exponential delay.
+    /// </summary>
+    private const int BackoffMultiplier = 2;
+
+    /// <summary>
+    /// Default maximum delay between retries in milliseconds.
+    /// </summary>
+    private const int DefaultMaxDelayMs = 30000;
+
+    /// <summary>
     /// Gets or sets the maximum number of attempts.
     /// </summary>
-    public int MaxAttempts { get; set; } = 3;
+    public int MaxAttempts { get; set; } = DefaultMaxAttempts;
 
     /// <summary>
     /// Gets or sets the initial delay between retries in milliseconds.
     /// </summary>
-    public int InitialDelayMs { get; set; } = 100;
+    public int InitialDelayMs { get; set; } = DefaultInitialDelayMs;
 
     /// <summary>
     /// Gets or sets the maximum delay between retries in milliseconds.
     /// </summary>
-    public int MaxDelayMs { get; set; } = 30000;
+    public int MaxDelayMs { get; set; } = DefaultMaxDelayMs;
 
     /// <summary>
     /// Gets or sets whether to use jitter in backoff.
@@ -61,8 +81,8 @@ public sealed class RetryHelper
     /// </summary>
     public static async Task<T> RetryAsync<T>(
         Func<Task<T>> operation,
-        int maxAttempts = 3,
-        int initialDelayMs = 100,
+        int maxAttempts = DefaultMaxAttempts,
+        int initialDelayMs = DefaultInitialDelayMs,
         Func<Exception, bool> shouldRetry = null)
     {
         var attempt = 0;
@@ -82,7 +102,7 @@ public sealed class RetryHelper
             {
                 attempt++;
                 await Task.Delay(delay);
-                delay = (int)Math.Min(delay * 2, 30000); // Cap at 30 seconds
+                delay = (int)Math.Min(delay * BackoffMultiplier, DefaultMaxDelayMs);
             }
         }
     }
@@ -92,8 +112,8 @@ public sealed class RetryHelper
     /// </summary>
     public static T Retry<T>(
         Func<T> operation,
-        int maxAttempts = 3,
-        int initialDelayMs = 100,
+        int maxAttempts = DefaultMaxAttempts,
+        int initialDelayMs = DefaultInitialDelayMs,
         Func<Exception, bool> shouldRetry = null)
     {
         var attempt = 0;
@@ -113,7 +133,7 @@ public sealed class RetryHelper
             {
                 attempt++;
                 System.Threading.Thread.Sleep(delay);
-                delay = (int)Math.Min(delay * 2, 30000);
+                delay = (int)Math.Min(delay * BackoffMultiplier, DefaultMaxDelayMs);
             }
         }
     }
@@ -134,10 +154,41 @@ public sealed class RetryHelper
 /// </summary>
 public sealed class RetryPolicyBuilder
 {
-    private int _maxAttempts = 3;
-    private int _initialDelayMs = 100;
-    private int _maxDelayMs = 30000;
-    private bool _useJitter = true;
+    /// <summary>
+    /// Default maximum number of attempts.
+    /// </summary>
+    private const int DefaultMaxAttempts = 3;
+
+    /// <summary>
+    /// Default initial delay between retries in milliseconds.
+    /// </summary>
+    private const int DefaultInitialDelayMs = 100;
+
+    /// <summary>
+    /// Default maximum delay between retries in milliseconds.
+    /// </summary>
+    private const int DefaultMaxDelayMs = 30000;
+
+    /// <summary>
+    /// Default jitter enabled state.
+    /// </summary>
+    private const bool DefaultUseJitter = true;
+
+    /// <summary>
+    /// Backoff multiplier for exponential delay.
+    /// </summary>
+    private const int BackoffMultiplier = 2;
+
+    /// <summary>
+    /// Jitter range multiplier (0.5 to 1.0 of base delay).
+    /// </summary>
+    private const double JitterMinMultiplier = 0.5;
+    private const double JitterMaxMultiplier = 1.0;
+
+    private int _maxAttempts = DefaultMaxAttempts;
+    private int _initialDelayMs = DefaultInitialDelayMs;
+    private int _maxDelayMs = DefaultMaxDelayMs;
+    private bool _useJitter = DefaultUseJitter;
     private List<Type> _retryableExceptions = new();
 
     /// <summary>
@@ -206,6 +257,21 @@ public sealed class RetryPolicyBuilder
 /// </summary>
 public sealed class RetryPolicy
 {
+    /// <summary>
+    /// Backoff multiplier for exponential delay.
+    /// </summary>
+    private const int BackoffMultiplier = 2;
+
+    /// <summary>
+    /// Jitter minimum multiplier (0.5 of base delay).
+    /// </summary>
+    private const double JitterMinMultiplier = 0.5;
+
+    /// <summary>
+    /// Jitter maximum multiplier (1.0 of base delay).
+    /// </summary>
+    private const double JitterMaxMultiplier = 1.0;
+
     public int MaxAttempts { get; set; }
     public int InitialDelayMs { get; set; }
     public int MaxDelayMs { get; set; }
@@ -233,11 +299,11 @@ public sealed class RetryPolicy
             catch (Exception ex) when (attempt < MaxAttempts - 1 && IsRetryableException(ex))
             {
                 attempt++;
-                delay = (int)Math.Min((long)delay * 2, MaxDelayMs);
+                delay = (int)Math.Min((long)delay * BackoffMultiplier, MaxDelayMs);
 
                 if (UseJitter)
                 {
-                    delay = (int)(delay * (0.5 + Random.Shared.NextDouble() * 0.5));
+                    delay = (int)(delay * (JitterMinMultiplier + Random.Shared.NextDouble() * (JitterMaxMultiplier - JitterMinMultiplier)));
                 }
 
                 await Task.Delay(delay);
