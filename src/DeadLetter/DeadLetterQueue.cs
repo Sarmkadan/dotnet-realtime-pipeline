@@ -6,7 +6,6 @@
 
 namespace DotNetRealtimePipeline.DeadLetter;
 
-using DotNetRealtimePipeline.Constants;
 using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
@@ -20,6 +19,11 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class DeadLetterQueue : IDeadLetterQueue
 {
+    private const int DefaultMaxCapacity = 1000;
+    private const int DefaultMaxRetries = 3;
+    private const int DefaultPeekCount = 100;
+    private const int DefaultDequeueCount = 10;
+
     private readonly int _maxCapacity;
     private readonly int _defaultMaxRetries;
     private readonly Dictionary<Guid, DeadLetterEntry> _entries = new();
@@ -30,12 +34,12 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
     /// Maximum number of entries the queue will hold at one time.
     /// Once full, the oldest resolved/permanent-failure entries are evicted first;
     /// if none are eligible, new entries are rejected and the caller is notified.
-    /// Defaults to <see cref="PipelineConstants.DefaultMaxBufferSize"/> / 10.
+    /// Defaults to <see cref="DefaultMaxCapacity"/>.
     /// </param>
     /// <param name="defaultMaxRetries">
     /// Default retry budget applied to each entry unless overridden.
     /// </param>
-    public DeadLetterQueue(int maxCapacity = 1000, int defaultMaxRetries = 3)
+    public DeadLetterQueue(int maxCapacity = DefaultMaxCapacity, int defaultMaxRetries = DefaultMaxRetries)
     {
         if (maxCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(maxCapacity));
         if (defaultMaxRetries < 0) throw new ArgumentOutOfRangeException(nameof(defaultMaxRetries));
@@ -110,7 +114,7 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
     }
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<DeadLetterEntry>> PeekAsync(int maxCount = 100)
+    public Task<IReadOnlyList<DeadLetterEntry>> PeekAsync(int maxCount = DefaultPeekCount)
     {
         if (maxCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
 
@@ -126,7 +130,7 @@ public sealed class DeadLetterQueue : IDeadLetterQueue
     }
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<DeadLetterEntry>> DequeueForRetryAsync(int maxCount = 10)
+    public Task<IReadOnlyList<DeadLetterEntry>> DequeueForRetryAsync(int maxCount = DefaultDequeueCount)
     {
         if (maxCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxCount));
 
