@@ -97,6 +97,14 @@ public static class BackpressureContextJsonExtensions
     /// </summary>
     private sealed class QueueJsonConverter : JsonConverter<Queue<long>>
     {
+        /// <summary>
+        /// Reads a queue of 64-bit integers from a JSON array.
+        /// </summary>
+        /// <param name="reader">The reader positioned at the JSON value to convert.</param>
+        /// <param name="typeToConvert">The type to convert.</param>
+        /// <param name="options">The serializer options to use.</param>
+        /// <returns>The deserialized queue, or null when the JSON token is null.</returns>
+        /// <exception cref="JsonException">Thrown when the JSON value is not an array or contains a nonnumeric element.</exception>
         public override Queue<long> Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -128,6 +136,12 @@ public static class BackpressureContextJsonExtensions
             return queue;
         }
 
+        /// <summary>
+        /// Writes a queue of 64-bit integers as a JSON array.
+        /// </summary>
+        /// <param name="writer">The writer to which the JSON value is written.</param>
+        /// <param name="value">The queue to serialize.</param>
+        /// <param name="options">The serializer options to use.</param>
         public override void Write(
             Utf8JsonWriter writer,
             Queue<long> value,
@@ -153,6 +167,14 @@ public static class BackpressureContextJsonExtensions
     /// </summary>
     private sealed class DictionaryJsonConverter : JsonConverter<Dictionary<string, long>>
     {
+        /// <summary>
+        /// Reads a dictionary with string keys and 64-bit integer values from a JSON object.
+        /// </summary>
+        /// <param name="reader">The reader positioned at the JSON value to convert.</param>
+        /// <param name="typeToConvert">The type to convert.</param>
+        /// <param name="options">The serializer options to use.</param>
+        /// <returns>The deserialized dictionary, or null when the JSON token is null.</returns>
+        /// <exception cref="JsonException">Thrown when the JSON value is not an object or a property value is not numeric.</exception>
         public override Dictionary<string, long> Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -190,6 +212,12 @@ public static class BackpressureContextJsonExtensions
             return dictionary;
         }
 
+        /// <summary>
+        /// Writes a dictionary with string keys and 64-bit integer values as a JSON object.
+        /// </summary>
+        /// <param name="writer">The writer to which the JSON value is written.</param>
+        /// <param name="value">The dictionary to serialize.</param>
+        /// <param name="options">The serializer options to use.</param>
         public override void Write(
             Utf8JsonWriter writer,
             Dictionary<string, long> value,
@@ -217,6 +245,14 @@ public static class BackpressureContextJsonExtensions
     {
         private const string DateFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
+        /// <summary>
+        /// Reads a <see cref="DateTime"/> value from a JSON string and normalizes it to UTC.
+        /// </summary>
+        /// <param name="reader">The reader positioned at the JSON value to convert.</param>
+        /// <param name="typeToConvert">The type to convert.</param>
+        /// <param name="options">The serializer options to use.</param>
+        /// <returns>The deserialized UTC date and time, or the default value when the JSON token is null.</returns>
+        /// <exception cref="JsonException">Thrown when the JSON value is not a valid date and time string.</exception>
         public override DateTime Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -239,6 +275,12 @@ public static class BackpressureContextJsonExtensions
             throw new JsonException($"Expected string for DateTime, got {reader.TokenType}");
         }
 
+        /// <summary>
+        /// Writes a <see cref="DateTime"/> value using the converter's UTC format.
+        /// </summary>
+        /// <param name="writer">The writer to which the JSON value is written.</param>
+        /// <param name="value">The date and time to serialize.</param>
+        /// <param name="options">The serializer options to use.</param>
         public override void Write(
             Utf8JsonWriter writer,
             DateTime value,
