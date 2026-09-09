@@ -41,7 +41,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static DataPoint FromJson(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<DataPoint>(json, JsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize DataPoint");
     }
