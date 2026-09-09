@@ -103,4 +103,16 @@ public static class WindowEventExtensions
             windowEvent.CalculateMax(),
             windowEvent.CalculateStandardDeviation());
     }
+
+    /// <summary>
+    /// Determines whether the window has no data points.
+    /// </summary>
+    /// <param name="window">The window to check.</param>
+    /// <returns><see langword="true"/> if the window has no data points; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="window"/> is <c>null</c>.</exception>
+    public static bool IsEmpty(this WindowEvent window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        return window.DataPoints.Count == 0;
+    }
 }
