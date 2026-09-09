@@ -37,6 +37,9 @@ public sealed class ExportService
         string outputPath,
         OutputFormat format)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
         var result = new ExportResult { StartTime = DateTime.UtcNow };
 
         try
@@ -88,6 +91,9 @@ public sealed class ExportService
         List<ProcessingResult> results,
         string outputPath)
     {
+        ArgumentNullException.ThrowIfNull(results);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
         var result = new ExportResult { StartTime = DateTime.UtcNow };
 
         try
@@ -124,6 +130,9 @@ public sealed class ExportService
         MetricAggregation metrics,
         string outputPath)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
         var result = new ExportResult { StartTime = DateTime.UtcNow };
 
         try
@@ -160,6 +169,10 @@ public sealed class ExportService
         string outputDirectory,
         params OutputFormat[] formats)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        ArgumentNullException.ThrowIfNull(formats);
+
         var results = new List<ExportResult>();
 
         foreach (var format in formats)
@@ -241,6 +254,10 @@ public sealed class BatchExportProcessor
         OutputFormat format,
         int batchSize = DefaultBatchSize)
     {
+        ArgumentNullException.ThrowIfNull(dataFetcher);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        ArgumentNullException.ThrowIfNull(format);
+
         var result = new BatchExportResult { StartTime = DateTime.UtcNow };
 
         try
