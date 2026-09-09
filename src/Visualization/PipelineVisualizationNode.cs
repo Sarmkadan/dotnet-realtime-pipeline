@@ -49,6 +49,14 @@ public sealed class PipelineVisualizationNode
     }
 
     /// <summary>
+    /// Returns a one-line summary of the stage name, type, and downstream edge count.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{StageName} ({StageType}), downstream edges: {DownstreamStages.Count}";
+    }
+
+    /// <summary>
     /// Renders a compact single-line representation of this node.
     /// </summary>
     public string ToInlineString()
