@@ -153,4 +153,17 @@ public sealed class ValidationResult
         if (IsValid) return "Validation passed";
         return $"Validation failed: {ErrorMessage}";
     }
+
+    /// <summary>
+    /// Returns a readable representation of the validation result.
+    /// </summary>
+    public override string ToString()
+    {
+        if (IsValid) return "Valid";
+
+        var result = $"Invalid: {ErrorMessage}";
+        return InvalidIndices.Count > 0
+            ? $"{result} (Invalid indices ({InvalidIndices.Count}): {string.Join(", ", InvalidIndices)})"
+            : result;
+    }
 }
