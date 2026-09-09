@@ -60,7 +60,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static List<DataPoint> FromJsonArray(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<List<DataPoint>>(json, JsonOptions)
             ?? new List<DataPoint>();
     }
@@ -88,6 +88,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string ToCsvBatch(List<DataPoint> dataPoints)
     {
+        ArgumentNullException.ThrowIfNull(dataPoints);
         var sb = new StringBuilder();
         sb.AppendLine("Id,Timestamp,Value,Source,Quality,Tags");
 
@@ -104,6 +105,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string SerializeResults(List<ProcessingResult> results)
     {
+        ArgumentNullException.ThrowIfNull(results);
         return JsonSerializer.Serialize(results, JsonOptions);
     }
 
@@ -112,6 +114,7 @@ public sealed class SerializationHelper
     /// </summary>
     public static string SerializeMetrics(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         return JsonSerializer.Serialize(metrics, JsonOptions);
     }
 
@@ -142,6 +145,8 @@ public sealed class BatchSerializationHelper
     /// </summary>
     public static async Task WriteToFileAsync(string filePath, List<DataPoint> dataPoints, string format = "json")
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(dataPoints);
         var content = format.ToLowerInvariant() switch
         {
             "csv" => SerializationHelper.ToCsvBatch(dataPoints),
@@ -157,6 +162,7 @@ public sealed class BatchSerializationHelper
     /// </summary>
     public static async Task<List<DataPoint>> ReadFromFileAsync(string filePath, string format = "json")
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         var content = await System.IO.File.ReadAllTextAsync(filePath, Encoding.UTF8);
 
         return format.ToLowerInvariant() switch
@@ -226,6 +232,7 @@ public sealed class DateTimeSerializationHelper
     /// </summary>
     public static long Iso8601ToUnix(string iso8601)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(iso8601);
         var dateTime = DateTime.Parse(iso8601, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
         return (long)(dateTime - DateTime.UnixEpoch).TotalMilliseconds;
     }
@@ -249,6 +256,7 @@ public sealed class DictionaryConversionHelper
     /// </summary>
     public static Dictionary<string, object> ToDictionary(DataPoint dataPoint)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
         return new Dictionary<string, object>
         {
             ["id"] = dataPoint.Id,
@@ -266,6 +274,7 @@ public sealed class DictionaryConversionHelper
     /// </summary>
     public static Dictionary<string, object> ToDictionary(ProcessingResult result)
     {
+        ArgumentNullException.ThrowIfNull(result);
         return new Dictionary<string, object>
         {
             ["result_id"] = result.ResultId,
@@ -282,6 +291,7 @@ public sealed class DictionaryConversionHelper
     /// </summary>
     public static Dictionary<string, object> ToDictionary(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         var dict = new Dictionary<string, object>
         {
             ["computed_at"] = metrics.ComputedAt,
