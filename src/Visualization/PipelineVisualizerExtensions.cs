@@ -9,6 +9,9 @@ namespace DotNetRealtimePipeline.Visualization;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using DotNetRealtimePipeline.Domain.Models;
 
 /// <summary>
@@ -97,4 +100,25 @@ public static class PipelineVisualizerExtensions
         return (minThroughput, maxThroughput, avgThroughput);
     }
 
+    /// <summary>
+    /// Asynchronously renders the pipeline visualization to a file.
+    /// </summary>
+    /// <param name="visualizer">The pipeline visualizer instance.</param>
+    /// <param name="config">The pipeline configuration.</param>
+    /// <param name="filePath">The path to the file where the visualization will be written.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="visualizer"/>, <paramref name="config"/>, or <paramref name="filePath"/> is null or whitespace.</exception>
+    public static async Task RenderToFileAsync(
+        this PipelineVisualizer visualizer,
+        PipelineConfig config,
+        string filePath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(visualizer);
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(filePath);
+
+        await File.WriteAllTextAsync(filePath, visualizer.Render(config), cancellationToken);
+    }
 }
