@@ -23,6 +23,7 @@ public sealed class CompressionHelper
     /// </summary>
     public static byte[] CompressGzip(string data)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentException.ThrowIfNullOrEmpty(data);
 
         var inputBytes = Encoding.UTF8.GetBytes(data);
@@ -106,6 +107,9 @@ public sealed class CompressionHelper
     /// </summary>
     public static async Task CompressFileAsync(string inputPath, string outputPath)
     {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(outputPath);
+
         using (var inputFile = new FileStream(inputPath, FileMode.Open))
         {
             using (var outputFile = new FileStream(outputPath, FileMode.Create))
@@ -123,6 +127,9 @@ public sealed class CompressionHelper
     /// </summary>
     public static async Task DecompressFileAsync(string inputPath, string outputPath)
     {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(outputPath);
+
         using (var inputFile = new FileStream(inputPath, FileMode.Open))
         {
             using (var gzipStream = new GZipStream(inputFile, CompressionMode.Decompress))
@@ -140,6 +147,7 @@ public sealed class CompressionHelper
     /// </summary>
     public static double CalculateCompressionRatio(string originalData)
     {
+        ArgumentNullException.ThrowIfNull(originalData);
         ArgumentException.ThrowIfNullOrEmpty(originalData);
 
         var compressed = CompressGzip(originalData);
@@ -147,18 +155,14 @@ public sealed class CompressionHelper
 
         return compressed.Length > 0 ? (double)compressed.Length / original.Length : 0;
     }
-}
 
-/// <summary>
-/// Helper for compression statistics and analysis.
-/// </summary>
-public sealed class CompressionAnalyzer
-{
     /// <summary>
     /// Analyzes compression efficiency for a dataset.
     /// </summary>
     public static CompressionStats AnalyzeCompression(string data)
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var originalBytes = Encoding.UTF8.GetBytes(data);
         var compressedBytes = CompressionHelper.CompressGzip(data);
 
@@ -180,6 +184,8 @@ public sealed class CompressionAnalyzer
     /// </summary>
     public static CompressionComparison CompareAlgorithms(string data)
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var original = Encoding.UTF8.GetBytes(data).Length;
         var gzip = CompressionHelper.CompressGzip(data).Length;
         var deflate = CompressionHelper.CompressDeflate(data).Length;
