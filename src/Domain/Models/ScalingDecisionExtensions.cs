@@ -57,4 +57,13 @@ public static class ScalingDecisionExtensions
 
         return $"{decision.StageName},{decision.DecidedAt.ToString("o", CultureInfo.InvariantCulture)},{decision.Direction},{decision.FromConsumers},{decision.ToConsumers},{decision.BufferFillPercent.ToString(CultureInfo.InvariantCulture)},{decision.BackpressureFrequency.ToString(CultureInfo.InvariantCulture)}";
     }
+    /// <summary>Gets the delta in consumer count (ToConsumers - FromConsumers) for the scaling decision.</summary>
+    /// <param name="decision">The scaling decision to evaluate.</param>
+    /// <returns>The change in consumer count (positive for scale up, negative for scale down).</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="decision"/> is <c>null</c>.</exception>
+    public static int GetConsumerDelta(this ScalingDecision decision)
+    {
+        ArgumentNullException.ThrowIfNull(decision);
+        return decision.ToConsumers - decision.FromConsumers;
+    }
 }
