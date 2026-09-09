@@ -20,6 +20,18 @@ using System.Text;
 /// </summary>
 public sealed class PipelineVisualizer
 {
+    private const int DiagramSeparatorWidth = 72;
+    private const int BufferBarWidth = 20;
+    private const int StageNameColumnWidth = -18;
+    private const int BackpressureFlagColumnWidth = -15;
+    private const int BufferFillColumnWidth = 5;
+    private const int ThroughputColumnWidth = 8;
+    private const int DroppedItemsColumnWidth = 8;
+    private const string StageConnectorLine = "       │";
+    private const string StageConnectorArrow = "       ▼";
+    private const string CompactStageSeparator = " → ";
+    private const string NodeBoxBorder = "  +------------------------------------------------------+";
+
     private readonly BackpressureService _backpressureService;
     private readonly MetricsService _metricsService;
 
@@ -80,7 +92,7 @@ public sealed class PipelineVisualizer
 
         sb.AppendLine();
         sb.AppendLine($"  Pipeline: {config.PipelineName}  (v{config.Version})");
-        sb.AppendLine(new string('─', 72));
+        sb.AppendLine(new string('─', DiagramSeparatorWidth));
 
         foreach (var node in nodes)
         {
@@ -88,12 +100,12 @@ public sealed class PipelineVisualizer
 
             if (node.DownstreamStages.Count > 0)
             {
-                sb.AppendLine("       │");
-                sb.AppendLine("       ▼");
+                sb.AppendLine(StageConnectorLine);
+                sb.AppendLine(StageConnectorArrow);
             }
         }
 
-        sb.AppendLine(new string('─', 72));
+        sb.AppendLine(new string('─', DiagramSeparatorWidth));
 
         var sysStatus = _backpressureService.GetSystemStatus();
         sb.AppendLine($"  System health : {sysStatus.GetHealthStatus()}");
@@ -120,7 +132,7 @@ public sealed class PipelineVisualizer
         foreach (var node in nodes)
             parts.Add(node.ToInlineString());
 
-        return string.Join(" → ", parts);
+        return string.Join(CompactStageSeparator, parts);
     }
 
     // -------------------------------------------------------------------------
@@ -134,14 +146,14 @@ public sealed class PipelineVisualizer
             _          => "+"
         };
 
-        string bufBar = BuildBar(node.BufferFillPercent, 20);
+        string bufBar = BuildBar(node.BufferFillPercent, BufferBarWidth);
         string bpFlag = node.IsBackpressured ? " [BACKPRESSURE]" : "";
 
-        sb.AppendLine("  +------------------------------------------------------+");
-        sb.AppendLine($"  | {healthIcon} {node.StageName,-18} ({node.StageType}){bpFlag,-15}|");
-        sb.AppendLine($"  |   Buffer : [{bufBar}] {node.BufferFillPercent,5:F1}%             |");
-        sb.AppendLine($"  |   EPS    : {node.ThroughputEps,8:F2}   Dropped: {node.DroppedItems,8:N0}        |");
-        sb.AppendLine("  +------------------------------------------------------+");
+        sb.AppendLine(NodeBoxBorder);
+        sb.AppendLine($"  | {healthIcon} {node.StageName,StageNameColumnWidth} ({node.StageType}){bpFlag,BackpressureFlagColumnWidth}|");
+        sb.AppendLine($"  |   Buffer : [{bufBar}] {node.BufferFillPercent,BufferFillColumnWidth:F1}%             |");
+        sb.AppendLine($"  |   EPS    : {node.ThroughputEps,ThroughputColumnWidth:F2}   Dropped: {node.DroppedItems,DroppedItemsColumnWidth:N0}        |");
+        sb.AppendLine(NodeBoxBorder);
     }
 
     private static string BuildBar(double percent, int width)
