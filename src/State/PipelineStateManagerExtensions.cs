@@ -109,4 +109,16 @@ public static class PipelineStateManagerExtensions
 
         return string.Join(Environment.NewLine, history);
     }
+
+    /// <summary>
+    /// Gets the total number of state transitions that have been recorded.
+    /// </summary>
+    /// <param name="manager">The <see cref="PipelineStateManager"/> instance.</param>
+    /// <returns>The count of state transitions in the manager's history.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="manager"/> is <c>null</c>.</exception>
+    public static int GetTransitionCount(this PipelineStateManager manager)
+    {
+        ArgumentNullException.ThrowIfNull(manager);
+        return manager.GetStateHistory().Count;
+    }
 }
