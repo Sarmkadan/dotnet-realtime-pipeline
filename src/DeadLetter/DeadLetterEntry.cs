@@ -143,6 +143,16 @@ public sealed class DeadLetterEntry
         return $"DLQ[{EntryId:N} | dp={DataPoint.Id} | stage={FailureStageName} | " +
                $"retries={RetryCount}/{MaxRetries} | status={Status}]";
     }
+
+    /// <summary>
+    /// Returns a one-line representation of the dead-letter entry.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"Id={EntryId}, FailureStageName={FailureStageName}, FailureReason={FailureReason}, " +
+               $"RetryCount/MaxRetries={RetryCount}/{MaxRetries}, ExceptionType={ExceptionType}, " +
+               $"EnqueuedAt={EnqueuedAt.ToUniversalTime():O}";
+    }
 }
 
 /// <summary>
