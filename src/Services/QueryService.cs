@@ -34,6 +34,11 @@ public sealed class QueryService
     /// <summary>
     /// Searches for data points by multiple criteria.
     /// </summary>
+    /// <param name="startTime">Start timestamp in milliseconds (optional).</param>
+    /// <param name="endTime">End timestamp in milliseconds (optional).</param>
+    /// <param name="source">Data source filter (optional).</param>
+    /// <param name="minQuality">Minimum quality threshold (optional).</param>
+    /// <returns>List of data points matching the criteria.</returns>
     public async Task<List<DataPoint>> SearchDataPointsAsync(
         long? startTime = null,
         long? endTime = null,
@@ -82,6 +87,9 @@ public sealed class QueryService
     /// <summary>
     /// Gets aggregated statistics for data points in a time range.
     /// </summary>
+    /// <param name="startMs">Start timestamp in milliseconds.</param>
+    /// <param name="endMs">End timestamp in milliseconds.</param>
+    /// <returns>Aggregate statistics for the specified time range.</returns>
     public async Task<DataAggregateStatistics> GetAggregateStatisticsAsync(
         long startMs,
         long endMs)
@@ -121,6 +129,10 @@ public sealed class QueryService
     /// <summary>
     /// Analyzes trends in data over time.
     /// </summary>
+    /// <param name="startMs">Start timestamp in milliseconds.</param>
+    /// <param name="endMs">End timestamp in milliseconds.</param>
+    /// <param name="intervalMs">Interval size in milliseconds for grouping.</param>
+    /// <returns>Trend analysis results.</returns>
     public async Task<TrendAnalysis> AnalyzeTrendsAsync(
         long startMs,
         long endMs,
@@ -183,6 +195,10 @@ public sealed class QueryService
     /// <summary>
     /// Performs time series decomposition analysis.
     /// </summary>
+    /// <param name="startMs">Start timestamp in milliseconds.</param>
+    /// <param name="endMs">End timestamp in milliseconds.</param>
+    /// <param name="movingAverageWindow">Window size for moving average calculation (default 5).</param>
+    /// <returns>Time series decomposition results.</returns>
     public async Task<TimeSeriesDecomposition> DecomposeTimeSeriesAsync(
         long startMs,
         long endMs,
@@ -218,6 +234,8 @@ public sealed class QueryService
     /// <summary>
     /// Gets recently processed metrics.
     /// </summary>
+    /// <param name="count">Number of recent metrics to retrieve (default 10).</param>
+    /// <returns>List of recent metric aggregations.</returns>
     public async Task<List<MetricAggregation>> GetRecentMetricsAsync(int count = 10)
     {
         return await _metricsRepository.GetHistoryAsync(count);
@@ -226,6 +244,7 @@ public sealed class QueryService
     /// <summary>
     /// Gets the total count of data points in the repository.
     /// </summary>
+    /// <returns>Total number of data points.</returns>
     public async Task<long> GetDataPointCountAsync()
     {
         return await _dataPointRepository.CountAsync();
@@ -262,18 +281,69 @@ public sealed class QueryService
 /// </summary>
 public sealed class DataAggregateStatistics
 {
+    /// <summary>
+    /// Start timestamp in milliseconds.
+    /// </summary>
     public long StartMs { get; set; }
+
+    /// <summary>
+    /// End timestamp in milliseconds.
+    /// </summary>
     public long EndMs { get; set; }
+
+    /// <summary>
+    /// Number of data points in the range.
+    /// </summary>
     public int Count { get; set; }
+
+    /// <summary>
+    /// Sum of all values.
+    /// </summary>
     public double Sum { get; set; }
+
+    /// <summary>
+    /// Average value.
+    /// </summary>
     public double Average { get; set; }
+
+    /// <summary>
+    /// Minimum value.
+    /// </summary>
     public double Min { get; set; }
+
+    /// <summary>
+    /// Maximum value.
+    /// </summary>
     public double Max { get; set; }
+
+    /// <summary>
+    /// Standard deviation of values.
+    /// </summary>
     public double StdDev { get; set; }
+
+    /// <summary>
+    /// Median value.
+    /// </summary>
     public double Median { get; set; }
+
+    /// <summary>
+    /// 95th percentile value.
+    /// </summary>
     public double P95 { get; set; }
+
+    /// <summary>
+    /// 99th percentile value.
+    /// </summary>
     public double P99 { get; set; }
+
+    /// <summary>
+    /// Number of unique sources.
+    /// </summary>
     public int UniqueSourceCount { get; set; }
+
+    /// <summary>
+    /// Average quality of data points.
+    /// </summary>
     public double AverageQuality { get; set; }
 
     public override string ToString()
@@ -287,11 +357,34 @@ public sealed class DataAggregateStatistics
 /// </summary>
 public sealed class TrendAnalysis
 {
+    /// <summary>
+    /// Status of the trend analysis (e.g., SUCCESS, INSUFFICIENT_DATA).
+    /// </summary>
     public string Status { get; set; } = "UNKNOWN";
+
+    /// <summary>
+    /// Direction of the trend (INCREASING, DECREASING, STABLE).
+    /// </summary>
     public string Direction { get; set; } = "";
+
+    /// <summary>
+    /// Percentage change between first and second half of the data.
+    /// </summary>
     public double ChangePercent { get; set; }
+
+    /// <summary>
+    /// Number of time intervals analyzed.
+    /// </summary>
     public int IntervalCount { get; set; }
+
+    /// <summary>
+    /// Time span analyzed in milliseconds.
+    /// </summary>
     public long TimeSpanMs { get; set; }
+
+    /// <summary>
+    /// Volatility of the data (standard deviation of interval averages).
+    /// </summary>
     public double Volatility { get; set; }
 }
 
@@ -300,9 +393,28 @@ public sealed class TrendAnalysis
 /// </summary>
 public sealed class TimeSeriesDecomposition
 {
+    /// <summary>
+    /// Status of the decomposition (e.g., SUCCESS, INSUFFICIENT_DATA).
+    /// </summary>
     public string Status { get; set; } = "UNKNOWN";
+
+    /// <summary>
+    /// Original number of data points.
+    /// </summary>
     public int OriginalCount { get; set; }
+
+    /// <summary>
+    /// Number of trend points after moving average.
+    /// </summary>
     public int TrendPoints { get; set; }
+
+    /// <summary>
+    /// Strength of seasonality component (0-100).
+    /// </summary>
     public double SeasonalityStrength { get; set; }
+
+    /// <summary>
+    /// Strength of trend component (0-100).
+    /// </summary>
     public double TrendStrength { get; set; }
 }
