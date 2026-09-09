@@ -86,6 +86,11 @@ public abstract class EventSubscriberBase
 /// </summary>
 public class DataIngestSubscriber : EventSubscriberBase
 {
+    private const long MaxFutureTimestampMs = 86400000;
+    private const long MaxPastTimestampMs = 864000000;
+    private const double MinimumSensorValue = -10000;
+    private const double MaximumSensorValue = 10000;
+
     /// <summary>
     /// Gets the maximum number of data points allowed in a single batch.
     /// This prevents memory DoS attacks and ensures predictable memory usage.
@@ -133,17 +138,15 @@ public class DataIngestSubscriber : EventSubscriberBase
         }
 
         // Validate timestamp is reasonable (not in the distant future or past)
-        const long maxFutureTimestampMs = 86400000; // 24 hours in future
-        const long maxPastTimestampMs = 864000000; // 10 days in past
         long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (args.DataPoint.Timestamp > currentTimestamp + maxFutureTimestampMs)
+        if (args.DataPoint.Timestamp > currentTimestamp + MaxFutureTimestampMs)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(args.DataPoint.Timestamp),
                 $"Timestamp is too far in the future. Current: {currentTimestamp}, Received: {args.DataPoint.Timestamp}");
         }
 
-        if (args.DataPoint.Timestamp < currentTimestamp - maxPastTimestampMs)
+        if (args.DataPoint.Timestamp < currentTimestamp - MaxPastTimestampMs)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(args.DataPoint.Timestamp),
@@ -160,7 +163,7 @@ public class DataIngestSubscriber : EventSubscriberBase
 
         // Validate value is within reasonable bounds (e.g., temperature sensor: -273.15°C to 1000°C)
         // This prevents obviously invalid sensor readings
-        if (args.DataPoint.Value < -10000 || args.DataPoint.Value > 10000)
+        if (args.DataPoint.Value < MinimumSensorValue || args.DataPoint.Value > MaximumSensorValue)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(args.DataPoint.Value),
@@ -193,6 +196,10 @@ public class DataIngestSubscriber : EventSubscriberBase
 /// </summary>
 public class ProcessingCompletionSubscriber : EventSubscriberBase
 {
+    private const long NoCompletedItems = 0;
+    private const double PercentageMultiplier = 100.0;
+    private const double DefaultSuccessRatePercent = 100.0;
+
     private long _successCount;
     private long _failureCount;
 
@@ -242,7 +249,9 @@ public class ProcessingCompletionSubscriber : EventSubscriberBase
     public double GetSuccessRatePercent()
     {
         var total = _successCount + _failureCount;
-        return total > 0 ? (_successCount * 100.0) / total : 100.0;
+        return total > NoCompletedItems
+            ? (_successCount * PercentageMultiplier) / total
+            : DefaultSuccessRatePercent;
     }
 
     /// <summary>
@@ -259,6 +268,10 @@ public class ProcessingCompletionSubscriber : EventSubscriberBase
 /// </summary>
 public class BackpressureAlertSubscriber : EventSubscriberBase
 {
+    private const int SequentialDegreeOfParallelism = 1;
+    private const double PercentageMultiplier = 100.0;
+    private const double CriticalUtilizationPercent = 95;
+
     private int _backpressureCount;
     private DateTime _firstBackpressureTime = DateTime.MinValue;
 
@@ -292,7 +305,7 @@ public class BackpressureAlertSubscriber : EventSubscriberBase
             MaxQueueSizeBehavior = MaxQueueSizeBehavior.Block,
             DispatchMode = SubscriberDispatchMode.Sequential,
             ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount,
-            MaxDegreeOfParallelism = 1
+            MaxDegreeOfParallelism = SequentialDegreeOfParallelism
         };
     }
 
@@ -307,13 +320,13 @@ public class BackpressureAlertSubscriber : EventSubscriberBase
             if (_firstBackpressureTime == DateTime.MinValue)
                 _firstBackpressureTime = args.Timestamp;
 
-            var utilizationPercent = (args.Context.BufferSize * 100.0) / args.Context.MaxBufferCapacity;
+            var utilizationPercent = (args.Context.BufferSize * PercentageMultiplier) / args.Context.MaxBufferCapacity;
 
             _logger.LogWarning(
                 "Backpressure detected - Stage: {Stage}, Utilization: {Util:F1}%, IsBackpressured: {Backpressured}, Count: {Count}",
                 args.StageName, utilizationPercent, args.Context.IsBackpressured, _backpressureCount);
 
-            if (utilizationPercent > 95)
+            if (utilizationPercent > CriticalUtilizationPercent)
             {
                 await OnCriticalBackpressureAsync(args);
             }
@@ -348,6 +361,8 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
     // Striped counters for thread-safe aggregation across multiple threads
     // Using 16 stripes to reduce contention while maintaining cache locality
     private const int StripeCount = 16;
+    private const long NanosecondsPerMillisecond = 1_000_000;
+    private const int NoMetricsCollected = 0;
     private readonly StripedMetrics[] _stripedMetrics = new StripedMetrics[StripeCount];
 
     // Simple lock for snapshot operations (infrequent, not on hot path)
@@ -387,7 +402,7 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
             var metrics = _stripedMetrics[stripeIndex];
 
             // Accumulate using Interlocked operations - zero allocation on hot path
-            Interlocked.Add(ref metrics.TotalLatencyNs, (long)(args.Metrics.AverageProcessingTimeMs * 1_000_000));
+            Interlocked.Add(ref metrics.TotalLatencyNs, (long)(args.Metrics.AverageProcessingTimeMs * NanosecondsPerMillisecond));
             Interlocked.Increment(ref metrics.MetricsCount);
 
             // Optional: Log at debug level only when needed
@@ -413,7 +428,7 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
     public double GetAverageProcessingTime()
     {
         var snapshot = TakeSnapshot();
-        return snapshot.MetricsCount > 0
+        return snapshot.MetricsCount > NoMetricsCollected
             ? snapshot.TotalLatencyMs / snapshot.MetricsCount
             : 0.0;
     }
@@ -461,7 +476,7 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
             }
 
             // Create new snapshot
-            snapshot = new MetricsSnapshot(totalLatencyNs / 1_000_000.0, metricsCount);
+            snapshot = new MetricsSnapshot(totalLatencyNs / (double)NanosecondsPerMillisecond, metricsCount);
             _currentSnapshot = snapshot;
 
             return snapshot;
@@ -527,6 +542,8 @@ public sealed class MetricsAggregationSubscriber : EventSubscriberBase
 /// </summary>
 public class ErrorAlertSubscriber : EventSubscriberBase
 {
+    private const int SequentialDegreeOfParallelism = 1;
+
     private int _errorCount;
 
     public ErrorAlertSubscriber(PipelineEventPublisher publisher, ILogger<ErrorAlertSubscriber> logger)
@@ -556,7 +573,7 @@ public class ErrorAlertSubscriber : EventSubscriberBase
             MaxQueueSizeBehavior = MaxQueueSizeBehavior.Block,
             DispatchMode = SubscriberDispatchMode.Sequential,
             ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount,
-            MaxDegreeOfParallelism = 1
+            MaxDegreeOfParallelism = SequentialDegreeOfParallelism
         };
     }
 
