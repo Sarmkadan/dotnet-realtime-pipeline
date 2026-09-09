@@ -33,6 +33,8 @@ public sealed class ErrorHandlingMiddleware
     public async Task<ErrorResponse<T>> ExecuteWithErrorHandlingAsync<T>(
         string operationName, Func<Task<T>> operation)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
+        ArgumentNullException.ThrowIfNull(operation);
         try
         {
             var result = await operation();
@@ -50,6 +52,8 @@ public sealed class ErrorHandlingMiddleware
     public ErrorResponse<T> ExecuteWithErrorHandling<T>(
         string operationName, Func<T> operation)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
+        ArgumentNullException.ThrowIfNull(operation);
         try
         {
             var result = operation();
