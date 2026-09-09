@@ -9,5 +9,8 @@ public sealed class WorkerOptions
     public bool EnableMetricsWorker { get; set; } = true;
     public bool EnableHealthCheckWorker { get; set; } = true;
 
+    /// <summary>
+    /// Returns a one-line representation of the worker configuration.
+    /// </summary>
     public override string ToString() => $"WorkerOptions {{ MetricsAggregationIntervalMs = {MetricsAggregationIntervalMs}, HealthCheckIntervalMs = {HealthCheckIntervalMs}, EnableProcessingWorker = {EnableProcessingWorker}, EnableMetricsWorker = {EnableMetricsWorker}, EnableHealthCheckWorker = {EnableHealthCheckWorker} }}";
 }
