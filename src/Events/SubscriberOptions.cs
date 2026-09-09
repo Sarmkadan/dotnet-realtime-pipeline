@@ -71,6 +71,16 @@ public sealed class SubscriberOptions
     /// Useful for logging and diagnostics.
     /// </summary>
     public string? Name { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the subscriber options.
+    /// </summary>
+    /// <returns>A string containing the subscriber options.</returns>
+    public override string ToString()
+    {
+        var name = Name ?? "<unnamed>";
+        return $"Name: {name}, MaxQueueSize: {MaxQueueSize}, MaxQueueSizeBehavior: {MaxQueueSizeBehavior}, DispatchMode: {DispatchMode}, ErrorPolicy: {ErrorPolicy}, MaxDegreeOfParallelism: {MaxDegreeOfParallelism}";
+    }
 }
 
 /// <summary>
