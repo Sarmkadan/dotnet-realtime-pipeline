@@ -26,6 +26,9 @@ public sealed class CommandLineParser
     /// <summary>
     /// Registers a command type with the parser.
     /// </summary>
+    /// <param name="verb">The verb used to identify the command.</param>
+    /// <param name="commandFactory">The factory that creates the command.</param>
+    /// <returns>No value is returned.</returns>
     public void RegisterCommand(string verb, Func<ParsedCommand> commandFactory)
     {
         _commandRegistry[verb] = commandFactory ?? throw new ArgumentNullException(nameof(commandFactory));
@@ -34,6 +37,8 @@ public sealed class CommandLineParser
     /// <summary>
     /// Parses command-line arguments into a structured command.
     /// </summary>
+    /// <param name="args">The command-line arguments to parse.</param>
+    /// <returns>The parsed command.</returns>
     public ParsedCommand Parse(string[] args)
     {
         if (args is null || args.Length == 0)
@@ -151,6 +156,9 @@ public abstract class ParsedCommand
     /// <summary>
     /// Gets an option value with fallback to default.
     /// </summary>
+    /// <param name="name">The name of the option.</param>
+    /// <param name="defaultValue">The value returned when the option is not present.</param>
+    /// <returns>The option value, or <paramref name="defaultValue"/> when the option is not present.</returns>
     public string GetOption(string name, string defaultValue = "")
     {
         return Options.TryGetValue(name, out var value) ? value : defaultValue;
@@ -159,6 +167,8 @@ public abstract class ParsedCommand
     /// <summary>
     /// Checks if an option flag is set.
     /// </summary>
+    /// <param name="name">The name of the option flag.</param>
+    /// <returns><see langword="true"/> if the option is present; otherwise, <see langword="false"/>.</returns>
     public bool HasFlag(string name)
     {
         return Options.ContainsKey(name);
@@ -177,6 +187,7 @@ public abstract class ParsedCommand
 /// </summary>
 public sealed class UnknownCommand : ParsedCommand
 {
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         Console.WriteLine(string.IsNullOrEmpty(ErrorMessage) ? $"Unknown command: {Verb}" : ErrorMessage);
@@ -184,8 +195,12 @@ public sealed class UnknownCommand : ParsedCommand
     }
 }
 
+/// <summary>
+/// Displays the available command-line commands and their options.
+/// </summary>
 public sealed class HelpCommand : ParsedCommand
 {
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         Console.WriteLine("Real-Time Pipeline - Command-Line Interface");
@@ -200,6 +215,9 @@ public sealed class HelpCommand : ParsedCommand
     }
 }
 
+/// <summary>
+/// Represents a command that ingests data from a file.
+/// </summary>
 public sealed class IngestCommand : ParsedCommand
 {
     public IngestCommand()
@@ -207,6 +225,7 @@ public sealed class IngestCommand : ParsedCommand
         RequiredOptions.Add("file");
     }
 
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         var filePath = GetOption("file");
@@ -217,6 +236,9 @@ public sealed class IngestCommand : ParsedCommand
     }
 }
 
+/// <summary>
+/// Represents a command that queries data within a time range.
+/// </summary>
 public sealed class QueryCommand : ParsedCommand
 {
     public QueryCommand()
@@ -225,6 +247,7 @@ public sealed class QueryCommand : ParsedCommand
         RequiredOptions.Add("end");
     }
 
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         var start = GetOption("start");
@@ -235,8 +258,12 @@ public sealed class QueryCommand : ParsedCommand
     }
 }
 
+/// <summary>
+/// Represents a command that displays the pipeline status.
+/// </summary>
 public sealed class StatusCommand : ParsedCommand
 {
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         var format = GetOption("format", "text");
@@ -245,6 +272,9 @@ public sealed class StatusCommand : ParsedCommand
     }
 }
 
+/// <summary>
+/// Represents a command that exports data within a time range to a file.
+/// </summary>
 public sealed class ExportCommand : ParsedCommand
 {
     public ExportCommand()
@@ -254,6 +284,7 @@ public sealed class ExportCommand : ParsedCommand
         RequiredOptions.Add("output");
     }
 
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         var start = GetOption("start");
@@ -271,6 +302,7 @@ public sealed class ExportCommand : ParsedCommand
 /// </summary>
 public sealed class VisualizeCommand : ParsedCommand
 {
+    /// <inheritdoc/>
     public override Task<int> ExecuteAsync()
     {
         var compact = HasFlag("compact");
