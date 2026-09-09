@@ -91,4 +91,11 @@ public sealed class ExponentialBackoffRetryPolicy : IRetryPolicy
 
         return RetryResult<T>.Failure(attempt, lastException);
     }
+    /// <summary>
+    /// Returns a string representation of the current retry policy configuration.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"ExponentialBackoffRetryPolicy: MaxAttempts={_options.MaxAttempts}, BaseDelay={_options.BaseDelay}, MaxDelay={_options.MaxDelay}, JitterFactor={_options.JitterFactor}";
+    }
 }
