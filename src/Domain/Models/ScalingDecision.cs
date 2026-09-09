@@ -47,6 +47,14 @@ public sealed class ScalingDecision
 
     /// <summary>UTC timestamp when the decision was made.</summary>
     public DateTime DecidedAt { get; init; } = DateTime.UtcNow;
+
+    /// <summary>Returns a single-line summary of the scaling decision.</summary>
+    public override string ToString()
+    {
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "{0} {1} {2}->{3} BufferFillPercent={4:F1}% BackpressureFrequency={5:F2}/min DecidedAt={6:O} Reason={7}",
+            StageName, Direction, FromConsumers, ToConsumers, BufferFillPercent, BackpressureFrequency, DecidedAt, Reason);
+    }
 }
 
 /// <summary>Tracks the live scaling state and history for a single pipeline stage.</summary>
