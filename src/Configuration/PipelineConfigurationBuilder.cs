@@ -16,6 +16,27 @@ using System;
 /// </summary>
 public sealed class PipelineConfigurationBuilder
 {
+    private const long InitialPipelineId = 1;
+    private const int NoConfiguredStagesCount = 0;
+    private const long DefaultBufferSizeForHighThroughput = 100000;
+    private const long DefaultFlushIntervalMsForHighThroughput = 500;
+    private const int DefaultConcurrentConsumersForHighThroughput = 16;
+    private const long DefaultWindowSizeMsForHighThroughput = PipelineConstants.DefaultWindowSlideMs;
+    private const long DefaultWindowSlideMsForHighThroughput = 500;
+    private const int DefaultRetriesForHighThroughput = 2;
+    private const long DefaultRetryDelayMsForHighThroughput = 50;
+    private const long DefaultBufferSizeForLowLatency = PipelineConstants.DefaultWindowSizeMs;
+    private const long DefaultFlushIntervalMsForLowLatency = PipelineConstants.DefaultRetryDelayMs;
+    private const int DefaultConcurrentConsumersForLowLatency = 2;
+    private const long DefaultWindowSizeMsForLowLatency = PipelineConstants.DefaultWindowSlideMs;
+    private const long DefaultWindowSlideMsForLowLatency = 100;
+    private const long DefaultProcessingTimeoutMsForLowLatency = PipelineConstants.MetricsCollectionIntervalMs;
+    private const long DefaultBufferSizeForHighReliability = 50000;
+    private const long DefaultFlushIntervalMsForHighReliability = 2000;
+    private const int DefaultRetriesForHighReliability = 5;
+    private const long DefaultRetryDelayMsForHighReliability = 500;
+    private const int DefaultDataQualityThresholdForHighReliability = 85;
+
     private readonly PipelineConfig _config;
 
     public PipelineConfigurationBuilder(string pipelineName, string version)
@@ -23,7 +44,7 @@ public sealed class PipelineConfigurationBuilder
         ArgumentException.ThrowIfNullOrEmpty(pipelineName);
         ArgumentException.ThrowIfNullOrEmpty(version);
 
-        _config = new PipelineConfig(1, pipelineName, version);
+        _config = new PipelineConfig(InitialPipelineId, pipelineName, version);
     }
 
     /// <summary>
@@ -130,13 +151,13 @@ public sealed class PipelineConfigurationBuilder
     /// </summary>
     public PipelineConfigurationBuilder WithHighPerformanceDefaults()
     {
-        _config.MaxBufferSize = 100000;
-        _config.BufferFlushIntervalMs = 500;
-        _config.MaxConcurrentConsumers = 16;
-        _config.WindowSizeMs = 1000;
-        _config.WindowSlideMs = 500;
-        _config.MaxRetries = 2;
-        _config.RetryDelayMs = 50;
+        _config.MaxBufferSize = DefaultBufferSizeForHighThroughput;
+        _config.BufferFlushIntervalMs = DefaultFlushIntervalMsForHighThroughput;
+        _config.MaxConcurrentConsumers = DefaultConcurrentConsumersForHighThroughput;
+        _config.WindowSizeMs = DefaultWindowSizeMsForHighThroughput;
+        _config.WindowSlideMs = DefaultWindowSlideMsForHighThroughput;
+        _config.MaxRetries = DefaultRetriesForHighThroughput;
+        _config.RetryDelayMs = DefaultRetryDelayMsForHighThroughput;
         return this;
     }
 
@@ -145,12 +166,12 @@ public sealed class PipelineConfigurationBuilder
     /// </summary>
     public PipelineConfigurationBuilder WithLowLatencyDefaults()
     {
-        _config.MaxBufferSize = 5000;
-        _config.BufferFlushIntervalMs = 100;
-        _config.MaxConcurrentConsumers = 2;
-        _config.WindowSizeMs = 1000;
-        _config.WindowSlideMs = 100;
-        _config.ProcessingTimeoutMs = 5000;
+        _config.MaxBufferSize = DefaultBufferSizeForLowLatency;
+        _config.BufferFlushIntervalMs = PipelineConstants.DefaultRetryDelayMs;
+        _config.MaxConcurrentConsumers = DefaultConcurrentConsumersForLowLatency;
+        _config.WindowSizeMs = DefaultWindowSizeMsForLowLatency;
+        _config.WindowSlideMs = DefaultWindowSlideMsForLowLatency;
+        _config.ProcessingTimeoutMs = PipelineConstants.MetricsCollectionIntervalMs;
         return this;
     }
 
@@ -159,12 +180,12 @@ public sealed class PipelineConfigurationBuilder
     /// </summary>
     public PipelineConfigurationBuilder WithHighReliabilityDefaults()
     {
-        _config.MaxBufferSize = 50000;
-        _config.BufferFlushIntervalMs = 2000;
-        _config.MaxConcurrentConsumers = 4;
-        _config.MaxRetries = 5;
-        _config.RetryDelayMs = 500;
-        _config.MinDataQualityThreshold = 85;
+        _config.MaxBufferSize = DefaultBufferSizeForHighReliability;
+        _config.BufferFlushIntervalMs = DefaultFlushIntervalMsForHighReliability;
+        _config.MaxConcurrentConsumers = PipelineConstants.DefaultMaxConcurrentConsumers;
+        _config.MaxRetries = DefaultRetriesForHighReliability;
+        _config.RetryDelayMs = DefaultRetryDelayMsForHighReliability;
+        _config.MinDataQualityThreshold = DefaultDataQualityThresholdForHighReliability;
         _config.ValidateOnIngestion = true;
         return this;
     }
@@ -175,7 +196,7 @@ public sealed class PipelineConfigurationBuilder
     public PipelineConfig Build()
     {
         // Add default stages if none configured
-        if (_config.Stages.Count == 0)
+        if (_config.Stages.Count == NoConfiguredStagesCount)
         {
             _config.Stages.Add(new PipelineStageDef(PipelineConstants.StageName_Ingestion, "SOURCE"));
             _config.Stages.Add(new PipelineStageDef(PipelineConstants.StageName_Validation, "FILTER"));
