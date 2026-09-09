@@ -174,4 +174,30 @@ public static class InMemoryDataPointRepositoryExtensions
             .ToList()
             .AsReadOnly();
     }
+
+    /// <summary>
+    /// Retrieves data points from the specified source within a time range.
+    /// </summary>
+    /// <param name="repository">The repository instance.</param>
+    /// <param name="source">The source identifier to match.</param>
+    /// <param name="startMs">The start timestamp in milliseconds.</param>
+    /// <param name="endMs">The end timestamp in milliseconds.</param>
+    /// <returns>A list of data points whose source matches <paramref name="source"/> within the specified time range.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="repository"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="source"/> is <see langword="null"/>, empty, or consists only of white-space characters.</exception>
+    public static async Task<List<DataPoint>> GetBySourceInTimeRangeAsync(
+        this IDataPointRepository repository,
+        string source,
+        long startMs,
+        long endMs)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentException.ThrowIfNullOrWhiteSpace(source);
+
+        var dataPoints = await repository.GetByTimeRangeAsync(startMs, endMs);
+
+        return dataPoints
+            .Where(dataPoint => string.Equals(dataPoint.Source, source, StringComparison.Ordinal))
+            .ToList();
+    }
 }
