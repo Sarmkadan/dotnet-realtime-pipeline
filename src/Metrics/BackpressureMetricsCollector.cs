@@ -19,6 +19,9 @@ using System.Linq;
 /// </summary>
 public sealed class BackpressureMetricsCollector
 {
+    private const int DefaultMaxEventHistory = 500;
+    private const int DefaultRecentEventCount = 50;
+
     private readonly BackpressureService _backpressureService;
     private readonly int _maxEventHistory;
 
@@ -27,7 +30,7 @@ public sealed class BackpressureMetricsCollector
     private readonly List<BackpressureEvent> _eventHistory = new();
     private readonly object _lock = new();
 
-    public BackpressureMetricsCollector(BackpressureService backpressureService, int maxEventHistory = 500)
+    public BackpressureMetricsCollector(BackpressureService backpressureService, int maxEventHistory = DefaultMaxEventHistory)
     {
         _backpressureService = backpressureService ?? throw new ArgumentNullException(nameof(backpressureService));
         _maxEventHistory = maxEventHistory > 0
@@ -171,7 +174,7 @@ public sealed class BackpressureMetricsCollector
     /// <summary>
     /// Returns the most recent <paramref name="count"/> backpressure events across all stages.
     /// </summary>
-    public IReadOnlyList<BackpressureEvent> GetRecentEvents(int count = 50)
+    public IReadOnlyList<BackpressureEvent> GetRecentEvents(int count = DefaultRecentEventCount)
     {
         if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
