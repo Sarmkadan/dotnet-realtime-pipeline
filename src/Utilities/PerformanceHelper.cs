@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using DotNetRealtimePipeline.Constants;
 
 /// <summary>
 /// Helper class for performance measurements, profiling, and optimization analysis.
@@ -17,6 +18,12 @@ using System.Linq;
 /// </summary>
 public sealed class PerformanceHelper
 {
+    // Performance benchmarking constants
+    private const int DefaultBenchmarkIterations = (int)PipelineConstants.MaxMetricHistorySize;
+    private const int Percentile95 = (int)PipelineConstants.BackpressureCriticalMark;
+    private const int Percentile99 = 99;
+    private const double PercentileBase = (double)PipelineConstants.MaxDataQualityScore;
+    private const int MinArrayIndex = PipelineConstants.MinDataQualityScore;
     /// <summary>
     /// Measures the execution time of a synchronous operation.
     /// </summary>
@@ -44,7 +51,7 @@ public sealed class PerformanceHelper
     /// <summary>
     /// Benchmarks an operation multiple times and returns statistics.
     /// </summary>
-    public static BenchmarkResult Benchmark(Action operation, int iterations = 1000)
+    public static BenchmarkResult Benchmark(Action operation, int iterations = DefaultBenchmarkIterations)
     {
         ArgumentNullException.ThrowIfNull(nameof(operation));
         var measurements = new List<long>();
@@ -65,8 +72,8 @@ public sealed class PerformanceHelper
             MinMs = measurements.Min(),
             MaxMs = measurements.Max(),
             MedianMs = GetMedian(measurements),
-            P95Ms = GetPercentile(measurements, 95),
-            P99Ms = GetPercentile(measurements, 99)
+            P95Ms = GetPercentile(measurements, Percentile95),
+            P99Ms = GetPercentile(measurements, Percentile99)
         };
     }
 
@@ -111,8 +118,8 @@ public sealed class PerformanceHelper
     private static double GetPercentile(List<long> values, int percentile)
     {
         var sorted = values.OrderBy(v => v).ToList();
-        int index = (int)Math.Ceiling(sorted.Count * (percentile / 100.0)) - 1;
-        return sorted[Math.Max(0, Math.Min(index, sorted.Count - 1))];
+        int index = (int)Math.Ceiling(sorted.Count * (percentile / PercentileBase)) - 1;
+        return sorted[Math.Max(MinArrayIndex, Math.Min(index, sorted.Count - 1))];
     }
 }
 
@@ -162,6 +169,12 @@ public sealed class PerformanceTracker
 {
     private readonly List<PerformanceSample> _samples = new();
     private readonly object _lockObject = new();
+
+    // Performance tracking constants
+    private const int Percentile95 = (int)PipelineConstants.BackpressureCriticalMark;
+    private const int Percentile99 = 99;
+    private const double PercentileBase = PipelineConstants.MaxDataQualityScore;
+    private const int MinArrayIndex = PipelineConstants.MinDataQualityScore;
 
     /// <summary>
     /// Records a performance sample.
@@ -237,8 +250,8 @@ public sealed class PerformanceTracker
     private static double GetPercentile(List<double> values, int percentile)
     {
         var sorted = values.OrderBy(v => v).ToList();
-        int index = (int)Math.Ceiling(sorted.Count * (percentile / 100.0)) - 1;
-        return sorted[Math.Max(0, Math.Min(index, sorted.Count - 1))];
+        int index = (int)Math.Ceiling(sorted.Count * (percentile / PercentileBase)) - 1;
+        return sorted[Math.Max(MinArrayIndex, Math.Min(index, sorted.Count - 1))];
     }
 
     private static double CalculateStdDev(List<double> values)
