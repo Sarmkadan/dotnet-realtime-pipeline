@@ -29,6 +29,12 @@ public sealed class CommandExecutor
     private readonly ILogger<CommandExecutor> _logger;
     private readonly PipelineVisualizer _visualizer;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CommandExecutor"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator used to process commands.</param>
+    /// <param name="logger">The logger used to record command execution.</param>
+    /// <param name="visualizer">The visualizer used to render pipeline configurations.</param>
     public CommandExecutor(
         PipelineOrchestrator orchestrator,
         ILogger<CommandExecutor> logger,
@@ -42,6 +48,8 @@ public sealed class CommandExecutor
     /// <summary>
     /// Executes a parsed command with error handling and logging.
     /// </summary>
+    /// <param name="command">The parsed command to execute.</param>
+    /// <returns>A task whose result is the command exit code.</returns>
     public async Task<int> ExecuteAsync(ParsedCommand command)
     {
         if (command is null)
@@ -68,6 +76,10 @@ public sealed class CommandExecutor
     /// <summary>
     /// Ingests data points from a file or batch.
     /// </summary>
+    /// <param name="filePath">The path of the file containing the data points.</param>
+    /// <param name="useBatch">Whether to process the data points as a batch.</param>
+    /// <param name="format">The format of the input file.</param>
+    /// <returns>A task whose result indicates whether ingestion completed successfully.</returns>
     public async Task<bool> IngestDataAsync(string filePath, bool useBatch, string format)
     {
         try
@@ -107,6 +119,11 @@ public sealed class CommandExecutor
     /// <summary>
     /// Queries data points within a time range.
     /// </summary>
+    /// <param name="startMs">The start of the time range, in milliseconds.</param>
+    /// <param name="endMs">The end of the time range, in milliseconds.</param>
+    /// <param name="source">The source used to filter data points.</param>
+    /// <param name="minQuality">The minimum quality used to filter data points.</param>
+    /// <returns>A task whose result contains the matching data points.</returns>
     public async Task<List<DataPoint>> QueryDataAsync(long startMs, long endMs, string source, int minQuality)
     {
         try
@@ -130,6 +147,7 @@ public sealed class CommandExecutor
     /// <summary>
     /// Gets current pipeline status.
     /// </summary>
+    /// <returns>A task whose result contains the current pipeline status values.</returns>
     public async Task<Dictionary<string, object>> GetStatusAsync()
     {
         try
@@ -163,6 +181,11 @@ public sealed class CommandExecutor
     /// <summary>
     /// Exports data to a file in specified format.
     /// </summary>
+    /// <param name="startMs">The start of the time range to export, in milliseconds.</param>
+    /// <param name="endMs">The end of the time range to export, in milliseconds.</param>
+    /// <param name="outputPath">The path of the output file.</param>
+    /// <param name="format">The output format.</param>
+    /// <returns>A task whose result indicates whether the export completed successfully.</returns>
     public async Task<bool> ExportDataAsync(long startMs, long endMs, string outputPath, string format)
     {
         try
@@ -199,6 +222,9 @@ public sealed class CommandExecutor
     /// Renders an ASCII visualization of the pipeline topology with live runtime metrics.
     /// Pass <paramref name="compact"/> as <c>true</c> for a single-line summary.
     /// </summary>
+    /// <param name="config">The pipeline configuration to visualize.</param>
+    /// <param name="compact">Whether to render a compact single-line visualization.</param>
+    /// <returns>A task whose result contains the rendered visualization.</returns>
     public Task<string> VisualizeAsync(PipelineConfig config, bool compact = false)
     {
         try
@@ -222,6 +248,11 @@ public sealed class CommandExecutor
 /// </summary>
 public static class FormatFactory
 {
+    /// <summary>
+    /// Creates a data loader for the specified format.
+    /// </summary>
+    /// <param name="format">The data format handled by the loader.</param>
+    /// <returns>A loader for the specified format.</returns>
     public static IDataLoader CreateLoader(string format)
     {
         return format.ToLowerInvariant() switch
@@ -232,6 +263,11 @@ public static class FormatFactory
         };
     }
 
+    /// <summary>
+    /// Creates a data exporter for the specified format.
+    /// </summary>
+    /// <param name="format">The data format handled by the exporter.</param>
+    /// <returns>An exporter for the specified format.</returns>
     public static IDataExporter CreateExporter(string format)
     {
         return format.ToLowerInvariant() switch
@@ -244,23 +280,39 @@ public static class FormatFactory
     }
 }
 
+/// <summary>
+/// Defines a loader that reads data points from a file.
+/// </summary>
 public interface IDataLoader
 {
+    /// <summary>
+    /// Loads data points from a file.
+    /// </summary>
+    /// <param name="filePath">The path of the file to load.</param>
+    /// <returns>A task whose result contains the loaded data points.</returns>
     Task<List<DataPoint>> LoadAsync(string filePath);
 }
 
+/// <summary>
+/// Defines an exporter that writes data points to a file.
+/// </summary>
 public interface IDataExporter
 {
+    /// <summary>
+    /// Exports data points to a file.
+    /// </summary>
+    /// <param name="data">The data points to export.</param>
+    /// <param name="outputPath">The path of the output file.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     Task ExportAsync(List<DataPoint> data, string outputPath);
 }
 
+/// <summary>
+/// Loads data points from JSON files.
+/// </summary>
 public sealed class JsonDataLoader : IDataLoader
 {
-    /// <summary>
-    /// Loads data points from a UTF-8 JSON array file.
-    /// </summary>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or blank.</exception>
-    /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
+    /// <inheritdoc/>
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -274,13 +326,12 @@ public sealed class JsonDataLoader : IDataLoader
     }
 }
 
+/// <summary>
+/// Exports data points to JSON files.
+/// </summary>
 public sealed class JsonDataExporter : IDataExporter
 {
-    /// <summary>
-    /// Writes the supplied data points to <paramref name="outputPath"/> as an indented JSON array.
-    /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
+    /// <inheritdoc/>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -293,14 +344,12 @@ public sealed class JsonDataExporter : IDataExporter
     }
 }
 
+/// <summary>
+/// Loads data points from CSV files.
+/// </summary>
 public sealed class CsvDataLoader : IDataLoader
 {
-    /// <summary>
-    /// Loads data points from a CSV file with the header
-    /// <c>Id,Timestamp,Value,Source,Quality,Tags</c>.
-    /// </summary>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="filePath"/> is null or blank.</exception>
-    /// <exception cref="FileNotFoundException">Thrown when the file does not exist.</exception>
+    /// <inheritdoc/>
     public async Task<List<DataPoint>> LoadAsync(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -352,13 +401,12 @@ public sealed class CsvDataLoader : IDataLoader
     }
 }
 
+/// <summary>
+/// Exports data points to CSV files.
+/// </summary>
 public sealed class CsvDataExporter : IDataExporter
 {
-    /// <summary>
-    /// Writes the supplied data points to <paramref name="outputPath"/> as CSV.
-    /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
+    /// <inheritdoc/>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -383,13 +431,12 @@ public sealed class CsvDataExporter : IDataExporter
     }
 }
 
+/// <summary>
+/// Exports data points to XML files.
+/// </summary>
 public sealed class XmlDataExporter : IDataExporter
 {
-    /// <summary>
-    /// Writes the supplied data points to <paramref name="outputPath"/> as an XML document.
-    /// </summary>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="data"/> is null.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="outputPath"/> is null or blank.</exception>
+    /// <inheritdoc/>
     public async Task ExportAsync(List<DataPoint> data, string outputPath)
     {
         ArgumentNullException.ThrowIfNull(data);
