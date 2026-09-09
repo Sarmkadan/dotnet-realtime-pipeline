@@ -20,7 +20,20 @@ using System.Threading.Tasks;
 /// </summary>
 public interface IOutputFormatter
 {
+    /// <summary>
+    /// Formats the specified data as a string.
+    /// </summary>
+    /// <typeparam name="T">The reference type of the data to format.</typeparam>
+    /// <param name="data">The data to format.</param>
+    /// <returns>The formatted representation of <paramref name="data"/>.</returns>
     string Format<T>(T data) where T : class;
+
+    /// <summary>
+    /// Asynchronously formats the specified data as a string.
+    /// </summary>
+    /// <typeparam name="T">The reference type of the data to format.</typeparam>
+    /// <param name="data">The data to format.</param>
+    /// <returns>A task that represents the asynchronous formatting operation and contains the formatted data.</returns>
     Task<string> FormatAsync<T>(T data) where T : class;
 }
 
@@ -35,11 +48,13 @@ public sealed class JsonOutputFormatter : IOutputFormatter
         PropertyNameCaseInsensitive = true
     };
 
+    /// <inheritdoc/>
     public string Format<T>(T data) where T : class
     {
         return JsonSerializer.Serialize(data, Options);
     }
 
+    /// <inheritdoc/>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
         return await Task.FromResult(Format(data));
@@ -51,6 +66,7 @@ public sealed class JsonOutputFormatter : IOutputFormatter
 /// </summary>
 public sealed class CsvOutputFormatter : IOutputFormatter
 {
+    /// <inheritdoc/>
     public string Format<T>(T data) where T : class
     {
         if (data is List<DataPoint> dataPoints)
@@ -66,6 +82,7 @@ public sealed class CsvOutputFormatter : IOutputFormatter
         return string.Empty;
     }
 
+    /// <inheritdoc/>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
         return await Task.FromResult(Format(data));
@@ -118,6 +135,7 @@ public sealed class TableOutputFormatter : IOutputFormatter
 {
     private const int ColumnPadding = 2;
 
+    /// <inheritdoc/>
     public string Format<T>(T data) where T : class
     {
         if (data is List<DataPoint> dataPoints)
@@ -133,6 +151,7 @@ public sealed class TableOutputFormatter : IOutputFormatter
         return JsonSerializer.Serialize(data);
     }
 
+    /// <inheritdoc/>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
         return await Task.FromResult(Format(data));
@@ -223,6 +242,7 @@ public sealed class TableOutputFormatter : IOutputFormatter
 /// </summary>
 public sealed class HtmlOutputFormatter : IOutputFormatter
 {
+    /// <inheritdoc/>
     public string Format<T>(T data) where T : class
     {
         var sb = new StringBuilder();
@@ -252,6 +272,7 @@ public sealed class HtmlOutputFormatter : IOutputFormatter
         return sb.ToString();
     }
 
+    /// <inheritdoc/>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
         return await Task.FromResult(Format(data));
@@ -284,6 +305,12 @@ public sealed class HtmlOutputFormatter : IOutputFormatter
 /// </summary>
 public static class OutputFormatterFactory
 {
+    /// <summary>
+    /// Creates an output formatter for the specified format.
+    /// </summary>
+    /// <param name="format">The output format for which to create a formatter.</param>
+    /// <returns>An output formatter for <paramref name="format"/>, or a JSON formatter when the value is unsupported.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">This method does not throw for unsupported values; it returns a JSON formatter.</exception>
     public static IOutputFormatter Create(OutputFormat format)
     {
         return format switch
