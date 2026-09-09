@@ -183,6 +183,7 @@ public sealed class PipelineConfig
     /// </summary>
     public PipelineStageDef? GetStageByName(string stageName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stageName);
         return Stages.Find(s => s.StageName == stageName);
     }
 
@@ -201,6 +202,7 @@ public sealed class PipelineConfig
     /// </summary>
     public object? GetCustomSetting(string key)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
         return CustomSettings.TryGetValue(key, out var value) ? value : null;
     }
 
@@ -299,7 +301,8 @@ public sealed class PipelineStageDef
     /// <param name="value">The parameter value.</param>
     public void SetParameter(string key, object value)
     {
-        if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Key cannot be null", nameof(key));
-        Parameters[key] = value ?? throw new ArgumentNullException(nameof(value));
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(value);
+        Parameters[key] = value;
     }
 }
