@@ -13,6 +13,7 @@ using DotNetRealtimePipeline.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -418,6 +419,22 @@ public sealed class WindowStatistics
     public double StdDev { get; set; }
     public long WindowDurationMs { get; set; }
     public double Throughput { get; set; }
+
+    /// <summary>
+    /// Returns an invariant-culture summary of the window statistics.
+    /// </summary>
+    public override string ToString() => string.Format(
+        CultureInfo.InvariantCulture,
+        "WindowStatistics {{ WindowId = {0:F2}, DataPointCount = {1:F2}, Sum = {2:F2}, Average = {3:F2}, Min = {4:F2}, Max = {5:F2}, StdDev = {6:F2}, WindowDurationMs = {7:F2}, Throughput = {8:F2} }}",
+        WindowId,
+        DataPointCount,
+        Sum,
+        Average,
+        Min,
+        Max,
+        StdDev,
+        WindowDurationMs,
+        Throughput);
 }
 
 /// <summary>
