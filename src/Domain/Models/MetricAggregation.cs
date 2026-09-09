@@ -178,7 +178,7 @@ public sealed class MetricAggregation
     /// </summary>
     public void RecordStageErrorRate(string stageName, double errorRate)
     {
-        if (string.IsNullOrWhiteSpace(stageName)) throw new ArgumentException("Stage name cannot be null", nameof(stageName));
+        ArgumentException.ThrowIfNullOrWhiteSpace(stageName);
         if (errorRate < 0 || errorRate > 100) throw new ArgumentException("Error rate must be between 0 and 100", nameof(errorRate));
 
         ErrorRateByStage[stageName] = errorRate;
