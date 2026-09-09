@@ -8,6 +8,7 @@ namespace DotNetRealtimePipeline.Metrics;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 /// <summary>
 /// A time-stamped backpressure event recorded by <see cref="BackpressureMetricsCollector"/>.
@@ -60,6 +61,17 @@ public sealed class StageBackpressureMetrics
 
     /// <summary>UTC timestamp of the last activation event.</summary>
     public DateTime? LastActivationAt { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the current instance for debugging and logging.
+    /// </summary>
+    /// <returns>A string containing the stage name, activation/drop counters, peak fill percent, and timestamps.</returns>
+    public override string ToString()
+    {
+        return string.Format(CultureInfo.InvariantCulture,
+            "StageBackpressureMetrics {{ StageName = {0}, ActivationCount = {1}, TotalActiveDurationMs = {2}, PeakBufferFillPercent = {3}, CurrentBufferFillPercent = {4}, TotalDroppedItems = {5}, LastActivationAt = {6} }}",
+            StageName, ActivationCount, TotalActiveDurationMs, PeakBufferFillPercent, CurrentBufferFillPercent, TotalDroppedItems, LastActivationAt);
+    }
 }
 
 /// <summary>
