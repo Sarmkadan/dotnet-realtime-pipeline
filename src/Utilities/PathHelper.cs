@@ -125,6 +125,7 @@ public sealed class PathHelper
     /// </summary>
     /// <param name="filename">The filename to sanitize.</param>
     /// <returns>The sanitized filename.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="filename"/> is null.</exception>
     public static string SanitizeFilename(string filename)
     {
         ArgumentNullException.ThrowIfNull(filename);
@@ -173,6 +174,7 @@ public sealed class PathHelper
     /// </summary>
     /// <param name="path">The path to check disk space for.</param>
     /// <returns>The available disk space in bytes, or -1 if unavailable.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
     public static long GetAvailableDiskSpace(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -193,6 +195,7 @@ public sealed class PathHelper
     /// </summary>
     /// <param name="path">The path to check disk space for.</param>
     /// <returns>The total disk space in bytes, or -1 if unavailable.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
     public static long GetTotalDiskSpace(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -213,6 +216,7 @@ public sealed class PathHelper
     /// </summary>
     /// <param name="path">The directory path to measure.</param>
     /// <returns>The size of the directory in bytes, or 0 if the directory doesn't exist.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is null.</exception>
     public static long GetDirectorySize(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -298,34 +302,52 @@ public sealed class FileSystemMonitor : IDisposable
         _watcher = new FileSystemWatcher(path);
     }
 
+    /// <summary>
+    /// Occurs when a file or directory in the monitored path is changed.
+    /// </summary>
     public event FileSystemEventHandler? Changed
     {
         add { _watcher.Changed += value; }
         remove { _watcher.Changed -= value; }
     }
 
+    /// <summary>
+    /// Occurs when a file or directory is created in the monitored path.
+    /// </summary>
     public event FileSystemEventHandler? Created
     {
         add { _watcher.Created += value; }
         remove { _watcher.Created -= value; }
     }
 
+    /// <summary>
+    /// Occurs when a file or directory is deleted from the monitored path.
+    /// </summary>
     public event FileSystemEventHandler? Deleted
     {
         add { _watcher.Deleted += value; }
         remove { _watcher.Deleted -= value; }
     }
 
+    /// <summary>
+    /// Starts monitoring the configured path for file system changes.
+    /// </summary>
     public void Start()
     {
         _watcher.EnableRaisingEvents = true;
     }
 
+    /// <summary>
+    /// Stops monitoring the configured path for file system changes.
+    /// </summary>
     public void Stop()
     {
         _watcher.EnableRaisingEvents = false;
     }
 
+    /// <summary>
+    /// Releases the resources used by the file system monitor.
+    /// </summary>
     public void Dispose()
     {
         _watcher?.Dispose();
