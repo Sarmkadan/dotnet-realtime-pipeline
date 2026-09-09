@@ -82,6 +82,12 @@ public sealed class MetricsService
     /// <summary>
     /// Creates a metric aggregation from collected data.
     /// </summary>
+    /// <param name="windowStartMs">The start of the window in milliseconds.</param>
+    /// <param name="windowEndMs">The end of the window in milliseconds.</param>
+    /// <param name="itemsProcessed">The number of items processed.</param>
+    /// <param name="itemsFailed">The number of items that failed.</param>
+    /// <param name="itemsSkipped">The number of items skipped.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the metric aggregation.</returns>
     public async Task<MetricAggregation> CreateMetricAggregationAsync(
         long windowStartMs,
         long windowEndMs,
@@ -135,6 +141,7 @@ public sealed class MetricsService
     /// <summary>
     /// Computes health status based on current metrics.
     /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the health report.</returns>
     public async Task<HealthReport> GenerateHealthReportAsync()
     {
         MetricAggregation latest;
@@ -182,6 +189,8 @@ public sealed class MetricsService
     /// <summary>
     /// Gets performance trend analysis.
     /// </summary>
+    /// <param name="historyCount">The number of historical metrics to analyze.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the performance trend analysis.</returns>
     public async Task<PerformanceTrend> AnalyzePerformanceTrendAsync(int historyCount = 10)
     {
         var recentMetrics = await _repository.GetHistoryAsync(historyCount);
@@ -233,6 +242,7 @@ public sealed class MetricsService
     /// <summary>
     /// Gets the distribution of metrics by source.
     /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the metric distribution.</returns>
     public async Task<MetricDistribution> GetMetricDistributionAsync()
     {
         var latest = await _repository.GetLatestAsync();
@@ -277,17 +287,53 @@ public sealed class MetricsService
 /// </summary>
 public sealed class HealthReport
 {
+    /// <summary>
+    /// Gets or sets the health status.
+    /// </summary>
     public string Status { get; set; } = "UNKNOWN";
+    /// <summary>
+    /// Gets or sets the health message.
+    /// </summary>
     public string Message { get; set; } = "";
+    /// <summary>
+    /// Gets or sets the throughput in items per second.
+    /// </summary>
     public double ThroughputItemsPerSecond { get; set; }
+    /// <summary>
+    /// Gets or sets the success rate percentage.
+    /// </summary>
     public double SuccessRatePercent { get; set; }
+    /// <summary>
+    /// Gets or sets the error rate percentage.
+    /// </summary>
     public double ErrorRatePercent { get; set; }
+    /// <summary>
+    /// Gets or sets the average processing time in milliseconds.
+    /// </summary>
     public double AverageProcessingTimeMs { get; set; }
+    /// <summary>
+    /// Gets or sets the 95th percentile processing time in milliseconds.
+    /// </summary>
     public double P95ProcessingTimeMs { get; set; }
+    /// <summary>
+    /// Gets or sets the 99th percentile processing time in milliseconds.
+    /// </summary>
     public double P99ProcessingTimeMs { get; set; }
+    /// <summary>
+    /// Gets or sets the backpressure percentage.
+    /// </summary>
     public double BackpressurePercentage { get; set; }
+    /// <summary>
+    /// Gets or sets the total number of items processed.
+    /// </summary>
     public long TotalProcessed { get; set; }
+    /// <summary>
+    /// Gets or sets the total number of items that failed.
+    /// </summary>
     public long TotalFailed { get; set; }
+    /// <summary>
+    /// Gets or sets the timestamp when the report was generated.
+    /// </summary>
     public DateTime GeneratedAt { get; set; }
 }
 
@@ -296,11 +342,29 @@ public sealed class HealthReport
 /// </summary>
 public sealed class PerformanceTrend
 {
+    /// <summary>
+    /// Gets or sets the trend direction (e.g., IMPROVING, DEGRADING, STABLE).
+    /// </summary>
     public string TrendDirection { get; set; }
+    /// <summary>
+    /// Gets or sets the throughput change percentage.
+    /// </summary>
     public double ThroughputChangePercent { get; set; }
+    /// <summary>
+    /// Gets or sets the latency change percentage.
+    /// </summary>
     public double LatencyChangePercent { get; set; }
+    /// <summary>
+    /// Gets or sets the error rate change percentage.
+    /// </summary>
     public double ErrorRateChangePercent { get; set; }
+    /// <summary>
+    /// Gets or sets the number of samples analyzed.
+    /// </summary>
     public int SamplesAnalyzed { get; set; }
+    /// <summary>
+    /// Gets or sets the time span in milliseconds.
+    /// </summary>
     public long TimeSpanMs { get; set; }
 }
 
@@ -309,8 +373,20 @@ public sealed class PerformanceTrend
 /// </summary>
 public sealed class MetricDistribution
 {
+    /// <summary>
+    /// Gets or sets the total number of sources.
+    /// </summary>
     public int TotalSources { get; set; }
+    /// <summary>
+    /// Gets or sets the breakdown of items by source.
+    /// </summary>
     public Dictionary<string, long> SourceBreakdown { get; set; } = new();
+    /// <summary>
+    /// Gets or sets the error rates by stage.
+    /// </summary>
     public Dictionary<string, double> StageErrorRates { get; set; } = new();
+    /// <summary>
+    /// Gets or sets the timestamp when the distribution was computed.
+    /// </summary>
     public DateTime ComputedAt { get; set; }
 }
