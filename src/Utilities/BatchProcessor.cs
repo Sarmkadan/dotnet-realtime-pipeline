@@ -17,10 +17,13 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class BatchProcessor<TInput, TOutput>
 {
+    private const int DefaultBatchSize = 1000;
+    private const int DefaultMaxDegreeOfParallelism = 4;
+
     private readonly int _batchSize;
     private readonly int _maxDegreeOfParallelism;
 
-    public BatchProcessor(int batchSize = 1000, int maxDegreeOfParallelism = 4)
+    public BatchProcessor(int batchSize = DefaultBatchSize, int maxDegreeOfParallelism = DefaultMaxDegreeOfParallelism)
     {
         if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than 0");
         if (maxDegreeOfParallelism < 1) throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "Max degree of parallelism must be greater than 0");
@@ -151,9 +154,12 @@ public sealed class BatchProcessingProgress
 /// </summary>
 public sealed class DataPointBatchProcessor
 {
+    private const int DefaultBatchSize = 1000;
+    private const int DefaultParallelism = 4;
+
     private readonly BatchProcessor<Domain.Models.DataPoint, Domain.Models.ProcessingResult> _processor;
 
-    public DataPointBatchProcessor(int batchSize = 1000, int parallelism = 4)
+    public DataPointBatchProcessor(int batchSize = DefaultBatchSize, int parallelism = DefaultParallelism)
     {
         if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than 0");
         if (parallelism < 1) throw new ArgumentOutOfRangeException(nameof(parallelism), "Parallelism must be greater than 0");
