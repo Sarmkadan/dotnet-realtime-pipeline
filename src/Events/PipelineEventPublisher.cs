@@ -34,6 +34,7 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishDataIngestedAsync(DataPoint dataPoint)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
         _logger.LogInformation("PublishDataIngestedAsync called with {DataPoint}", dataPoint);
         try
         {
@@ -55,6 +56,7 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishProcessingCompletedAsync(ProcessingResult result)
     {
+        ArgumentNullException.ThrowIfNull(result);
         _logger.LogInformation("PublishProcessingCompletedAsync called with {Result}", result);
         try
         {
@@ -76,6 +78,7 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishBackpressureDetectedAsync(string stageName, BackpressureContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         _logger.LogInformation("PublishBackpressureDetectedAsync called with {StageName}", stageName);
         try
         {
@@ -102,6 +105,7 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishMetricsCollectedAsync(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         _logger.LogInformation("PublishMetricsCollectedAsync called with {Metrics}", metrics);
         try
         {
@@ -123,6 +127,7 @@ public sealed class PipelineEventPublisher : IDisposable
     /// </summary>
     public async Task PublishPipelineErrorAsync(string operationName, Exception exception)
     {
+        ArgumentNullException.ThrowIfNull(exception);
         _logger.LogInformation("PublishPipelineErrorAsync called with {OperationName}", operationName);
         try
         {
