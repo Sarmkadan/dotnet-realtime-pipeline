@@ -65,9 +65,12 @@ public sealed class DynamicScalingService
         double scaleDownThresholdPercent = DefaultScaleDownThresholdPercent,
         int cooldownSeconds = DefaultCooldownSeconds)
     {
-        _backpressureService = backpressureService ?? throw new ArgumentNullException(nameof(backpressureService));
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(backpressureService);
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(logger);
+        _backpressureService = backpressureService;
+        _config = config;
+        _logger = logger;
         _minConsumers = Math.Max(MinimumConsumerCount, minConsumers);
         _maxConsumers = Math.Max(_minConsumers + ConsumerScalingStep, maxConsumers);
         _scaleUpThresholdPercent = scaleUpThresholdPercent;
@@ -110,6 +113,7 @@ public sealed class DynamicScalingService
     /// <param name="stageName">The pipeline stage to query.</param>
     public StageScalingState? GetScalingState(string stageName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stageName);
         lock (_lock)
         {
             return _states.TryGetValue(stageName, out var state) ? state : null;
