@@ -39,8 +39,10 @@ public sealed class DynamicScalingWorker : IDisposable
         ILogger<DynamicScalingWorker> logger,
         int intervalMs = 5000)
     {
-        _scalingService = scalingService ?? throw new ArgumentNullException(nameof(scalingService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(scalingService);
+        ArgumentNullException.ThrowIfNull(logger);
+        _scalingService = scalingService;
+        _logger = logger;
         _intervalMs = Math.Max(500, intervalMs);
         _cancellationTokenSource = new CancellationTokenSource();
     }
