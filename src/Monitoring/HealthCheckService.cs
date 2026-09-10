@@ -33,6 +33,8 @@ public sealed class HealthCheckService
     /// </summary>
     public void RegisterComponent(string name, Func<Task<ComponentHealth>> healthCheck)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(healthCheck);
         _components.Add(new HealthCheckComponent
         {
             Name = name,
