@@ -166,7 +166,7 @@ public static class DynamicScalingServiceExtensions
         int cooldownSeconds = 15,
         int evaluationIntervalMs = 5000)
     {
-        if (services is null) throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton(sp => new DynamicScalingService(
             sp.GetRequiredService<BackpressureService>(),
