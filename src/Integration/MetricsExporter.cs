@@ -42,6 +42,7 @@ public sealed class PrometheusMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportAsync(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         var lines = new List<string>();
 
         var timestamp = new DateTimeOffset(metrics.ComputedAt).ToUnixTimeMilliseconds();
@@ -62,6 +63,7 @@ public sealed class PrometheusMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportBatchAsync(List<MetricAggregation> metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         var tasks = metrics.Select(m => ExportAsync(m));
         await Task.WhenAll(tasks);
     }
@@ -88,6 +90,7 @@ public sealed class HttpMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportAsync(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         try
         {
             var json = JsonSerializer.Serialize(metrics);
@@ -115,6 +118,7 @@ public sealed class HttpMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportBatchAsync(List<MetricAggregation> metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         try
         {
             var json = JsonSerializer.Serialize(metrics);
@@ -164,6 +168,7 @@ public sealed class CompositeMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportAsync(MetricAggregation metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         var tasks = _exporters.Select(e =>
         {
             return e.ExportAsync(metrics).ContinueWith(t =>
@@ -183,6 +188,7 @@ public sealed class CompositeMetricsExporter : IMetricsExporter
     /// </summary>
     public async Task ExportBatchAsync(List<MetricAggregation> metrics)
     {
+        ArgumentNullException.ThrowIfNull(metrics);
         var tasks = _exporters.Select(e =>
         {
             return e.ExportBatchAsync(metrics).ContinueWith(t =>
@@ -210,6 +216,8 @@ public static class MetricsExporterFactory
 
     public static IMetricsExporter CreateHttp(string endpoint, HttpClient client, ILogger<HttpMetricsExporter> logger)
     {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentNullException.ThrowIfNull(client);
         return new HttpMetricsExporter(endpoint, client, logger);
     }
 
