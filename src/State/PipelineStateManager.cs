@@ -81,6 +81,7 @@ public sealed class PipelineStateManager
     /// <param name="listener">The listener to register.</param>
     public void RegisterStateChangeListener(Action<PipelineState, PipelineState> listener)
     {
+        ArgumentNullException.ThrowIfNull(listener);
         _listeners.Add(new StateChangeListener { Callback = listener });
     }
 
@@ -243,6 +244,8 @@ public sealed class ConfigurationStateManager
     /// <param name="value">The value of the override.</param>
     public void SetOverride(string key, object value)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(value);
         _overrides[key] = value;
         _logger.LogInformation("Configuration override set: {Key} = {Value}", key, value);
     }
@@ -318,6 +321,7 @@ public sealed class OperationMetricsTracker
     /// <param name="success">Whether the operation was successful.</param>
     public void RecordOperation(string operationName, long durationMs, bool success)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
         var metrics = _metrics.GetOrAdd(operationName, _ => new OperationMetrics());
 
         metrics.TotalExecutions++;
@@ -342,6 +346,7 @@ public sealed class OperationMetricsTracker
     /// <returns>The metrics for the operation, or null if not found.</returns>
     public OperationMetrics GetOperationMetrics(string operationName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(operationName);
         return _metrics.TryGetValue(operationName, out var metrics) ? metrics : null;
     }
 
