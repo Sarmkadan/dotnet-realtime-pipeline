@@ -62,6 +62,8 @@ internal sealed class SubscriberChannel : IDisposable
     /// <returns>True if the event was successfully enqueued, false otherwise.</returns>
     public bool TryPost(PipelineEventArgs args)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         if (_disposed)
         {
             _logger.LogWarning("Attempted to post to disposed subscriber channel {SubscriberName}", _subscriberName);
