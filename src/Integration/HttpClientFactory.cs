@@ -98,6 +98,8 @@ public sealed class PipelineHttpClientFactory
     /// </summary>
     public HttpClient CreateServiceClient(string serviceName, TimeSpan timeout, bool useCompression = true)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serviceName);
+
         if (_clients.TryGetValue(serviceName, out var cached))
         {
             return cached;
@@ -139,6 +141,8 @@ public sealed class PipelineHttpClientFactory
     /// </summary>
     public HttpClient GetOrCreateClient(string key, Action<HttpClient> configure)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
         if (_clients.TryGetValue(key, out var client))
         {
             return client;
@@ -156,6 +160,8 @@ public sealed class PipelineHttpClientFactory
     /// </summary>
     public void RemoveClient(string serviceName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serviceName);
+
         if (_clients.ContainsKey(serviceName))
         {
             var client = _clients[serviceName];
@@ -240,6 +246,7 @@ public sealed class HttpClientBuilder
     /// </summary>
     public HttpClientBuilder WithHeader(string name, string value)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
         _config.DefaultHeaders[name] = value;
         return this;
     }
