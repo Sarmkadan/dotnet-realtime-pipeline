@@ -69,6 +69,9 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// </summary>
     public async Task PostEventAsync(string eventName, PipelineEventArgs args)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(args);
+
         if (_disposed)
         {
             _logger.LogWarning("Attempted to post to disposed channel manager");
@@ -168,6 +171,8 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// </summary>
     public int GetTotalErrorCount(string eventName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+
         if (_channelsByEvent.TryGetValue(eventName, out var channels))
         {
             lock (channels)
@@ -188,6 +193,8 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// </summary>
     public int GetSubscriberCount(string eventName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+
         if (_channelsByEvent.TryGetValue(eventName, out var channels))
         {
             lock (channels)
