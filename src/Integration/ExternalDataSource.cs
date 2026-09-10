@@ -107,6 +107,9 @@ public sealed class DataSourceManager
     /// </summary>
     public void Register(string name, IExternalDataSource source, int priority = 0)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(source);
+
         _sources.Add(new DataSourceConnection
         {
             Name = name,
