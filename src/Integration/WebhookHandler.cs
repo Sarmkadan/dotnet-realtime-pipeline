@@ -37,6 +37,7 @@ public sealed class WebhookHandler
     /// </summary>
     public void Subscribe(string url, WebhookEventType eventTypes, string secret = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
         lock (_lockObject)
         {
             var subscription = new WebhookSubscription
@@ -59,6 +60,7 @@ public sealed class WebhookHandler
     /// </summary>
     public bool Unsubscribe(string url)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
         lock (_lockObject)
         {
             var removed = _subscriptions.RemoveAll(s => s.Url == url);
@@ -76,6 +78,7 @@ public sealed class WebhookHandler
     /// </summary>
     public async Task SendWebhookEventAsync(WebhookEventType eventType, object eventData)
     {
+        ArgumentNullException.ThrowIfNull(eventData);
         List<WebhookSubscription> activeSubscriptions;
 
         lock (_lockObject)
