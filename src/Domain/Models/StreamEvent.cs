@@ -123,6 +123,7 @@ public sealed class StreamEvent
     /// </summary>
     public bool HasBeenProcessedByStage(string stageName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(stageName);
         return ProcessedByStages.Contains(stageName);
     }
 
@@ -166,6 +167,7 @@ public sealed class StreamEvent
     /// </summary>
     public object? GetPayload(string key)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
         return Payload.TryGetValue(key, out var value) ? value : null;
     }
 
@@ -199,6 +201,7 @@ public sealed class StreamEvent
     /// </summary>
     public StreamEvent CreateChildEvent(long newEventId, string newEventType)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newEventType);
         var child = new StreamEvent(newEventId, DataPointId, Timestamp, newEventType)
         {
             SourceSystem = SourceSystem,
