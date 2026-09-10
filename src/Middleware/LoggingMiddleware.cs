@@ -31,6 +31,7 @@ public sealed class LoggingMiddleware
     /// </summary>
     public void LogDataIngestion(DataPoint dataPoint, string stage)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
         var correlationId = Guid.NewGuid().ToString("N").Substring(0, 8);
         _logger.LogInformation(
             "[{CorrelationId}] Data ingestion started - ID: {DataId}, Source: {Source}, Quality: {Quality}, Stage: {Stage}",
@@ -42,6 +43,7 @@ public sealed class LoggingMiddleware
     /// </summary>
     public void LogProcessingCompletion(ProcessingResult result, long elapsedMs)
     {
+        ArgumentNullException.ThrowIfNull(result);
         var status = result.Success ? "SUCCESS" : "FAILED";
         _logger.LogInformation(
             "Processing {Status} - ResultId: {Id}, Duration: {ElapsedMs}ms, Message: {Message}",
@@ -53,6 +55,7 @@ public sealed class LoggingMiddleware
     /// </summary>
     public void LogBackpressureEvent(string stageName, BackpressureContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var utilizationPercent = context.BufferSize * 100.0 / context.MaxBufferCapacity;
         _logger.LogWarning(
             "Backpressure triggered - Stage: {Stage}, Utilization: {Util:F1}%, IsBackpressured: {Backpressured}",
@@ -73,6 +76,7 @@ public sealed class LoggingMiddleware
     /// </summary>
     public void LogError(string operationName, Exception ex, string context)
     {
+        ArgumentNullException.ThrowIfNull(ex);
         _logger.LogError(ex,
             "Operation failed - Operation: {Operation}, Context: {Context}, Message: {Message}",
             operationName, context, ex.Message);
