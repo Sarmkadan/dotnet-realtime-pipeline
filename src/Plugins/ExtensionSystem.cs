@@ -213,6 +213,7 @@ public sealed class PluginRegistry
     /// </summary>
     public void RegisterConfiguration(PluginConfiguration config)
     {
+        ArgumentNullException.ThrowIfNull(config);
         _configurations[config.Name] = config;
         _logger.LogInformation("Plugin configuration registered: {Name} v{Version}", config.Name, config.Version);
     }
@@ -222,6 +223,7 @@ public sealed class PluginRegistry
     /// </summary>
     public PluginConfiguration GetConfiguration(string pluginName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginName);
         return _configurations.TryGetValue(pluginName, out var config) ? config : null;
     }
 
@@ -256,6 +258,8 @@ public sealed class LoggingPlugin : PipelinePluginBase, IDataProcessingPlugin
 
     public async Task<ProcessingResult> ProcessAsync(DataPoint dataPoint)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
+
         _logger.LogDebug("Processing data point: {Id} from {Source}", dataPoint.Id, dataPoint.Source);
 
         return await Task.FromResult(new ProcessingResult
@@ -286,6 +290,9 @@ public sealed class HookManager
     /// </summary>
     public void RegisterHook(string hookName, Delegate handler)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(hookName);
+        ArgumentNullException.ThrowIfNull(handler);
+
         if (!_hooks.ContainsKey(hookName))
         {
             _hooks[hookName] = new List<Delegate>();
@@ -300,6 +307,8 @@ public sealed class HookManager
     /// </summary>
     public async Task ExecuteHookAsync(string hookName, params object[] args)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(hookName);
+
         if (!_hooks.TryGetValue(hookName, out var handlers))
         {
             return;
