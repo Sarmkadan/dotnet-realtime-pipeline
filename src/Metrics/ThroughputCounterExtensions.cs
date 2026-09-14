@@ -76,4 +76,56 @@ public static class ThroughputCounterExtensions
         ArgumentNullException.ThrowIfNull(counter);
         return counter.GetThroughput() * 60;
     }
+
+    /// <summary>
+    /// Records a single event in the global throughput counter.
+    /// </summary>
+    /// <param name="counter">The <see cref="ThroughputCounter"/> instance.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="counter"/> is null.</exception>
+    public static void RecordEvent(this ThroughputCounter counter)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        counter.RecordEvents(1);
+    }
+
+    /// <summary>
+    /// Records a single event in the specified stage of the throughput counter.
+    /// </summary>
+    /// <param name="counter">The <see cref="ThroughputCounter"/> instance.</param>
+    /// <param name="stageName">The name of the stage.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="counter"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="stageName"/> is null or whitespace.</exception>
+    public static void RecordEvent(this ThroughputCounter counter, string stageName)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+        counter.RecordEvents(stageName, 1);
+    }
+
+    /// <summary>
+    /// Gets the throughput per minute for a specific stage.
+    /// </summary>
+    /// <param name="counter">The <see cref="ThroughputCounter"/> instance.</param>
+    /// <param name="stageName">The name of the stage.</param>
+    /// <returns>The throughput multiplied by 60 (events per minute) for the specified stage.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="counter"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="stageName"/> is null or whitespace.</exception>
+    public static double GetThroughputPerMinute(this ThroughputCounter counter, string stageName)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        ArgumentException.ThrowIfNullOrEmpty(stageName);
+        return counter.GetThroughput(stageName) * 60;
+    }
+
+    /// <summary>
+    /// Determines whether the throughput counter is idle (no events recorded).
+    /// </summary>
+    /// <param name="counter">The <see cref="ThroughputCounter"/> instance.</param>
+    /// <returns>true if the counter is idle; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="counter"/> is null.</exception>
+    public static bool IsIdle(this ThroughputCounter counter)
+    {
+        ArgumentNullException.ThrowIfNull(counter);
+        return counter.GetThroughput() == 0;
+    }
 }
