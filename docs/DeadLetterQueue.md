@@ -121,3 +121,10 @@ using (var dlq = new DeadLetterQueue())
 - `DequeueForRetryAsync` removes entries from the queue; if the operation fails after removal, those entries are lost unless the implementation retries internally (consult the specific provider’s documentation).
 - The acknowledgment methods (`AcknowledgeFailureAsync` and `AcknowledgeSuccessAsync`) assume they are called after a successful `DequeueForRetryAsync` for the same entry; calling them without a prior dequeue results in `InvalidOperationException`.
 - The `DeadLetterQueueStats` structure returned by `GetStatsAsync` includes at least `CurrentDepth` (number of entries stored) and `FailedCount` (cumulative number of entries that have been acknowledged as failed). Additional metrics may be present depending on the underlying storage.
+
+## See also
+- [DeadLetterEntry](DeadLetterEntry.md)
+- [DeadLetterQueueExtensions](DeadLetterQueueExtensions.md)
+- [DeadLetterQueueTests](DeadLetterQueueTests.md)
+- [IDeadLetterQueue](IDeadLetterQueue.md)
+- [RetryPolicy](RetryPolicy.md)
