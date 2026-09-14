@@ -290,8 +290,27 @@ public sealed class PipelineErrorEventArgs : PipelineEventArgs
 }
 
 // Event definitions
+/// <summary>
+/// Event-type marker for data ingested events.
+/// </summary>
 public sealed class DataIngestedEvent { }
+
+/// <summary>
+/// Event-type marker for processing completed events.
+/// </summary>
 public sealed class ProcessingCompletedEvent { }
+
+/// <summary>
+/// Event-type marker for backpressure detected events.
+/// </summary>
 public sealed class BackpressureDetectedEvent { }
+
+/// <summary>
+/// Event-type marker for metrics collected events.
+/// </summary>
 public sealed class MetricsCollectedEvent { }
+
+/// <summary>
+/// Event-type marker for pipeline error events.
+/// </summary>
 public sealed class PipelineErrorEvent { }
