@@ -104,7 +104,7 @@ window state) that must be shared across the whole pipeline.
 │ │ • GetBySource / Query     │  │ • GetAverageMetrics            ││
 │ │ • Delete / Clear          │  │ • Aggregation                  ││
 │ │                           │  │                                ││
-│ │ InMemoryDataPointRepo     │  │ InMemoryMetricsRepo            ││
+│ │ InMemoryDataPointRepository │  │ InMemoryMetricsRepo            ││
 │ │ └─ Thread-safe dict       │  │ └─ Rolling history             ││
 │ │    with locks             │  │    with size limits            ││
 │ └───────────────────────────┘  └────────────────────────────────┘│
@@ -137,24 +137,29 @@ User Code
             │   ├─ Buffer full → ApplyBackpressureAsync (Block, delay) and return false
             │   └─ Otherwise → enqueue into the in-memory ingestion queue, return true
             │
+
             └─ (returns immediately; processing is asynchronous)
 
 Background loop (ProcessingLoopAsync, started by StartAsync):
     │
     ├─ Dequeue up to 100 points per iteration (Task.Delay(100) when idle)
     │
+
     ├─> DataProcessingService.ProcessBatchAsync(batch)
     │   ├─ Validate each point (DataPoint.IsValid)
     │   ├─ Quality check against MinDataQualityThreshold
     │   └─ Persist accepted points via IDataPointRepository
     │
+
     ├─> MetricsService: record processing time + throughput per result
     │
+
     ├─> BackpressureService.TryAddToBuffer("Windowing", n)
     │   └─> WindowingService.ProcessDataPoints(points)
     │       └─ Assign to tumbling/sliding windows, emit closed windows
     │       (buffer is drained again after the hand-off)
     │
+
     └─> BackpressureService.RemoveFromBuffer("Ingestion", batch.Count)
 
 [Latency for a single point is dominated by the 100ms polling interval]
@@ -172,10 +177,12 @@ User Code (Query Request)
             │   ├─ Source
             │   └─ Quality threshold
             │
+
             ├─> IDataPointRepository.Query()
             │   ├─ Filter in-memory collection
             │   └─ Return matching points
             │
+
             └─> Return Results to User
 
 [Timeline: <1ms for typical queries (in-memory)]
@@ -190,15 +197,18 @@ Background Task (Periodic)
             │
             ├─ Get all data points in window
             │
+
             ├─ Calculate aggregations:
             │  ├─ Count, Sum, Average
             │  ├─ Min, Max, StdDev
             │  ├─ Percentiles (P50, P95, P99)
             │  └─ Trending
             │
+
             ├─> MetricsService.RecordMetric()
             │   └─ Store aggregation
             │
+
             └─> IMetricsRepository.AddAsync()
                 └─ Persist metrics
 
@@ -269,10 +279,10 @@ await Task.WhenAll(tasks);
 1. **Block Strategy** (Default)
    ```
    Incoming Data ──→ Is Buffer Full? ──→ YES ──→ Wait/Retry
-                        │
-                        NO
-                        ↓
-                      Accept
+                       │
+                       NO
+                       ↓
+                     Accept
    ```
    - Pauses ingestion until buffer drains
    - No data loss
@@ -282,7 +292,7 @@ await Task.WhenAll(tasks);
 2. **Throttle Strategy**
    ```
    Incoming Rate ──→ 100% ──→ 75% ──→ 50% ──→ Resume
-                    when buffer fills
+                   when buffer fills
    ```
    - Gradually reduces ingestion rate
    - Balanced loss vs. performance
@@ -292,10 +302,10 @@ await Task.WhenAll(tasks);
 3. **Drop Strategy**
    ```
    Incoming Data ──→ Is Buffer Full? ──→ YES ──→ Discard Oldest
-                        │
-                        NO
-                        ↓
-                      Accept
+                       │
+                       NO
+                       ↓
+                     Accept
    ```
    - Always accepts new data
    - Removes oldest items to make room
@@ -421,6 +431,14 @@ a typed async handler to a named event (`T : PipelineEventArgs`). Note that
 `PipelineEventPublisher` is **not** registered by `AddPipelineServices`; construct it
 yourself or add it to your service collection.
 
+### Dead Letter Retry Policy
+
+The pipeline implements a robust retry mechanism before routing failed items to the dead-letter queue. See [Retry Policy](RetryPolicy.md) for configuration details including backoff strategies, jitter, and exception classification. Failed items that exhaust retries are routed to the [Dead Letter Queue](DeadLetterQueue.md) for inspection, manual retry, or permanent discard.
+
+### Subscriber Channel Model
+
+Event delivery uses an isolated channel per subscriber to prevent slow handlers from blocking others. Each subscription gets its own bounded queue and consumer task. See [Subscriber Channel](SubscriberChannel.md) for details on queue policies, dispatch modes, and error handling, and [Subscriber Options](SubscriberOptions.md) for configuration.
+
 ## Monitoring and Observability
 
 ### Health Check Levels
@@ -456,7 +474,7 @@ Detects performance trends over time:
   implementation.
 - **No hosted endpoints.** Despite the Dockerfile exposing port 8080, the entry point is
   a console demo; the API/webhook/CLI classes must be hosted by consumer code.
-- **Best-effort shutdown.** `StopAsync` flips a flag and waits a fixed 500 ms; it does
+- **Best-effort shutdown.** `StopAsync` flips a flag and waits a fixed 5000 ms; it does
   not join the processing loop, so in-flight work past that window is abandoned and any
   points still in the ingestion queue are lost.
 - **Fire-and-forget processing loop.** `StartAsync` starts `ProcessingLoopAsync` with
