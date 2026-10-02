@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 /// Orchestrates the entire data processing pipeline.
 /// Coordinates multiple services and manages the flow of data through stages.
 /// </summary>
-public sealed class PipelineOrchestrator : IAsyncDisposable
+public class PipelineOrchestrator : IAsyncDisposable
 {
     private readonly DataProcessingService _processingService;
     private readonly WindowingService _windowingService;
@@ -172,7 +172,7 @@ public sealed class PipelineOrchestrator : IAsyncDisposable
     /// </summary>
     /// <param name="dataPoint">The data point to be ingested.</param>
     /// <returns>A task representing the asynchronous operation, returning true if accepted, false otherwise.</returns>
-    public async Task<bool> IngestDataPointAsync(DataPoint dataPoint)
+    public virtual async Task<bool> IngestDataPointAsync(DataPoint dataPoint)
     {
         if (dataPoint is null) throw new ArgumentNullException(nameof(dataPoint));
         if (!_isRunning) throw new InvalidOperationException("Pipeline is not running");
@@ -207,7 +207,7 @@ public sealed class PipelineOrchestrator : IAsyncDisposable
     /// </summary>
     /// <param name="dataPoints">The data points to ingest as a batch.</param>
     /// <returns>A <see cref="BatchProcessingResult"/> summarizing the outcome.</returns>
-    public async Task<BatchProcessingResult> ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)
+    public virtual async Task<BatchProcessingResult> ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)
     {
         if (dataPoints is null) throw new ArgumentNullException(nameof(dataPoints));
 
