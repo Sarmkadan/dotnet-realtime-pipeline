@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DotNetRealtimePipeline.API;
 using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Data.Repositories;
 using DotNetRealtimePipeline.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -23,14 +24,7 @@ public class ApiEndpointHandlerTests
     public ApiEndpointHandlerTests()
     {
         _mockLogger = new Mock<ILogger<DataIngestionHandler>>();
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         _handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
     }
@@ -41,14 +35,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestAsync_WithValidDataPoint_ReturnsSuccessResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
         mockOrchestrator.Setup(x => x.IngestDataPointAsync(It.IsAny<DataPoint>())).ReturnsAsync(true);
 
         var handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
@@ -70,14 +57,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestAsync_WithValidDataPoint_ReturnsFailureResponseWhenIngestionFails()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
         mockOrchestrator.Setup(x => x.IngestDataPointAsync(It.IsAny<DataPoint>())).ReturnsAsync(false);
 
         var handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
@@ -99,14 +79,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestAsync_WithNullDataPoint_ReturnsBadRequestResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
         DataPoint dataPoint = null!;
@@ -127,14 +100,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestAsync_WhenOrchestratorThrowsException_ReturnsErrorResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
         var exception = new InvalidOperationException("Pipeline is not running");
         mockOrchestrator.Setup(x => x.IngestDataPointAsync(It.IsAny<DataPoint>())).ThrowsAsync(exception);
 
@@ -157,14 +123,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WithValidBatch_ReturnsSuccessResponseWithBatchResults()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var dataPoints = new List<DataPoint>
         {
@@ -197,14 +156,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WithEmptyList_ReturnsBadRequestResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
         var dataPoints = new List<DataPoint>();
@@ -225,14 +177,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WithNullList_ReturnsBadRequestResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var handler = new DataIngestionHandler(mockOrchestrator.Object, _mockLogger.Object);
         List<DataPoint> dataPoints = null!;
@@ -253,14 +198,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WhenOrchestratorThrowsException_ReturnsErrorResponse()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var dataPoints = new List<DataPoint>
         {
@@ -288,14 +226,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WithSingleDataPoint_ReturnsCorrectCounts()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var dataPoints = new List<DataPoint>
         {
@@ -323,14 +254,7 @@ public class ApiEndpointHandlerTests
     public async Task IngestBatchAsync_WithAllFailing_ReturnsCorrectFailureCounts()
     {
         // Arrange
-        var mockOrchestrator = new Mock<PipelineOrchestrator>(
-            Mock.Of<DataProcessingService>(),
-            Mock.Of<WindowingService>(),
-            Mock.Of<MetricsService>(),
-            Mock.Of<BackpressureService>(),
-            Mock.Of<QueryService>(),
-            new PipelineConfig()
-        );
+        var mockOrchestrator = CreateMockOrchestrator();
 
         var dataPoints = new List<DataPoint>
         {
@@ -447,4 +371,19 @@ public class ApiEndpointHandlerTests
     }
 
     #endregion
+
+    private static Mock<PipelineOrchestrator> CreateMockOrchestrator()
+    {
+        var config = new PipelineConfig();
+        var mockRepo = Mock.Of<IDataPointRepository>();
+        var mockMetricsRepo = Mock.Of<IMetricsRepository>();
+        return new Mock<PipelineOrchestrator>(
+            new Mock<DataProcessingService>(mockRepo, config).Object,
+            new Mock<WindowingService>(config).Object,
+            new Mock<MetricsService>(mockMetricsRepo, null).Object,
+            new Mock<BackpressureService>().Object,
+            new Mock<QueryService>(mockRepo, mockMetricsRepo).Object,
+            config
+        );
+    }
 }
