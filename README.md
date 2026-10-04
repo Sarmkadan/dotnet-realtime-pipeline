@@ -435,3 +435,48 @@ HealthReport health = await pipeline.GetHealthReportAsync();
 PerformanceTrend trend = await pipeline.GetPerformanceTrendAsync();
 DrainResult drain = await pipeline.DrainAsync(TimeSpan.FromSeconds(10));
 ```
+
+## Checkpointing and recovery
+
+The `CheckpointManager` service allows a pipeline to record processing offsets so that after a restart it can resume from the last committed position rather than reprocessing from the beginning.
+
+### Configuration
+
+Create a `CheckpointManager` instance, optionally specifying a persistence path for durable storage (e.g., a file). If no path is provided, checkpoints are kept in-memory only and will be lost on process exit.
+
+```csharp
+using DotNetRealtimePipeline.Services;
+
+// Persist checkpoints to a file in the current directory.
+var checkpointManager = new CheckpointManager("checkpoints.json");
+
+// On startup, load any previously persisted checkpoints.
+await checkpointManager.LoadAsync();
+```
+
+### Usage in a pipeline stage
+
+Within each pipeline stage, after successfully processing a batch or a single data point, commit the offset (e.g., the sequence number or timestamp) to the checkpoint manager.
+
+```csharp
+// Example: committing after processing a data point.
+long lastProcessedOffset = dataPoint.Timestamp; // or any monotonic offset
+await checkpointManager.CommitAsync("enrichment", lastProcessedOffset, cancellationToken);
+```
+
+### Resuming after restart
+
+When the pipeline starts again, load the persisted checkpoints and use `GetLastOffset` (or `GetCheckpoint`) to determine where to resume for each stage.
+
+```csharp
+// After LoadAsync as shown above:
+long enrichmentOffset = checkpointManager.GetLastOffset("enrichment");
+// If the offset is -1, no checkpoint exists; start from the beginning.
+// Otherwise, begin processing from the next offset after enrichmentOffset.
+```
+
+### Delivery guarantees
+
+The checkpoint manager itself provides an **at-least-once** delivery guarantee when used in the typical pattern of committing after successful processing. If the process crashes after a data point is processed but before its offset is checkpointed, that data point will be reprocessed after restart. Conversely, because offsets are only advanced after successful processing, no data point is skipped, guaranteeing at-least-once processing.
+
+Exactly-once processing is not automatically provided; it requires that the processing side effects be idempotent or that transactions span both the processing and checkpoint commitment. The `CheckpointManager` does not coordinate with external systems to achieve exactly-once semantics.
