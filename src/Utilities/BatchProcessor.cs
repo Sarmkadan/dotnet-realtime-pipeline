@@ -144,6 +144,7 @@ public sealed class BatchProcessingProgress
     {
         return $"Progress: {ProgressPercent:F1}% ({ProcessedBatches}/{TotalBatches} batches), " +
                $"Items: {ProcessedItems}/{TotalItems}, " +
+               $"Elapsed: {ElapsedTime:hh\\:mm\\:ss}, " +
                $"Speed: {ItemsPerSecond:F0} items/sec, " +
                $"ETA: {EstimatedTimeRemaining:hh\\:mm\\:ss}";
     }
