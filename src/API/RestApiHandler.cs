@@ -175,6 +175,14 @@ public sealed class BatchIngestResult
     /// Gets or sets the total number of data points in the batch.
     /// </summary>
     public int TotalCount { get; set; }
+
+    /// <summary>
+    /// Returns a string summarizing the batch ingest result.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"BatchIngestResult {{ Total={TotalCount}, Successful={SuccessfulCount}, Failed={FailedCount} }}";
+    }
 }
 
 /// <summary>
@@ -287,6 +295,14 @@ public sealed class PipelineStatusInfo
     /// Gets or sets the average processing latency in milliseconds.
     /// </summary>
     public double AverageLatency { get; set; }
+
+    /// <summary>
+    /// Returns a string summarizing the pipeline status.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"PipelineStatusInfo {{ Name={PipelineName}, Version={Version}, Running={IsRunning}, Processed={TotalProcessed}, Failed={TotalFailed}, Pending={Pending}, Health={HealthStatus}, Throughput={Throughput:F1}/s, SuccessRate={SuccessRate:F1}%, AvgLatency={AverageLatency:F1}ms }}";
+    }
 }
 
 /// <summary>
@@ -401,5 +417,13 @@ public sealed class ApiErrorResponse
     public static ApiErrorResponse TooManyRequests(string message)
     {
         return new ApiErrorResponse { StatusCode = 429, Message = message, ErrorCode = "RATE_LIMIT" };
+    }
+
+    /// <summary>
+    /// Returns a string summarizing the error response.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"ApiErrorResponse {{ StatusCode={StatusCode}, ErrorCode={ErrorCode}, Message={Message} }}";
     }
 }
