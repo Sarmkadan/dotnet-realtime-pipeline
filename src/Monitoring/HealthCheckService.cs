@@ -22,6 +22,11 @@ public sealed class HealthCheckService
     private readonly ILogger<HealthCheckService> _logger;
     private readonly List<HealthCheckComponent> _components = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HealthCheckService"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator to monitor.</param>
+    /// <param name="logger">The logger instance for diagnostic output.</param>
     public HealthCheckService(PipelineOrchestrator orchestrator, ILogger<HealthCheckService> logger)
     {
         _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
@@ -168,9 +173,16 @@ public sealed class HealthCheckService
 /// </summary>
 public sealed class ComponentHealth
 {
+    /// <summary>Gets or sets a value indicating whether the component is healthy.</summary>
     public bool IsHealthy { get; set; }
+
+    /// <summary>Gets or sets a human-readable status message.</summary>
     public string Message { get; set; }
+
+    /// <summary>Gets or sets the UTC timestamp when the health check was performed.</summary>
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Gets or sets additional diagnostic details as key-value pairs.</summary>
     public Dictionary<string, object> Details { get; set; } = new();
 }
 
@@ -201,11 +213,22 @@ public enum SystemHealth
 /// </summary>
 public sealed class SystemHealthReport
 {
+    /// <summary>Gets or sets the UTC timestamp when the report was generated.</summary>
     public DateTime CheckedAt { get; set; }
+
+    /// <summary>Gets or sets the overall system health status.</summary>
     public SystemHealth OverallStatus { get; set; }
+
+    /// <summary>Gets or sets the per-component health results keyed by component name.</summary>
     public Dictionary<string, ComponentHealth> Components { get; set; }
+
+    /// <summary>Gets or sets the current pipeline status description.</summary>
     public string PipelineStatus { get; set; }
+
+    /// <summary>Gets or sets the current pipeline throughput in items per second.</summary>
     public double Throughput { get; set; }
+
+    /// <summary>Gets or sets the pipeline success rate as a percentage.</summary>
     public double SuccessRate { get; set; }
 }
 
@@ -214,10 +237,19 @@ public sealed class SystemHealthReport
 /// </summary>
 public sealed class QuickHealthStatus
 {
+    /// <summary>Gets or sets a value indicating whether the pipeline is currently running.</summary>
     public bool IsRunning { get; set; }
+
+    /// <summary>Gets or sets the overall health status label.</summary>
     public string HealthStatus { get; set; }
+
+    /// <summary>Gets or sets the number of items pending in the pipeline queue.</summary>
     public int PendingItems { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether throughput is above the minimum threshold.</summary>
     public bool ThroughputOk { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the error rate is within acceptable limits.</summary>
     public bool ErrorRateAcceptable { get; set; }
 }
 
@@ -236,6 +268,10 @@ public sealed class ResourceMonitor
 {
     private readonly ILogger<ResourceMonitor> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ResourceMonitor"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for diagnostic output.</param>
     public ResourceMonitor(ILogger<ResourceMonitor> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -287,9 +323,18 @@ public sealed class ResourceMonitor
 /// </summary>
 public sealed class ResourceUsage
 {
+    /// <summary>Gets or sets the working-set memory usage in megabytes.</summary>
     public double MemoryMB { get; set; }
+
+    /// <summary>Gets or sets the current thread count of the process.</summary>
     public int ThreadCount { get; set; }
+
+    /// <summary>Gets or sets the CPU usage as a percentage.</summary>
     public double CpuUsagePercent { get; set; }
+
+    /// <summary>Gets or sets the private memory usage in megabytes.</summary>
     public double PrivateMemoryMB { get; set; }
+
+    /// <summary>Gets or sets the UTC timestamp when the resource snapshot was taken.</summary>
     public DateTime CheckedAt { get; set; }
 }
