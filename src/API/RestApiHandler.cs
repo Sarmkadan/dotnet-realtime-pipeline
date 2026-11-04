@@ -77,6 +77,11 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataIngestionHandler"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator that receives ingested data points.</param>
+    /// <param name="logger">The logger used to record ingestion errors.</param>
     public DataIngestionHandler(PipelineOrchestrator orchestrator, ILogger<DataIngestionHandler> logger)
         : base(logger)
     {
@@ -171,6 +176,9 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
     }
 }
 
+/// <summary>
+/// Result of a batch data ingestion request.
+/// </summary>
 public sealed class BatchIngestResult
 {
     /// <summary>
@@ -204,6 +212,11 @@ public sealed class StatusHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StatusHandler"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator whose status is reported.</param>
+    /// <param name="logger">The logger used to record status retrieval errors.</param>
     public StatusHandler(PipelineOrchestrator orchestrator, ILogger<StatusHandler> logger)
         : base(logger)
     {
@@ -256,6 +269,9 @@ public sealed class StatusHandler : ApiEndpointHandler
     }
 }
 
+/// <summary>
+/// Pipeline status information returned by the status endpoint.
+/// </summary>
 public sealed class PipelineStatusInfo
 {
     /// <summary>
@@ -324,6 +340,11 @@ public sealed class QueryHandler : ApiEndpointHandler
 {
     private readonly PipelineOrchestrator _orchestrator;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueryHandler"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator that provides the query service.</param>
+    /// <param name="logger">The logger used to record query errors.</param>
     public QueryHandler(PipelineOrchestrator orchestrator, ILogger<QueryHandler> logger)
         : base(logger)
     {
