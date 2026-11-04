@@ -22,6 +22,9 @@ using System.Threading.Tasks;
 /// </summary>
 public class PipelineOrchestrator : IAsyncDisposable
 {
+    private const int DrainBatchSize = 100;
+    private const int IdlePollDelayMs = 100;
+
     private readonly DataProcessingService _processingService;
     private readonly WindowingService _windowingService;
     private readonly MetricsService _metricsService;
@@ -285,7 +288,7 @@ public class PipelineOrchestrator : IAsyncDisposable
     {
         var processingTimer = new Stopwatch();
         List<DataPoint> batch = new();
-        int batchSize = 100;
+        int batchSize = DrainBatchSize;
 
         while (_isRunning || _drainRequested)
         {
@@ -306,7 +309,7 @@ public class PipelineOrchestrator : IAsyncDisposable
                     // nothing left to process - exit deterministically instead of idling.
                     if (_drainRequested) break;
 
-                    await Task.Delay(100);
+                    await Task.Delay(IdlePollDelayMs);
                     continue;
                 }
 
@@ -419,7 +422,7 @@ public class PipelineOrchestrator : IAsyncDisposable
             {
                 // Log error and continue
                 System.Diagnostics.Debug.WriteLine($"Processing loop error: {ex.Message}");
-                await Task.Delay(100);
+                await Task.Delay(IdlePollDelayMs);
             }
         }
 
