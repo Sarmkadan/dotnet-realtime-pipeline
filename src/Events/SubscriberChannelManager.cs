@@ -22,6 +22,11 @@ internal sealed class SubscriberChannelManager : IDisposable
     private readonly SubscriberOptions _defaultOptions;
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SubscriberChannelManager"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for diagnostic logging.</param>
+    /// <param name="defaultOptions">Optional default options for subscribers.</param>
     public SubscriberChannelManager(ILogger logger, SubscriberOptions? defaultOptions = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,6 +36,10 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// <summary>
     /// Registers a subscriber handler with per-subscriber isolation.
     /// </summary>
+    /// <typeparam name="T">The type of event arguments, derived from <see cref="PipelineEventArgs"/>.</typeparam>
+    /// <param name="eventName">The name of the event to subscribe to.</param>
+    /// <param name="handler">The async handler to invoke when the event is posted.</param>
+    /// <param name="options">Optional subscriber-specific options.</param>
     public void RegisterSubscriber<T>(string eventName, Func<T, Task> handler, SubscriberOptions? options = null) where T : PipelineEventArgs
     {
         if (string.IsNullOrWhiteSpace(eventName))
@@ -67,6 +76,9 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// Posts an event to all registered subscriber channels for the given event name.
     /// Each subscriber processes events independently with its own error handling.
     /// </summary>
+    /// <param name="eventName">The name of the event to post.</param>
+    /// <param name="args">The event arguments to pass to subscribers.</param>
+    /// <returns>A task representing the asynchronous post operation.</returns>
     public async Task PostEventAsync(string eventName, PipelineEventArgs args)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
@@ -138,6 +150,7 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// <summary>
     /// Stops all registered subscriber channels gracefully.
     /// </summary>
+    /// <returns>A task representing the asynchronous stop operation.</returns>
     public async Task StopAllAsync()
     {
         if (_disposed)
@@ -169,6 +182,8 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// <summary>
     /// Gets the total error count across all subscriber channels for an event.
     /// </summary>
+    /// <param name="eventName">The name of the event.</param>
+    /// <returns>The total error count across all subscriber channels for the event.</returns>
     public int GetTotalErrorCount(string eventName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
@@ -191,6 +206,8 @@ internal sealed class SubscriberChannelManager : IDisposable
     /// <summary>
     /// Gets the number of registered subscriber channels.
     /// </summary>
+    /// <param name="eventName">The name of the event.</param>
+    /// <returns>The number of registered subscriber channels for the event.</returns>
     public int GetSubscriberCount(string eventName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
@@ -205,6 +222,10 @@ internal sealed class SubscriberChannelManager : IDisposable
         return 0;
     }
 
+    /// <summary>
+    /// Asynchronously disposes the channel manager and all registered subscriber channels.
+    /// </summary>
+    /// <returns>A value task representing the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
         if (_disposed)
@@ -238,6 +259,9 @@ internal sealed class SubscriberChannelManager : IDisposable
         _disposed = true;
     }
 
+    /// <summary>
+    /// Disposes the channel manager and all registered subscriber channels.
+    /// </summary>
     public void Dispose()
     {
         DisposeAsync().GetAwaiter().GetResult();
