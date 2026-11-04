@@ -455,6 +455,53 @@ string json = await OutputFormatterFactory.Create(OutputFormat.Json).FormatAsync
 IOutputFormatter fallback = OutputFormatterFactory.Create((OutputFormat)99);
 ```
 
+## Metrics Exporters
+
+`src/Integration/MetricsExporter.cs` contains the exporters that send `MetricAggregation` results to other systems. Every exporter implements `IMetricsExporter`, which has two methods: `ExportAsync(MetricAggregation)` for one aggregation and `ExportBatchAsync(List<MetricAggregation>)` for several.
+
+- `PrometheusMetricsExporter` formats each aggregation as Prometheus text lines (`pipeline_average_processing_time_ms`, `pipeline_total_items_processed_total`, `pipeline_failed_items_total`, `pipeline_skipped_items_total`, `pipeline_backpressure_events_total`, `pipeline_total_backpressure_ms`), each with the aggregation's `ComputedAt` as a Unix millisecond timestamp. In the current code, it builds those lines, logs how many there are at `Debug` level, and returns. It does not write them to a file or an endpoint, so use it only if you add that step yourself.
+- `HttpMetricsExporter` POSTs JSON to a fixed endpoint with the `HttpClient` you pass in. `ExportAsync` sends one JSON object, and `ExportBatchAsync` sends a JSON array. A success logs at `Debug` or `Information`, and a non-success status logs a `Warning`. Exceptions (such as network failures) are logged as errors and are not rethrown, so a failed export does not stop the caller. The exporter does not dispose the `HttpClient`.
+- `CompositeMetricsExporter` fans each call out to every exporter added with `AddExporter(IMetricsExporter)`, and runs them concurrently. If one exporter's task faults, the failure is logged as `Exporter failed` and the other exporters still run. `AddExporter` null-checks its argument and adds to a plain `List`, so register all exporters during setup, before the composite is used from several threads. A custom exporter that throws synchronously, before it returns a task, is not caught by the composite and propagates to the caller.
+- `MetricsExporterFactory` creates the exporters with their dependencies:
+  - `CreatePrometheus(logger)` returns a `PrometheusMetricsExporter` as `IMetricsExporter`.
+  - `CreateHttp(endpoint, client, logger)` returns an `HttpMetricsExporter` as `IMetricsExporter`. A `null` endpoint throws `ArgumentNullException`, and a whitespace endpoint throws `ArgumentException`. A `null` client also throws `ArgumentNullException`.
+  - `CreateComposite(logger)` returns a `CompositeMetricsExporter` (not the interface), so you can call `AddExporter` without a cast.
+
+Use the composite when one set of metrics should go to several destinations. Each exporter is added once, and the caller then makes one call:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Integration;
+
+// Shared, long-lived HttpClient; the exporter does not dispose it.
+HttpClient httpClient = httpClientFactory.CreateClient("metrics");
+
+CompositeMetricsExporter composite = MetricsExporterFactory.CreateComposite(
+    loggerFactory.CreateLogger<CompositeMetricsExporter>());
+
+composite.AddExporter(MetricsExporterFactory.CreatePrometheus(
+    loggerFactory.CreateLogger<PrometheusMetricsExporter>()));
+
+composite.AddExporter(MetricsExporterFactory.CreateHttp(
+    "https://metrics.example.com/ingest",
+    httpClient,
+    loggerFactory.CreateLogger<HttpMetricsExporter>()));
+
+var aggregation = new MetricAggregation(metricId: 1, startMs: 0, endMs: 60_000, metricType: "throughput")
+{
+    TotalItemsProcessed = 1200,
+    TotalItemsFailed = 3,
+    AverageProcessingTimeMs = 4.7,
+    ComputedAt = DateTime.UtcNow
+};
+
+// Sends the aggregation to both exporters; each one logs its own failures.
+await composite.ExportAsync(aggregation);
+
+// Batch form: the HTTP exporter posts the whole list as one JSON array.
+await composite.ExportBatchAsync(new List<MetricAggregation> { aggregation });
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
