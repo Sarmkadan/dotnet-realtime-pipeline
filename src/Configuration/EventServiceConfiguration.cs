@@ -9,8 +9,18 @@
 /// </summary>
 public sealed class WorkerOptions
 {
-    public int MetricsAggregationIntervalMs { get; set; } = 5000;
-    public int HealthCheckIntervalMs { get; set; } = 10000;
+    /// <summary>
+    /// Default interval, in milliseconds, between metrics aggregation passes.
+    /// </summary>
+    public const int DefaultMetricsAggregationIntervalMs = 5000;
+
+    /// <summary>
+    /// Default interval, in milliseconds, between health check passes.
+    /// </summary>
+    public const int DefaultHealthCheckIntervalMs = 10000;
+
+    public int MetricsAggregationIntervalMs { get; set; } = DefaultMetricsAggregationIntervalMs;
+    public int HealthCheckIntervalMs { get; set; } = DefaultHealthCheckIntervalMs;
     public bool EnableProcessingWorker { get; set; } = true;
     public bool EnableMetricsWorker { get; set; } = true;
     public bool EnableHealthCheckWorker { get; set; } = true;
