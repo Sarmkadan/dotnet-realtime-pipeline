@@ -157,4 +157,14 @@ public sealed class SubscriberDeadLetterEntry
         SubscriberName = subscriberName ?? throw new ArgumentNullException(nameof(subscriberName));
         Exception = exception;
     }
+
+    /// <summary>
+    /// Returns a string representation of the dead-letter entry.
+    /// </summary>
+    /// <returns>A string containing the dead-letter entry details.</returns>
+    public override string ToString()
+    {
+        var exceptionMessage = Exception?.Message ?? "<no exception>";
+        return $"EventName: {EventName}, SerializedEventArgs: {SerializedEventArgs}, SubscriberName: {SubscriberName}, Timestamp: {Timestamp}, Exception: {exceptionMessage}";
+    }
 }
