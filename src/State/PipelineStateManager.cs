@@ -210,6 +210,8 @@ public sealed class StateTransition
     /// Gets or sets the reason for the transition.
     /// </summary>
     public string Reason { get; set; }
+
+    public override string ToString() => $"StateTransition {{ FromState = {FromState}, ToState = {ToState}, Timestamp = {Timestamp}, Reason = {Reason} }}";
 }
 
 internal sealed class StateChangeListener
@@ -398,4 +400,6 @@ public sealed class OperationMetrics
     /// Gets the success rate of the operation as a percentage.
     /// </summary>
     public double SuccessRate => TotalExecutions > 0 ? (SuccessfulExecutions * 100.0) / TotalExecutions : 0;
+
+    public override string ToString() => $"OperationMetrics {{ TotalExecutions = {TotalExecutions}, SuccessfulExecutions = {SuccessfulExecutions}, FailedExecutions = {FailedExecutions}, TotalDurationMs = {TotalDurationMs}, MinDurationMs = {MinDurationMs}, MaxDurationMs = {MaxDurationMs}, AverageDurationMs = {AverageDurationMs}, SuccessRate = {SuccessRate} }}";
 }
