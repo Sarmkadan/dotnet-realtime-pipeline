@@ -59,6 +59,11 @@ public sealed class PipelineHttpClientFactory
         ["Accept"] = "application/json"
     };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineHttpClientFactory"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to record client creation, removal and clearing. Must not be <c>null</c>.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="logger"/> is <c>null</c>.</exception>
     public PipelineHttpClientFactory(ILogger<PipelineHttpClientFactory> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -197,6 +202,41 @@ public sealed class HttpClientConfiguration
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>
+    /// Gets or sets the request timeout. Defaults to <see cref="DefaultTimeout"/> (30 seconds).
+    /// </summary>
+    public TimeSpan Timeout { get; set; } = DefaultTimeout;
+
+    /// <summary>
+    /// Gets or sets the maximum number of retry attempts for failed requests. Defaults to <see cref="DefaultMaxRetries"/> (3).
+    /// </summary>
+    public int MaxRetries { get; set; } = DefaultMaxRetries;
+
+    /// <summary>
+    /// Gets or sets the delay between retry attempts. Defaults to <see cref="DefaultRetryDelay"/> (1 second).
+    /// </summary>
+    public TimeSpan RetryDelay { get; set; } = DefaultRetryDelay;
+
+    /// <summary>
+    /// Gets or sets the maximum number of connections per host. Defaults to <see cref="DefaultMaxConnectionsPerHost"/> (10).
+    /// </summary>
+    public int MaxConnectionsPerHost { get; set; } = DefaultMaxConnectionsPerHost;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether GZip and Deflate compression is enabled. Defaults to <c>true</c>.
+    /// </summary>
+    public bool UseCompression { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the user agent string sent with requests. Defaults to <see cref="DefaultUserAgent"/> (<c>DotNetRealtimePipeline/1.0</c>).
+    /// </summary>
+    public string UserAgent { get; set; } = DefaultUserAgent;
+
+    /// <summary>
+    /// Gets or sets the headers added to every request. Defaults to an empty dictionary.
+    /// </summary>
+    public Dictionary<string, string> DefaultHeaders { get; set; } = new();
+
+    /// <summary>
     /// Default maximum number of retry attempts for failed requests.
     /// </summary>
     public const int DefaultMaxRetries = 3;
@@ -216,14 +256,6 @@ public sealed class HttpClientConfiguration
     /// </summary>
     public const string DefaultUserAgent = "DotNetRealtimePipeline/1.0";
 
-    public TimeSpan Timeout { get; set; } = DefaultTimeout;
-    public int MaxRetries { get; set; } = DefaultMaxRetries;
-    public TimeSpan RetryDelay { get; set; } = DefaultRetryDelay;
-    public int MaxConnectionsPerHost { get; set; } = DefaultMaxConnectionsPerHost;
-    public bool UseCompression { get; set; } = true;
-    public string UserAgent { get; set; } = DefaultUserAgent;
-    public Dictionary<string, string> DefaultHeaders { get; set; } = new();
-
     /// <summary>
     /// Returns a string representation of the configuration.
     /// </summary>
@@ -239,6 +271,11 @@ public sealed class HttpClientBuilder
     private readonly HttpClientConfiguration _config = new();
     private readonly ILogger<HttpClientBuilder> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HttpClientBuilder"/> class with default configuration.
+    /// </summary>
+    /// <param name="logger">Logger used to record client construction. Must not be <c>null</c>.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="logger"/> is <c>null</c>.</exception>
     public HttpClientBuilder(ILogger<HttpClientBuilder> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
