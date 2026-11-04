@@ -1249,6 +1249,117 @@ if (batch is not null)
 
 The example was not compiled or run against the repository. Check the exact names and namespaces before relying on it.
 
+## REST API Handlers
+
+The handler types are in `src/API/RestApiHandler.cs` (namespace `DotNetRealtimePipeline.API`). `ApiEndpointHandlerExtensions.cs` in the same folder adds helper methods for `ApiEndpointHandler`; this section does not cover them. The handlers are not registered in `ServiceCollectionExtensions`, so create them yourself with a `PipelineOrchestrator` and an `ILogger<T>`.
+
+The file contains these types:
+
+- `ApiEndpointHandler` is an abstract base class. Its constructor takes an `ILogger` and throws `ArgumentNullException` when it is `null`. It also holds the status code constants (`StatusOk` 200, `StatusBadRequest` 400, `StatusTooManyRequests` 429, `StatusInternalServerError` 500) and the nested generic `ApiEndpointHandler.ApiResponse<T>`.
+- `DataIngestionHandler` (sealed) has `IngestAsync(DataPoint)` and `IngestBatchAsync(List<DataPoint>)`. It returns `ApiResponse<bool>` and `ApiResponse<BatchIngestResult>`.
+- `BatchIngestResult` (sealed) has `SuccessfulCount`, `FailedCount`, and `TotalCount`.
+- `StatusHandler` (sealed) has `GetStatusAsync()`. It returns `ApiResponse<PipelineStatusInfo>`.
+- `PipelineStatusInfo` (sealed) is the payload for the status endpoint.
+- `QueryHandler` (sealed) has `QueryAsync(long startMs, long endMs, string source = "", int minQuality = 0)`. It returns `ApiResponse<List<DataPoint>>`.
+- `ApiErrorResponse` (sealed) is a separate error type with static factory methods. The handlers above do not return it.
+
+### ApiEndpointHandler.ApiResponse<T>
+
+Every handler method returns an `ApiResponse<T>` with these properties:
+
+- `Success` is `true` for a successful request.
+- `Data` holds the payload. It is `default` when the request fails.
+- `Message` is a human-readable description.
+- `StatusCode` is the HTTP status code the caller should use.
+- `Timestamp` is set to `DateTime.UtcNow` when the object is created.
+
+Handler methods do not throw. Each one catches exceptions, logs them, and returns a 500 response whose `Message` is the exception message.
+
+### DataIngestionHandler
+
+`IngestAsync(DataPoint dataPoint)`:
+
+- A `null` data point returns 400 with `Message` "Data point is null".
+- Otherwise it calls `PipelineOrchestrator.IngestDataPointAsync`. A `true` result returns 200 with `Data` set to `true`. A `false` result returns 429 with `Data` set to `false`, because the pipeline applied backpressure.
+
+`IngestBatchAsync(List<DataPoint> dataPoints)`:
+
+- A `null` or empty list returns 400 with `Message` "Data points list is empty".
+- Otherwise it calls `PipelineOrchestrator.ProcessBatchDataPointsAsync` and returns 200 with a `BatchIngestResult`. `Success` is `true` even when `FailedCount` is greater than 0. Check `Data.FailedCount` to see whether any items failed.
+- `TotalCount` is `dataPoints.Count`, the size of the input list.
+
+`BatchIngestResult.ToString()` returns `BatchIngestResult { Total=..., Successful=..., Failed=... }`.
+
+### StatusHandler
+
+`GetStatusAsync()` reads `PipelineOrchestrator.GetStatus()` and then `GetHealthReportAsync()`. It returns 200 with a `PipelineStatusInfo`. The health report may be `null`. In that case `HealthStatus` is `null`, and `Throughput`, `SuccessRate`, and `AverageLatency` are `0`.
+
+`PipelineStatusInfo` has these properties:
+
+| Property | Type | Source |
+|----------|------|--------|
+| `PipelineName` | `string` | configuration name |
+| `Version` | `string` | configuration version |
+| `IsRunning` | `bool` | pipeline status |
+| `TotalProcessed` | `long` | processed data point count |
+| `TotalFailed` | `long` | failed data point count |
+| `Pending` | `int` | items waiting in the queue |
+| `HealthStatus` | `string` | health status name |
+| `Throughput` | `double` | items per second |
+| `SuccessRate` | `double` | percentage |
+| `AverageLatency` | `double` | milliseconds |
+
+### QueryHandler
+
+`QueryAsync` gets the query service from `PipelineOrchestrator.GetQueryService()` and calls `SearchDataPointsAsync(startMs, endMs, source, minQuality)`. It returns 200 with the matching `DataPoint` list, and `Message` reports the number of results. The handler does not check the time range or the other arguments. It passes them through unchanged.
+
+### ApiErrorResponse
+
+`ApiErrorResponse` has `StatusCode`, `Message`, `ErrorCode`, and `Timestamp`. Each static factory method sets a fixed status code and error code:
+
+| Factory method | StatusCode | ErrorCode |
+|----------------|------------|-----------|
+| `BadRequest(string message)` | 400 | `BAD_REQUEST` |
+| `NotFound(string message)` | 404 | `NOT_FOUND` |
+| `InternalError(string message)` | 500 | `INTERNAL_ERROR` |
+| `TooManyRequests(string message)` | 429 | `RATE_LIMIT` |
+
+The rate-limit factory is named `TooManyRequests`, not `RateLimited`. Its error code is `RATE_LIMIT`.
+
+`ToString()` returns `ApiErrorResponse { StatusCode=..., ErrorCode=..., Message=... }`.
+
+### Example
+
+```csharp
+using DotNetRealtimePipeline.API;
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.Logging;
+
+// orchestrator is a PipelineOrchestrator resolved from your service provider.
+var ingestion = new DataIngestionHandler(orchestrator, loggerFactory.CreateLogger<DataIngestionHandler>());
+var status = new StatusHandler(orchestrator, loggerFactory.CreateLogger<StatusHandler>());
+
+var batch = await ingestion.IngestBatchAsync(new List<DataPoint> { point1, point2 });
+Console.WriteLine($"{batch.StatusCode}: {batch.Message}");  // 200: Batch processed: 2 successful, 0 failed
+if (batch.Data is not null)
+{
+    Console.WriteLine(batch.Data);                            // BatchIngestResult { Total=2, Successful=2, Failed=0 }
+}
+
+var empty = await ingestion.IngestBatchAsync(new List<DataPoint>());
+Console.WriteLine($"{empty.StatusCode}: {empty.Message}");   // 400: Data points list is empty
+
+var snapshot = await status.GetStatusAsync();
+Console.WriteLine($"{snapshot.StatusCode}: {snapshot.Data?.PipelineName}");
+
+ApiErrorResponse error = ApiErrorResponse.NotFound("Unknown pipeline");
+Console.WriteLine(error);
+// Output: ApiErrorResponse { StatusCode=404, ErrorCode=NOT_FOUND, Message=Unknown pipeline }
+```
+
+The example was not compiled or run against the repository. The sample output for the batch call assumes both data points are ingested successfully. Check the exact names and namespaces before relying on it.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
