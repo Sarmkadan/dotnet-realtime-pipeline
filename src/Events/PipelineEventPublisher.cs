@@ -23,6 +23,11 @@ public sealed class PipelineEventPublisher : IDisposable
     private readonly ILogger<PipelineEventPublisher> _logger;
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineEventPublisher"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for diagnostic logging.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="logger"/> is null.</exception>
     public PipelineEventPublisher(ILogger<PipelineEventPublisher> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -226,6 +231,9 @@ public sealed class PipelineEventPublisher : IDisposable
         return _channelManager.GetSubscriberCount(eventName);
     }
 
+    /// <summary>
+    /// Releases all resources used by the <see cref="PipelineEventPublisher"/>.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)
@@ -246,7 +254,14 @@ public abstract class PipelineEventArgs
     private const int CorrelationIdLength = 8;
     private const string CorrelationIdFormat = "N";
 
+    /// <summary>
+    /// Gets or sets the timestamp when the event occurred.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the correlation ID for tracing related events.
+    /// </summary>
     public string CorrelationId { get; set; } = Guid.NewGuid().ToString(CorrelationIdFormat).Substring(0, CorrelationIdLength);
 
     /// <summary>
@@ -263,6 +278,9 @@ public abstract class PipelineEventArgs
 /// </summary>
 public sealed class DataIngestedEventArgs : PipelineEventArgs
 {
+    /// <summary>
+    /// Gets or sets the data point that was ingested.
+    /// </summary>
     public DataPoint DataPoint { get; set; }
 
     /// <summary>
@@ -279,6 +297,9 @@ public sealed class DataIngestedEventArgs : PipelineEventArgs
 /// </summary>
 public sealed class ProcessingCompletedEventArgs : PipelineEventArgs
 {
+    /// <summary>
+    /// Gets or sets the processing result.
+    /// </summary>
     public ProcessingResult Result { get; set; }
 
     /// <summary>
@@ -295,7 +316,14 @@ public sealed class ProcessingCompletedEventArgs : PipelineEventArgs
 /// </summary>
 public sealed class BackpressureDetectedEventArgs : PipelineEventArgs
 {
+    /// <summary>
+    /// Gets or sets the name of the pipeline stage where backpressure was detected.
+    /// </summary>
     public string StageName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the backpressure context containing details about the backpressure condition.
+    /// </summary>
     public BackpressureContext Context { get; set; }
 
     /// <summary>
@@ -312,6 +340,9 @@ public sealed class BackpressureDetectedEventArgs : PipelineEventArgs
 /// </summary>
 public sealed class MetricsCollectedEventArgs : PipelineEventArgs
 {
+    /// <summary>
+    /// Gets or sets the collected metrics aggregation.
+    /// </summary>
     public MetricAggregation Metrics { get; set; }
 
     /// <summary>
@@ -328,7 +359,14 @@ public sealed class MetricsCollectedEventArgs : PipelineEventArgs
 /// </summary>
 public sealed class PipelineErrorEventArgs : PipelineEventArgs
 {
+    /// <summary>
+    /// Gets or sets the name of the operation that caused the error.
+    /// </summary>
     public string OperationName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the exception that occurred.
+    /// </summary>
     public Exception Exception { get; set; }
 
     /// <summary>
@@ -343,25 +381,30 @@ public sealed class PipelineErrorEventArgs : PipelineEventArgs
 // Event definitions
 /// <summary>
 /// Event-type marker for data ingested events.
+/// Used to identify the <see cref="DataIngestedEventArgs"/> event type in subscriptions.
 /// </summary>
 public sealed class DataIngestedEvent { }
 
 /// <summary>
 /// Event-type marker for processing completed events.
+/// Used to identify the <see cref="ProcessingCompletedEventArgs"/> event type in subscriptions.
 /// </summary>
 public sealed class ProcessingCompletedEvent { }
 
 /// <summary>
 /// Event-type marker for backpressure detected events.
+/// Used to identify the <see cref="BackpressureDetectedEventArgs"/> event type in subscriptions.
 /// </summary>
 public sealed class BackpressureDetectedEvent { }
 
 /// <summary>
 /// Event-type marker for metrics collected events.
+/// Used to identify the <see cref="MetricsCollectedEventArgs"/> event type in subscriptions.
 /// </summary>
 public sealed class MetricsCollectedEvent { }
 
 /// <summary>
 /// Event-type marker for pipeline error events.
+/// Used to identify the <see cref="PipelineErrorEventArgs"/> event type in subscriptions.
 /// </summary>
 public sealed class PipelineErrorEvent { }
