@@ -1489,6 +1489,120 @@ await inbound.ProcessWebhookAsync(new WebhookPayload
 });
 ```
 
+## Event Subscribers
+
+The subscriber classes in `src/Events/EventSubscriber.cs` attach handlers to a `PipelineEventPublisher` and add a small amount of domain logic on top. `SubscriberOptions.cs` defines the settings that control how each handler's channel queues, dispatches, and handles errors.
+
+| Class | Event (`nameof`) | Purpose |
+|-------|------------------|---------|
+| `EventSubscriberBase` | - | Abstract base. Holds the publisher and logger, tracks `_isSubscribed`, and provides `Subscribe()`, `Unsubscribe()`, `Start()`, `StopAsync()`, and the `GetSubscriberOptions()` default. |
+| `DataIngestSubscriber` | `DataIngestedEvent` | Validates each ingested `DataPoint` (ID, source, quality, timestamp window, finite value within ±10000) and then calls the `protected virtual ProcessIngestedDataAsync` hook. Exposes the constant `MaxBatchSize` (10000), which the handler does not enforce. |
+| `ProcessingCompletionSubscriber` | `ProcessingCompletedEvent` | Counts successes and failures and logs failures as warnings. `GetSuccessRatePercent()` returns 100 when nothing has completed yet. Extend through `protected virtual OnProcessingCompletionAsync`. |
+| `BackpressureAlertSubscriber` | `BackpressureDetectedEvent` | Counts backpressure events and logs them with the stage name and buffer utilization. When utilization is above 95%, it calls `protected virtual OnCriticalBackpressureAsync`. Exposes `GetBackpressureEventCount()`. |
+| `MetricsAggregationSubscriber` | `MetricsCollectedEvent` | Accumulates processing-time totals in 16 striped `Interlocked` counters, so the hot path does not take a lock. `GetAverageProcessingTime()`, `GetMetricsCount()`, and `Reset()` read or clear the totals. It is `sealed` and has no extension hook. |
+| `ErrorAlertSubscriber` | `PipelineErrorEvent` | Counts pipeline errors and logs each one as an error. Calls `protected virtual OnErrorDetectedAsync` for custom handling. Exposes `GetErrorCount()`. |
+
+Usage rules that apply to these subscribers:
+
+- Subscriber handlers are `private`. To customize behavior, override the `protected virtual` hook named in the table, not the handler.
+- `Subscribe()` calls `PipelineEventPublisher.Subscribe<T>` with the options from `GetSubscriberOptions()`. Call it once per instance, and call `publisher.Start()` after all subscriptions are in place. Channels consume events only after `Start()`.
+- The default options are `MaxQueueSize = 1000`, `MaxQueueSizeBehavior = DropNew`, `DispatchMode = Sequential`, `ErrorPolicy = SwallowAndCount`, and `MaxDegreeOfParallelism = 1`.
+- `BackpressureAlertSubscriber` and `ErrorAlertSubscriber` override `GetSubscriberOptions()` to use `MaxQueueSize = int.MaxValue` with `MaxQueueSizeBehavior.Block`, so alerts are not dropped when the queue fills. Both use sequential dispatch.
+- `ProcessingCompletionSubscriber`, `BackpressureAlertSubscriber`, `MetricsAggregationSubscriber`, and `ErrorAlertSubscriber` catch exceptions thrown by their handlers and log them, so the channel's `ErrorPolicy` does not see those exceptions. `DataIngestSubscriber` does not catch them, so its validation exceptions reach the channel's `ErrorPolicy`.
+- `EventSubscriberBase.Start()` and `StopAsync()` are no-ops and exist as virtual extension points. The publisher's `Start()` and `StopAsync()` control the channels.
+
+### SubscriberOptions
+
+`SubscriberOptions` (`src/Events/SubscriberOptions.cs`) is a mutable `sealed` class passed to `PipelineEventPublisher.Subscribe<T>(eventName, handler, options)`. Its `ToString()` returns a summary of all settings, which is useful in logs.
+
+| Property | Default | Meaning |
+|----------|---------|---------|
+| `MaxQueueSize` | `1000` (`DefaultMaxQueueSize`) | Capacity of the subscriber's bounded channel. |
+| `MaxQueueSizeBehavior` | `DropNew` | What happens when the queue is full. See below. |
+| `DispatchMode` | `Sequential` | `Sequential` uses one consumer task. `Parallel` uses `Parallel.ForEachAsync` bounded by `MaxDegreeOfParallelism`. |
+| `MaxDegreeOfParallelism` | `1` (`DefaultMaxDegreeOfParallelism`) | Concurrency limit, used only in `Parallel` mode. |
+| `ErrorPolicy` | `SwallowAndCount` | What happens when a handler throws. See below. |
+| `Name` | `null` | Label for logs and diagnostics. When it is `null`, the publisher falls back to the handler's declaring type name, then `AnonymousSubscriber`. |
+
+**`SubscriberErrorPolicy`** (the `ErrorPolicy` values). Every failure increments the channel's error count, which `publisher.GetSubscriberErrorCount(eventName)` reports, whatever the policy.
+
+- `SwallowAndCount`: logs the error and continues with the next event.
+- `DeadLetter`: logs the error and continues. The channel does not write to a dead-letter queue yet; the code has a comment saying a real system would do so.
+- `FailFast`: logs the error and rethrows, which stops the consumer task.
+
+**`MaxQueueSizeBehavior`** (the queue-full behavior). The channel maps these values as follows:
+
+- `DropNew` maps to `BoundedChannelFullMode.DropNewest`. The incoming event is discarded.
+- `Block` maps to `BoundedChannelFullMode.Wait`. The publisher waits until there is room.
+- `Reject` maps to `BoundedChannelFullMode.DropOldest`. The oldest queued event is discarded and the new one is kept. Nothing throws, even though the enum's XML comment says it rejects with an exception.
+
+**`SubscriberDispatchMode`**:
+
+- `Sequential`: one background consumer processes events in order.
+- `Parallel`: up to `MaxDegreeOfParallelism` events are processed at the same time. Ordering is not guaranteed.
+
+### Example: subscribing to `PipelineEventPublisher`
+
+You can subscribe a handler directly, or use one of the subscriber classes. Both work with the same publisher.
+
+```csharp
+using DotNetRealtimePipeline.Events;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var publisher = new PipelineEventPublisher(loggerFactory.CreateLogger<PipelineEventPublisher>());
+
+// 1. Direct subscription with default options (queue 1000, DropNew, sequential).
+publisher.Subscribe<ProcessingCompletedEventArgs>(
+    nameof(ProcessingCompletedEvent),
+    args =>
+    {
+        Console.WriteLine($"Completed {args.Result.ResultId}: success={args.Result.Success}");
+        return Task.CompletedTask;
+    });
+
+// 2. Direct subscription with explicit options: a parallel audit lane that waits instead of dropping.
+publisher.Subscribe<DataIngestedEventArgs>(
+    nameof(DataIngestedEvent),
+    args =>
+    {
+        Console.WriteLine($"Audit: data point {args.DataPoint.Id}");
+        return Task.CompletedTask;
+    },
+    new SubscriberOptions
+    {
+        Name = "ingest-audit",
+        MaxQueueSize = 500,
+        MaxQueueSizeBehavior = MaxQueueSizeBehavior.Block,
+        DispatchMode = SubscriberDispatchMode.Parallel,
+        MaxDegreeOfParallelism = 4,
+        ErrorPolicy = SubscriberErrorPolicy.SwallowAndCount
+    });
+
+// 3. Built-in subscriber class: logs pipeline errors and keeps a count.
+var errorAlerts = new ErrorAlertSubscriber(
+    publisher,
+    loggerFactory.CreateLogger<ErrorAlertSubscriber>());
+errorAlerts.Subscribe();
+
+// Start the channels after all subscriptions are registered.
+publisher.Start();
+
+await publisher.PublishPipelineErrorAsync("ingest", new InvalidOperationException("sensor offline"));
+
+// Handlers run on their own channels. This delay only keeps the demo output deterministic;
+// production code should wait on its own signal instead.
+await Task.Delay(TimeSpan.FromMilliseconds(100));
+Console.WriteLine($"Errors seen: {errorAlerts.GetErrorCount()}"); // 1
+
+await publisher.StopAsync();
+publisher.Dispose();
+```
+
+`PublishPipelineErrorAsync` returns once the event is queued on every channel, not once the handlers have run, so do not read `GetErrorCount()` straight after a publish call. `StopAsync()` cancels the consumer tasks instead of draining their queues, so events still queued at that point may never be handled. Wait for the work you need before stopping the publisher.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
