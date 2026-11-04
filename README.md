@@ -1137,6 +1137,118 @@ With only the `queue` component registered, a backlog of 1000 or more items make
 
 The example was not compiled or run against the repository. Check the exact names and namespaces before relying on it.
 
+## State Management
+
+The state types are in `src/State/PipelineStateManager.cs` (namespace `DotNetRealtimePipeline.State`). `PipelineStateManagerExtensions.cs` adds query helpers, and `PipelineStateManagerValidation.cs` has `Validate()`, `IsValid()`, and `EnsureValid()` for `PipelineStateManager`. None of these types are registered in `ServiceCollectionExtensions`. `PipelineInitializer` resolves `PipelineStateManager` from its service provider, so either register it yourself or construct the types directly, as the example below does.
+
+### PipelineStateManager
+
+`PipelineStateManager` is a sealed class that holds the pipeline lifecycle state. It starts in `PipelineState.Stopped`. Its constructor takes an `ILogger<PipelineStateManager>`.
+
+- `CurrentState` returns the current `PipelineState`. `IsOperational` is `true` only when the state is `Running`.
+- `TransitionTo(PipelineState newState, string reason = "")` returns `true` if the transition is allowed and `false` otherwise. An invalid transition does not throw. It logs a warning and leaves the state unchanged. A successful transition is appended to the history and listeners are notified.
+- `GetStateHistory()` returns a copy of the transition list, in the order the transitions happened.
+- `GetCurrentStateDuration()` returns the time since the last transition, or `TimeSpan.Zero` if there has been none.
+
+The allowed transitions are:
+
+| From | To |
+|------|----|
+| `Stopped` | `Running` |
+| `Running` | `Paused`, `Stopped` |
+| `Paused` | `Running`, `Stopped` |
+| `Failed` | `Stopped` |
+| any state | `Failed` |
+
+Any other pair is rejected. `Stopped` to `Stopped` and `Running` to `Running` are rejected too. `Initializing` is defined in the enum, but no rule allows a transition into it, so `TransitionTo(PipelineState.Initializing)` always returns `false`. Treat `Initializing` as unused by this manager.
+
+### RegisterStateChangeListener
+
+`RegisterStateChangeListener(Action<PipelineState, PipelineState> listener)` adds a callback that receives `(oldState, newState)`. It throws `ArgumentNullException` for a null listener.
+
+- Listeners run synchronously inside `TransitionTo`, while the manager's lock is held. Keep them short, and do not call `TransitionTo` from inside a listener.
+- An exception thrown by a listener is logged at Error and does not stop the other listeners or the transition.
+- There is no way to unregister a listener. Listeners are kept in a plain `List`, which is not thread-safe, so register them before the pipeline starts changing state.
+
+### StateTransition
+
+`StateTransition` is a class that records one transition. It has the properties `FromState`, `ToState`, `Timestamp` (UTC, set by `TransitionTo`), and `Reason`. `Reason` is `""` when `TransitionTo` is called without a reason.
+
+### PipelineStateManagerExtensions
+
+These extension methods work on `PipelineStateManager`:
+
+- `GetTransitionsTo(PipelineState)` returns the transitions whose `ToState` matches.
+- `GetLastTransition()` returns the most recent transition, or `null`.
+- `GetTotalTimeInState(PipelineState)` returns the cumulative time spent in a state, including the open interval if the manager is in that state now.
+- `ToHistoryString()` returns one line per transition, in the form `Timestamp | From → To | Reason`.
+- `GetTransitionCount()` returns the number of recorded transitions.
+
+### ConfigurationStateManager
+
+`ConfigurationStateManager` is a sealed class that stores named runtime overrides in a `ConcurrentDictionary<string, object>`. Its constructor takes an `ILogger<ConfigurationStateManager>`.
+
+- `SetOverride(string key, object value)` stores the value and logs it at Information. It throws `ArgumentException` for a null or whitespace key and `ArgumentNullException` for a null value. An existing key is replaced.
+- `GetOverride<T>(string key, T defaultValue = default)` returns the stored value if it exists and is of type `T`. Otherwise it returns `defaultValue`, including when the stored value has a different type.
+- `RemoveOverride(string key)` returns `true` if the key was removed.
+- `GetAllOverrides()` returns a copy of all overrides.
+- `ClearAllOverrides()` removes all overrides and logs the action.
+
+### OperationMetricsTracker and OperationMetrics
+
+`OperationMetricsTracker` is a sealed class that keeps one `OperationMetrics` object per operation name. Its constructor takes an `ILogger<OperationMetricsTracker>`.
+
+- `RecordOperation(string operationName, long durationMs, bool success)` adds one execution. It throws `ArgumentException` for a null or whitespace name. The first call for a name creates its `OperationMetrics`.
+- `GetOperationMetrics(string operationName)` returns the live `OperationMetrics` object for that name, or `null` if the name has not been recorded. It is not a snapshot. Its values change as more executions are recorded.
+- `GetAllMetrics()` returns a new dictionary that contains the same live `OperationMetrics` objects.
+
+`OperationMetrics` has these members:
+
+- `TotalExecutions`, `SuccessfulExecutions`, and `FailedExecutions` (`long`).
+- `TotalDurationMs` (`long`), `MinDurationMs` (`long`, starts at `long.MaxValue`), and `MaxDurationMs` (`long`).
+- `AverageDurationMs` (`double`) is `TotalDurationMs / TotalExecutions`, or `0` when there are no executions.
+- `SuccessRate` (`double`) is a percentage from `0` to `100`, or `0` when there are no executions.
+
+The counters are updated with plain increments and assignments, not with `Interlocked` or a lock. Calls to `RecordOperation` for the same name from several threads can lose updates. If you record from multiple threads, serialize the calls or accept approximate numbers.
+
+### Example
+
+```csharp
+using DotNetRealtimePipeline.State;
+using Microsoft.Extensions.Logging;
+
+using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+
+var stateManager = new PipelineStateManager(loggerFactory.CreateLogger<PipelineStateManager>());
+var config = new ConfigurationStateManager(loggerFactory.CreateLogger<ConfigurationStateManager>());
+var metrics = new OperationMetricsTracker(loggerFactory.CreateLogger<OperationMetricsTracker>());
+
+stateManager.RegisterStateChangeListener((from, to) =>
+    Console.WriteLine($"State: {from} -> {to}"));
+
+stateManager.TransitionTo(PipelineState.Running, "Startup complete");  // true
+stateManager.TransitionTo(PipelineState.Paused, "Manual pause");       // true
+stateManager.TransitionTo(PipelineState.Initializing);                 // false: no rule allows it
+
+Console.WriteLine($"Transitions: {stateManager.GetTransitionCount()}"); // 2
+
+config.SetOverride("Pipeline:BatchSize", 500);
+int batchSize = config.GetOverride("Pipeline:BatchSize", 100);          // 500
+string label = config.GetOverride<string>("Pipeline:BatchSize", "n/a"); // "n/a": stored value is not a string
+
+metrics.RecordOperation("ProcessBatch", 42, true);
+metrics.RecordOperation("ProcessBatch", 18, false);
+
+OperationMetrics? batch = metrics.GetOperationMetrics("ProcessBatch");
+if (batch is not null)
+{
+    Console.WriteLine($"{batch.TotalExecutions} runs, avg {batch.AverageDurationMs:F1} ms, success {batch.SuccessRate:F0}%");
+}
+// Output: 2 runs, avg 30.0 ms, success 50%
+```
+
+The example was not compiled or run against the repository. Check the exact names and namespaces before relying on it.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
