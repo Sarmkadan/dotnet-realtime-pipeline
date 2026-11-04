@@ -333,7 +333,7 @@ public sealed class CircuitBreakerMiddleware
 
             return result;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _failureCount++;
             _lastFailureTime = DateTime.UtcNow;

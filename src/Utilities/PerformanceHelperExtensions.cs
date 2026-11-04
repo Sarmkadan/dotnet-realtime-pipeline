@@ -48,7 +48,7 @@ public static class PerformanceHelperExtensions
 	/// <summary>
 	/// Measures the execution time of an operation with custom iterations.
 	/// </summary>
-	/// <param name="helper">The performance helper instance.</param>
+	/// <param name="_">The performance helper instance.</param>
 	/// <param name="operation">The operation to benchmark.</param>
 	/// <param name="iterations">Number of iterations to run.</param>
 	/// <returns>A benchmark result containing timing statistics.</returns>
@@ -88,7 +88,7 @@ public static class PerformanceHelperExtensions
 	/// <summary>
 	/// Measures the execution time of an asynchronous operation with custom iterations.
 	/// </summary>
-	/// <param name="helper">The performance helper instance.</param>
+	/// <param name="_">The performance helper instance.</param>
 	/// <param name="operation">The operation to benchmark.</param>
 	/// <param name="iterations">Number of iterations to run.</param>
 	/// <returns>A benchmark result containing timing statistics.</returns>

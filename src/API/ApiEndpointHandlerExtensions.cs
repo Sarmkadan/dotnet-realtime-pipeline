@@ -77,7 +77,7 @@ public static class ApiEndpointHandlerExtensions
     /// <param name="pageSize">Number of items per page.</param>
     /// <param name="totalCount">Total number of items available.</param>
     /// <param name="message">Optional message to include in the response.</param>
-    /// <returns>A paginated <see cref="ApiEndpointHandler.ApiResponse{PaginatedResponse{T}}"/> with the paginated data.</returns>
+    /// <returns>A paginated <c>ApiEndpointHandler.ApiResponse&lt;PaginatedResponse&lt;T&gt;&gt;</c> with the paginated data.</returns>
     /// <exception cref="ArgumentNullException">Thrown if handler or data is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if page, pageSize, or totalCount are invalid.</exception>
     public static ApiEndpointHandler.ApiResponse<PaginatedResponse<T>> ToPaginatedResponse<T>(

@@ -5,89 +5,88 @@ using System.Reflection;
 using DotNetRealtimePipeline.Data.Repositories;
 using DotNetRealtimePipeline.Metrics;
 
-namespace DotNetRealtimePipeline.Services
+namespace DotNetRealtimePipeline.Services;
+
+/// <summary>
+/// Provides validation helpers for <see cref="MetricsService"/> instances.
+/// </summary>
+public static class MetricsServiceValidation
 {
     /// <summary>
-    /// Provides validation helpers for <see cref="MetricsService"/> instances.
+    /// Validates the specified <see cref="MetricsService"/> instance.
     /// </summary>
-    public static class MetricsServiceValidation
+    /// <param name="value">The metrics service instance to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    public static IReadOnlyList<string> Validate(this MetricsService value)
     {
-        /// <summary>
-        /// Validates the specified <see cref="MetricsService"/> instance.
-        /// </summary>
-        /// <param name="value">The metrics service instance to validate.</param>
-        /// <returns>A list of human-readable validation problems; empty if valid.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-        public static IReadOnlyList<string> Validate(this MetricsService value)
+        ArgumentNullException.ThrowIfNull(value);
+
+        var problems = new List<string>();
+
+        // Validate repository is not null
+        if (value.GetRepository() is null)
         {
-            ArgumentNullException.ThrowIfNull(value);
-
-            var problems = new List<string>();
-
-            // Validate repository is not null
-            if (value.GetRepository() is null)
-            {
-                problems.Add("MetricsService repository cannot be null.");
-            }
-
-            // Validate throughput counter is not null
-            if (value.GetThroughputCounter() is null)
-            {
-                problems.Add("MetricsService throughput counter cannot be null.");
-            }
-
-            return problems.AsReadOnly();
+            problems.Add("MetricsService repository cannot be null.");
         }
 
-        /// <summary>
-        /// Determines whether the specified <see cref="MetricsService"/> instance is valid.
-        /// </summary>
-        /// <param name="value">The metrics service instance to check.</param>
-        /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-        public static bool IsValid(this MetricsService value)
+        // Validate throughput counter is not null
+        if (value.GetThroughputCounter() is null)
         {
-            return value is not null && Validate(value).Count == 0;
+            problems.Add("MetricsService throughput counter cannot be null.");
         }
 
-        /// <summary>
-        /// Ensures that the specified <see cref="MetricsService"/> instance is valid.
-        /// </summary>
-        /// <param name="value">The metrics service instance to validate.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown if the instance is not valid, containing a list of problems.</exception>
-        public static void EnsureValid(this MetricsService value)
-        {
-            ArgumentNullException.ThrowIfNull(value);
+        return problems.AsReadOnly();
+    }
 
-            var problems = Validate(value);
-            if (problems.Count > 0)
-            {
-                throw new ArgumentException(
-                    $"MetricsService is not valid. Problems:{Environment.NewLine}- ".Replace("- ", string.Empty) +
-                    string.Join(Environment.NewLine + "- ", problems),
-                    nameof(value));
-            }
-        }
+    /// <summary>
+    /// Determines whether the specified <see cref="MetricsService"/> instance is valid.
+    /// </summary>
+    /// <param name="value">The metrics service instance to check.</param>
+    /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    public static bool IsValid(this MetricsService value)
+    {
+        return value is not null && Validate(value).Count == 0;
+    }
 
-        /// <summary>
-        /// Gets the repository instance from MetricsService for validation purposes.
-        /// </summary>
-        private static IMetricsRepository? GetRepository(this MetricsService service)
-        {
-            var field = typeof(MetricsService).GetField("_repository",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return field?.GetValue(service) as IMetricsRepository;
-        }
+    /// <summary>
+    /// Ensures that the specified <see cref="MetricsService"/> instance is valid.
+    /// </summary>
+    /// <param name="value">The metrics service instance to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if the instance is not valid, containing a list of problems.</exception>
+    public static void EnsureValid(this MetricsService value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
 
-        /// <summary>
-        /// Gets the throughput counter instance from MetricsService for validation purposes.
-        /// </summary>
-        private static IPipelineMetrics? GetThroughputCounter(this MetricsService service)
+        var problems = Validate(value);
+        if (problems.Count > 0)
         {
-            var field = typeof(MetricsService).GetField("_throughputCounter",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return field?.GetValue(service) as IPipelineMetrics;
+            throw new ArgumentException(
+                $"MetricsService is not valid. Problems:{Environment.NewLine}- ".Replace("- ", string.Empty) +
+                string.Join(Environment.NewLine + "- ", problems),
+                nameof(value));
         }
+    }
+
+    /// <summary>
+    /// Gets the repository instance from MetricsService for validation purposes.
+    /// </summary>
+    private static IMetricsRepository? GetRepository(this MetricsService service)
+    {
+        var field = typeof(MetricsService).GetField("_repository",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field?.GetValue(service) as IMetricsRepository;
+    }
+
+    /// <summary>
+    /// Gets the throughput counter instance from MetricsService for validation purposes.
+    /// </summary>
+    private static IPipelineMetrics? GetThroughputCounter(this MetricsService service)
+    {
+        var field = typeof(MetricsService).GetField("_throughputCounter",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field?.GetValue(service) as IPipelineMetrics;
     }
 }

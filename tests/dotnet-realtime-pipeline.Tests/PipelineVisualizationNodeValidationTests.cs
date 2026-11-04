@@ -384,7 +384,7 @@ public sealed class PipelineVisualizationNodeValidationTests
 
         var result = node.Validate();
 
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains("DownstreamStages[1] must be a non-empty string.", result);
     }
 

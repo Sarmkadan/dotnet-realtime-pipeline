@@ -19,7 +19,6 @@ using System.Threading.Tasks;
 public sealed class LoggingMiddleware
 {
     private readonly ILogger<LoggingMiddleware> _logger;
-    private static readonly string CorrelationIdHeader = "X-Correlation-ID";
 
     public LoggingMiddleware(ILogger<LoggingMiddleware> logger)
     {

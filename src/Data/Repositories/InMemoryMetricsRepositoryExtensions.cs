@@ -214,7 +214,7 @@ public static class InMemoryMetricsRepositoryExtensions
     /// <param name="repository">The repository instance.</param>
     /// <param name="count">Number of metrics to retrieve.</param>
     /// <returns>Last N metrics across all types.</returns>
-    /// <exception cref="ArgumentException">Thrown when count < 1.</exception>
+    /// <exception cref="ArgumentException">Thrown when count &lt; 1.</exception>
     public static async Task<IReadOnlyList<MetricAggregation>> GetLastNMetricsAsync(
         this InMemoryMetricsRepository repository,
         int count)

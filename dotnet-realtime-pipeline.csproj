@@ -3,14 +3,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DotNetRealtimePipeline</RootNamespace>
     <AssemblyName>dotnet-realtime-pipeline</AssemblyName>
     <PackageId>dotnet-realtime-pipeline</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Vladyslav Zaiets</Authors>
     <Description>A high-performance real-time data processing pipeline for .NET applications with backpressure management, windowing, and aggregation capabilities.</Description>
     <PackageTags>dotnet realtime pipeline backpressure windowing aggregation</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

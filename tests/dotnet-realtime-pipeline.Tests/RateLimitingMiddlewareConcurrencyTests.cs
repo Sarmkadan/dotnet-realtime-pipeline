@@ -25,7 +25,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that when making concurrent requests, the rate limiter does not exceed the limit.
     /// </summary>
     [Fact]
-    public void TryConsume_WithConcurrentRequests_ShouldNotExceedLimit()
+    public async Task TryConsume_WithConcurrentRequests_ShouldNotExceedLimit()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 10, maxBurstSize: 10);
@@ -33,7 +33,6 @@ public class RateLimitingMiddlewareConcurrencyTests
         var limit = 10;
         var concurrentRequests = 100;
         var successfulRequests = new bool[concurrentRequests];
-        var successfulCount = 0;
 
         // Act - fire 100 concurrent requests against a limit of 10
         var tasks = new Task[concurrentRequests];
@@ -46,7 +45,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - count how many succeeded
         var successCount = 0;
@@ -66,7 +65,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that accessing the AvailableTokens property concurrently is thread-safe.
     /// </summary>
     [Fact]
-    public void AvailableTokens_WhenAccessedConcurrently_ShouldBeThreadSafe()
+    public async Task AvailableTokens_WhenAccessedConcurrently_ShouldBeThreadSafe()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 1000, maxBurstSize: 1000);
@@ -86,7 +85,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - should complete without exceptions or deadlocks
         var status = limiter.GetStatus(identifier);
@@ -98,7 +97,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that accessing the NextRefillTime property concurrently is thread-safe.
     /// </summary>
     [Fact]
-    public void NextRefillTime_WhenAccessedConcurrently_ShouldBeThreadSafe()
+    public async Task NextRefillTime_WhenAccessedConcurrently_ShouldBeThreadSafe()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 1000, maxBurstSize: 1000);
@@ -123,7 +122,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - should complete without exceptions or deadlocks
         var finalStatus = limiter.GetStatus(identifier);
@@ -161,7 +160,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that calling GetStatus concurrently does not throw exceptions.
     /// </summary>
     [Fact]
-    public void GetStatus_WhenCalledConcurrently_ShouldNotThrow()
+    public async Task GetStatus_WhenCalledConcurrently_ShouldNotThrow()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 100, maxBurstSize: 500);
@@ -182,7 +181,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - should complete without exceptions
         var status = limiter.GetStatus(identifier);
@@ -193,7 +192,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that concurrent access to different identifiers does not interfere.
     /// </summary>
     [Fact]
-    public void MultipleIdentifiers_WhenAccessedConcurrently_ShouldNotInterfere()
+    public async Task MultipleIdentifiers_WhenAccessedConcurrently_ShouldNotInterfere()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 100, maxBurstSize: 100);
@@ -210,7 +209,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             tasks[index + iterations] = Task.Run(() => limiter.TryAcquire(identifier2));
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - each identifier should have independent rate limiting
         var status1 = limiter.GetStatus(identifier1);
@@ -225,7 +224,7 @@ public class RateLimitingMiddlewareConcurrencyTests
     /// Tests that calling Reset concurrently does not cause issues.
     /// </summary>
     [Fact]
-    public void Reset_WhenCalledConcurrently_ShouldNotCauseIssues()
+    public async Task Reset_WhenCalledConcurrently_ShouldNotCauseIssues()
     {
         // Arrange
         var limiter = new RateLimitingMiddleware(tokensPerSecond: 100, maxBurstSize: 100);
@@ -243,7 +242,7 @@ public class RateLimitingMiddlewareConcurrencyTests
             });
         }
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         // Assert - should complete without exceptions
         var status = limiter.GetStatus(identifier);

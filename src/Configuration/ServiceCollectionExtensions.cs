@@ -103,6 +103,7 @@ services.AddSingleton<DotNetRealtimePipeline.Integration.PipelineHttpClientFacto
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configureOptions">The configuration action to apply to the default configuration.</param>
+    /// <param name="configureRetryPolicy">Optional action to customize the retry policy options.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="services"/> or <paramref name="configureOptions"/> is <see langword="null"/>.

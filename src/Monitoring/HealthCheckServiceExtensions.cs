@@ -67,7 +67,7 @@ public static class HealthCheckServiceExtensions
 	/// </summary>
 	/// <param name="service">The <see cref="HealthCheckService"/> instance.</param>
 	/// <param name="components">
-	/// A collection of named tuples where <paramref name="name"/> is the component name and <paramref name="healthCheck"/> is the async health‑check delegate.
+	/// A collection of named tuples where <c>Name</c> is the component name and <c>HealthCheck</c> is the async health‑check delegate.
 	/// </param>
 	/// <exception cref="ArgumentNullException">
 	/// Thrown when <paramref name="service"/> or <paramref name="components"/> is <c>null</c>.

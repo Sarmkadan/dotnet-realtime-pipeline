@@ -1,0 +1,31 @@
+<Project>
+
+  <!-- Shared MSBuild properties for every project under this directory (library, tests, benchmarks). -->
+  <PropertyGroup>
+    <Authors>Vladyslav Zaiets</Authors>
+    <Company>Vladyslav Zaiets</Company>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--
+      CS1591 (missing XML doc comment on public member): ~400 public members still lack docs.
+      Documenting them is a separate sweep; keep the build green until that lands.
+      CA2264 (ThrowIfNull on non-nullable value): the guards protect callers that are not nullable-aware.
+      NU1510 (PackageReference may be pruned): System.IO.Pipelines is kept on purpose for packaging.
+    -->
+    <NoWarn>$(NoWarn);CS1591;CA2264;NU1510</NoWarn>
+
+    <!--
+      Nullable-flow findings (CS8601-CS8633) are real null-safety issues in existing code, roughly 100 sites.
+      They are not trivial to fix, so they are reported as warnings but do not fail the build.
+      Remove an entry here once its sites are fixed.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS8601;CS8602;CS8603;CS8604;CS8618;CS8625;CS8633</WarningsNotAsErrors>
+  </PropertyGroup>
+
+</Project>
