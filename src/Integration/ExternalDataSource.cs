@@ -178,6 +178,9 @@ public sealed class DataSourceManager
 /// </summary>
 public sealed class CachedDataSource : IExternalDataSource
 {
+    private const int DefaultCacheCapacity = 1000;
+    private static readonly TimeSpan DefaultCacheTtl = TimeSpan.FromHours(1);
+
     private readonly IExternalDataSource _innerSource;
     private readonly Caching.CacheService<string, List<DataPoint>> _cache;
     private readonly ILogger<CachedDataSource> _logger;
@@ -186,7 +189,7 @@ public sealed class CachedDataSource : IExternalDataSource
     {
         _innerSource = innerSource ?? throw new ArgumentNullException(nameof(innerSource));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _cache = new Caching.CacheService<string, List<DataPoint>>(1000, TimeSpan.FromHours(1));
+        _cache = new Caching.CacheService<string, List<DataPoint>>(DefaultCacheCapacity, DefaultCacheTtl);
     }
 
     /// <summary>
