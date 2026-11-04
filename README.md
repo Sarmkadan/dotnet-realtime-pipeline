@@ -1784,6 +1784,71 @@ await initializer.StopAsync();
 await serviceProvider.DisposeAsync();
 ```
 
+## Backpressure Metrics
+
+`BackpressureMetricsCollector` (`src/Metrics/BackpressureMetricsCollector.cs`) turns the current state of `BackpressureService` into a history. It is a `public sealed` class that takes the service in its constructor, `new BackpressureMetricsCollector(backpressureService, maxEventHistory = 500)`. A `null` service throws `ArgumentNullException`. A `maxEventHistory` of zero or less is replaced by `PipelineConstants.MaxBackpressureEventHistory` (100). The collector keeps its own per-stage state and a list of events, trimmed to that limit with the oldest removed first. That state is independent of the service's contexts, so it remains after a context is cleared from the service.
+
+The three data types are in `src/Metrics/BackpressureMetricsModels.cs` (namespace `DotNetRealtimePipeline.Metrics`):
+
+| Type | Contents |
+|------|----------|
+| `BackpressureEvent` | One activation or release: `Timestamp` (UTC), `StageName`, `BufferFillPercent`, `IsActivation`, and `DroppedItems`. |
+| `StageBackpressureMetrics` | Per-stage totals: `ActivationCount`, `TotalActiveDurationMs`, `PeakBufferFillPercent`, `CurrentBufferFillPercent`, `TotalDroppedItems`, and `LastActivationAt` (`DateTime?`). |
+| `BackpressureMetricsSnapshot` | Pipeline-wide view: `StageMetrics` (a `List<StageBackpressureMetrics>`), `TotalActivations`, `TotalDroppedItems`, `ActiveBackpressureStages` (an `int`), and `SnapshotAt` (UTC). |
+
+All three override `ToString()` for logging. `BackpressureEvent` and `StageBackpressureMetrics` are plain property bags, so their properties can be set directly.
+
+How the data gets recorded:
+
+- `Poll()` reads the buffer status of every stage the service knows about. For each stage it updates the peak and current fill and the dropped count, then compares `IsBackpressured` with the value seen on the previous poll. A change to active increments `ActivationCount`, sets `LastActivationAt`, and records an activation event. A change to inactive adds the time since the last activation to `TotalActiveDurationMs` and records a release event. Events are stamped with the poll time, not the moment the service changed state, so the poll interval limits how precisely they are timed. Because duration is added only on a release, an activation still in progress does not appear in `TotalActiveDurationMs` yet.
+- `RecordManualEvent(stageName, bufferFillPercent, droppedItems, isActivation)` records a transition you observed yourself, without polling. Unlike `Poll()`, it does not compare against the previous state. Every activation call increments `ActivationCount`, and a release does not add to `TotalActiveDurationMs`. Record each transition once, and do not mix it with `Poll()` for the same stage. A blank stage name throws `ArgumentException`.
+- `TotalDroppedItems` in `StageBackpressureMetrics` is the last value read from the context, which is cumulative. It is not the sum of the events' `DroppedItems`.
+
+Reading the data:
+
+- `GetSnapshot()` builds a `BackpressureMetricsSnapshot` from the stage state. `ActiveBackpressureStages` counts stages whose last observed state is backpressured.
+- `GetStageMetrics(stageName)` returns the metrics for one stage, or `null` if the collector has not tracked it. A blank name throws `ArgumentException`.
+- `GetRecentEvents(count = 50)` returns the last `count` events across all stages, oldest first. A `count` of zero or less throws `ArgumentOutOfRangeException`.
+- `GetStageEvents(stageName)` returns every retained event for one stage. Its name match ignores case, while stage state lookups are case-sensitive, so use the same spelling as the service.
+- `Reset()` clears the stage state and the event history.
+
+The example below takes a snapshot after a stage has been backpressured:
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+using DotNetRealtimePipeline.Services;
+
+var backpressure = new BackpressureService();
+backpressure.CreateContext("enrichment", maxBufferCapacity: 1_000);
+
+var collector = new BackpressureMetricsCollector(backpressure);
+
+backpressure.TryAddToBuffer("enrichment", 800);
+collector.Poll(); // 80% fill, backpressure not yet active
+
+backpressure.TryAddToBuffer("enrichment", 300); // 1,100 > 1,000: rejected, 300 dropped, backpressure active
+collector.Poll(); // records the activation
+
+BackpressureMetricsSnapshot snapshot = collector.GetSnapshot();
+Console.WriteLine(snapshot);
+// BackpressureMetricsSnapshot { SnapshotAt = ..., StageCount = 1, TotalActivations = 1, TotalDroppedItems = 300, ActiveBackpressureStages = 1 }
+
+foreach (StageBackpressureMetrics stage in snapshot.StageMetrics)
+{
+    Console.WriteLine(
+        $"{stage.StageName}: peak={stage.PeakBufferFillPercent:F1}%, " +
+        $"activations={stage.ActivationCount}, dropped={stage.TotalDroppedItems}");
+}
+// enrichment: peak=80.0%, activations=1, dropped=300
+
+foreach (BackpressureEvent e in collector.GetRecentEvents())
+{
+    Console.WriteLine(
+        $"{e.Timestamp:O} {e.StageName} activation={e.IsActivation} " +
+        $"fill={e.BufferFillPercent:F1}% dropped={e.DroppedItems}");
+}
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
