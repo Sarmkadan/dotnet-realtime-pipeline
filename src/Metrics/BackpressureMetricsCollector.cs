@@ -30,6 +30,12 @@ public sealed class BackpressureMetricsCollector
     private readonly List<BackpressureEvent> _eventHistory = new();
     private readonly object _lock = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BackpressureMetricsCollector"/> class.
+    /// </summary>
+    /// <param name="backpressureService">The backpressure service to poll for metrics.</param>
+    /// <param name="maxEventHistory">Maximum number of events to retain in history. Defaults to <see cref="DefaultMaxEventHistory"/>.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="backpressureService"/> is <c>null</c>.</exception>
     public BackpressureMetricsCollector(BackpressureService backpressureService, int maxEventHistory = DefaultMaxEventHistory)
     {
         _backpressureService = backpressureService ?? throw new ArgumentNullException(nameof(backpressureService));
@@ -263,15 +269,49 @@ public sealed class BackpressureMetricsCollector
 
     // ── Internal tracking state per stage ────────────────────────────────────
 
+    /// <summary>
+    /// Internal per-stage tracking state for backpressure metrics.
+    /// </summary>
     private sealed class StageTrackingState
     {
+        /// <summary>
+        /// Gets or sets the name of the pipeline stage being tracked.
+        /// </summary>
         public string StageName { get; set; } = "";
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the stage is currently under backpressure.
+        /// </summary>
         public bool WasBackpressured { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total number of times backpressure has been activated for this stage.
+        /// </summary>
         public long ActivationCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cumulative duration (in milliseconds) the stage has spent in backpressure.
+        /// </summary>
         public long TotalActiveDurationMs { get; set; }
+
+        /// <summary>
+        /// Gets or sets the peak buffer fill percentage observed for this stage.
+        /// </summary>
         public double PeakBufferFillPercent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the current buffer fill percentage for this stage.
+        /// </summary>
         public double CurrentBufferFillPercent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total number of items dropped due to backpressure for this stage.
+        /// </summary>
         public long TotalDroppedItems { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timestamp of the most recent backpressure activation for this stage.
+        /// </summary>
         public DateTime? LastActivationAt { get; set; }
     }
 }
