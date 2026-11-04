@@ -560,6 +560,147 @@ cachedPrimary.ClearCache();
 
 Note that `GetSourceHealth()` reports the state the manager has seen so far, not a fresh check. A source only shows `False` after a `FetchDataAsync` call has found it unavailable.
 
+## Plugin System
+
+`src/Plugins/ExtensionSystem.cs` provides the plugin contracts, a manager that owns plugin lifecycle, a base class, a configuration record, a registry of configurations, a sample plugin, and a named hook system. The library does not call these types on its own: the host application creates `PluginManager` or `HookManager`, registers plugins or hooks, and calls the methods below. Nothing in the pipeline currently fetches plugins from the manager or fires hooks.
+
+### Plugin contracts
+
+- `IPipelinePlugin` is the base contract. It exposes `Name` and `Version` and two lifecycle methods, `InitializeAsync()` and `ShutdownAsync()`.
+- `IDataProcessingPlugin` adds `Task<ProcessingResult> ProcessAsync(DataPoint dataPoint)` for plugins that handle one data point at a time.
+- `IDataTransformPlugin` adds `DataPoint Transform(DataPoint dataPoint)`, a synchronous mapping from one point to another.
+- `IOutputPlugin` adds `Task OutputAsync(ProcessingResult result)` for sending results to a destination.
+
+A class can implement several of these interfaces. `PluginManager` filters by type, so a class that implements both `IDataProcessingPlugin` and `IOutputPlugin` appears in both lists.
+
+### PluginManager
+
+`PluginManager` keeps plugins in registration order. Its constructor takes an `ILogger<PluginManager>`, and a null logger throws `ArgumentNullException`. It is not registered in `ServiceCollectionExtensions`, so create it yourself.
+
+- `RegisterPlugin(IPipelinePlugin plugin)` appends the plugin and logs its name and version. A null plugin throws `ArgumentNullException`. Registering does not call the plugin's lifecycle methods.
+- `InitializeAsync()` calls `InitializeAsync()` on each plugin in registration order. If a plugin throws, the error is logged and the loop moves on to the next plugin. The method does not rethrow, so check the logs to find out whether a plugin failed. `IsInitialized` becomes `true` when the loop ends, even if some plugins failed. A plugin registered after this call is not initialized by it.
+- `ShutdownAsync()` calls `ShutdownAsync()` on each plugin in reverse registration order, with the same error handling. It sets `IsInitialized` back to `false`.
+- `GetProcessingPlugins()`, `GetTransformPlugins()` and `GetOutputPlugins()` return a new `List<T>` filtered by interface. `GetAllPlugins()` returns a copy of the full list.
+
+The manager has no lock. Register plugins during setup, before the manager is used from several threads.
+
+### PipelinePluginBase
+
+An abstract base class for plugins. Subclasses override `Name` and `Version`. The constructor takes a non-generic `ILogger` and throws `ArgumentNullException` when it is null. The virtual `InitializeAsync()` and `ShutdownAsync()` write one information log line and complete. Override them to acquire and release resources.
+
+### PluginConfiguration and PluginRegistry
+
+`PluginConfiguration` is a plain settings object with these properties:
+
+- `Name` and `Version`.
+- `Enabled`, which defaults to `true`.
+- `Settings`, a `Dictionary<string, object>`.
+- `Dependencies`, a `List<string>` of plugin names. The values are stored but nothing checks them.
+
+`PluginRegistry` stores configurations by `Name`. Despite its summary comment, it does not create or load plugin instances. It only holds the settings, and the host decides which plugins to build from them.
+
+- `RegisterConfiguration(PluginConfiguration config)` adds the configuration, or replaces the existing one with the same name. A null config throws `ArgumentNullException`.
+- `GetConfiguration(string pluginName)` returns `null` for an unknown name. A null or whitespace name throws `ArgumentException`.
+- `GetEnabledConfigurations()` returns only the configurations whose `Enabled` is `true`.
+- `GetAllConfigurations()` returns a copy of the internal dictionary.
+
+### LoggingPlugin
+
+`LoggingPlugin` is the bundled example. It derives from `PipelinePluginBase` and implements `IDataProcessingPlugin`. `ProcessAsync` logs the data point's `Id` and `Source` at Debug level and returns a successful `ProcessingResult` with `StageName` set to `"Logging Plugin"`. Use it as a template for new processing plugins.
+
+### HookManager
+
+`HookManager` lets you attach several handlers to a named hook and run them together.
+
+- `RegisterHook(string hookName, Delegate handler)` appends the handler. A null or whitespace name throws `ArgumentException`, and a null handler throws `ArgumentNullException`.
+- `ExecuteHookAsync(string hookName, params object[] args)` runs the handlers in registration order using `DynamicInvoke(args)`. When a handler returns a `Task`, the call waits for it before it runs the next handler. Other return values are ignored. A hook name with no handlers does nothing.
+- A handler that throws is logged at Error level, and the remaining handlers still run. `ExecuteHookAsync` does not throw because of a handler failure. This also covers arguments that do not match the delegate's signature, because the resulting exception is caught the same way.
+
+Use delegates that return `Task`. An `async void` handler is not awaited, so the hook can finish before it completes, and its exceptions are not caught by `ExecuteHookAsync`. `HookManager` has no lock either, so register hooks during setup.
+
+### Example: registering a custom plugin
+
+The example below adds a plugin that flags values above a threshold. It runs the bundled `LoggingPlugin` next to it, then shuts both down.
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Plugins;
+using Microsoft.Extensions.Logging;
+
+public sealed class ThresholdPlugin : PipelinePluginBase, IDataProcessingPlugin
+{
+    private readonly double _maxValue;
+
+    public ThresholdPlugin(ILogger<ThresholdPlugin> logger, double maxValue) : base(logger)
+    {
+        _maxValue = maxValue;
+    }
+
+    public override string Name => "Threshold Plugin";
+    public override string Version => "1.0.0";
+
+    public Task<ProcessingResult> ProcessAsync(DataPoint dataPoint)
+    {
+        ArgumentNullException.ThrowIfNull(dataPoint);
+
+        bool withinLimit = dataPoint.Value <= _maxValue;
+        if (!withinLimit)
+        {
+            _logger.LogWarning("Value {Value} from {Source} exceeds {Max}", dataPoint.Value, dataPoint.Source, _maxValue);
+        }
+
+        var result = new ProcessingResult
+        {
+            Success = withinLimit,
+            StageName = Name,
+            ProcessedAt = DateTime.UtcNow
+        };
+
+        if (!withinLimit)
+        {
+            result.MarkFailure($"Value {dataPoint.Value} is above {_maxValue}");
+        }
+
+        return Task.FromResult(result);
+    }
+}
+```
+
+```csharp
+ILoggerFactory loggerFactory = /* from your host */;
+
+var manager = new PluginManager(loggerFactory.CreateLogger<PluginManager>());
+
+// Register during setup, before InitializeAsync().
+manager.RegisterPlugin(new ThresholdPlugin(loggerFactory.CreateLogger<ThresholdPlugin>(), maxValue: 100));
+manager.RegisterPlugin(new LoggingPlugin(loggerFactory.CreateLogger<LoggingPlugin>()));
+
+await manager.InitializeAsync();
+
+// The pipeline does not call plugins for you; the host asks for them and runs them.
+foreach (IDataProcessingPlugin plugin in manager.GetProcessingPlugins())
+{
+    ProcessingResult result = await plugin.ProcessAsync(dataPoint);
+}
+
+// Shutdown runs in reverse registration order.
+await manager.ShutdownAsync();
+```
+
+A hook is registered and fired the same way. The handler signature has to match the arguments you pass to `ExecuteHookAsync`:
+
+```csharp
+var hooks = new HookManager(loggerFactory.CreateLogger<HookManager>());
+
+hooks.RegisterHook("AfterProcessing", new Func<DataPoint, Task>(point =>
+{
+    Console.WriteLine($"Processed {point.Id}");
+    return Task.CompletedTask;
+}));
+
+await hooks.ExecuteHookAsync("AfterProcessing", dataPoint);
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
