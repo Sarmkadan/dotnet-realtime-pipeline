@@ -184,6 +184,13 @@ public sealed class ComponentHealth
 
     /// <summary>Gets or sets additional diagnostic details as key-value pairs.</summary>
     public Dictionary<string, object> Details { get; set; } = new();
+
+    /// <summary>Returns a string representation of the component health.</summary>
+    public override string ToString()
+    {
+        var detailsCount = Details?.Count ?? 0;
+        return $"ComponentHealth(IsHealthy={IsHealthy}, Message={Message ?? "null"}, CheckedAt={CheckedAt:O}, DetailsCount={detailsCount})";
+    }
 }
 
 /// <summary>
@@ -230,6 +237,13 @@ public sealed class SystemHealthReport
 
     /// <summary>Gets or sets the pipeline success rate as a percentage.</summary>
     public double SuccessRate { get; set; }
+
+    /// <summary>Returns a string representation of the system health report.</summary>
+    public override string ToString()
+    {
+        var componentsCount = Components?.Count ?? 0;
+        return $"SystemHealthReport(CheckedAt={CheckedAt:O}, OverallStatus={OverallStatus}, ComponentsCount={componentsCount}, PipelineStatus={PipelineStatus ?? "null"}, Throughput={Throughput:F2}, SuccessRate={SuccessRate:F2}%)";
+    }
 }
 
 /// <summary>
@@ -251,6 +265,12 @@ public sealed class QuickHealthStatus
 
     /// <summary>Gets or sets a value indicating whether the error rate is within acceptable limits.</summary>
     public bool ErrorRateAcceptable { get; set; }
+
+    /// <summary>Returns a string representation of the quick health status.</summary>
+    public override string ToString()
+    {
+        return $"QuickHealthStatus(IsRunning={IsRunning}, HealthStatus={HealthStatus ?? "null"}, PendingItems={PendingItems}, ThroughputOk={ThroughputOk}, ErrorRateAcceptable={ErrorRateAcceptable})";
+    }
 }
 
 internal sealed class HealthCheckComponent
@@ -337,4 +357,10 @@ public sealed class ResourceUsage
 
     /// <summary>Gets or sets the UTC timestamp when the resource snapshot was taken.</summary>
     public DateTime CheckedAt { get; set; }
+
+    /// <summary>Returns a string representation of the resource usage.</summary>
+    public override string ToString()
+    {
+        return $"ResourceUsage(MemoryMB={MemoryMB:F2}, ThreadCount={ThreadCount}, CpuUsagePercent={CpuUsagePercent:F2}, PrivateMemoryMB={PrivateMemoryMB:F2}, CheckedAt={CheckedAt:O})";
+    }
 }
