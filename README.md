@@ -847,6 +847,154 @@ if (options.EnableHealthCheckWorker) health.Start();
 
 Because `EnableHealthCheckWorker = false` is applied by the `if` above, the health worker is skipped in this example. Without that `if`, the flag would have no effect. Also, `WorkerCoordinator` requires all three workers in its constructor, so if you use it, you cannot leave one out. Start the workers individually in that case.
 
+## Middleware
+
+The middleware types are in `src/Middleware/` (namespace `DotNetRealtimePipeline.Middleware`). None of them is registered in `ServiceCollectionExtensions`, so create the ones you need yourself and pass them an `ILogger<T>` where one is required. Each source file has a companion `*Extensions.cs` file with helper overloads and a `*Validation.cs` file.
+
+### LoggingMiddleware
+
+`LoggingMiddleware` (`src/Middleware/LoggingMiddleware.cs`) is a sealed class that takes `ILogger<LoggingMiddleware>`. It writes structured log lines and does not wrap or change any operation:
+
+- `LogDataIngestion(DataPoint dataPoint, string stage)` logs at Information. Each call generates its own 8-character ID for the line.
+- `LogProcessingCompletion(ProcessingResult result, long elapsedMs)` logs at Information with `SUCCESS` or `FAILED`.
+- `LogBackpressureEvent(string stageName, BackpressureContext context)` logs at Warning with the buffer utilization as a percentage.
+- `LogMetricsCollection(string metricName, long value, string unit)` logs at Debug.
+- `LogError(string operationName, Exception ex, string context)` logs at Error with the exception.
+- `LogPerformanceWarning(string operationName, long elapsedMs, long thresholdMs)` logs at Warning only when `elapsedMs` is greater than `thresholdMs`.
+
+The extension methods add `LogDataIngestionBatch(IEnumerable<DataPoint>, string stage)`, a `LogProcessingCompletion` overload that takes a `Stopwatch`, and a `LogPerformanceWarning` overload that takes a `Stopwatch`.
+
+`PerformanceLoggingMiddleware` (same file, constructor takes `ILogger<PerformanceLoggingMiddleware>`) times an operation:
+
+- `MeasureAsync<T>(string operationName, Func<Task<T>> operation)` and `Measure<T>(string operationName, Func<T> operation)` log the start at Debug and the elapsed time at Information when the operation succeeds.
+- On an exception they log at Error with the elapsed time and rethrow the original exception. Nothing is swallowed.
+
+`CorrelationMiddleware` (same file) carries a correlation ID through async code using a static `AsyncLocal<string>`:
+
+- `WithCorrelationAsync<T>(Func<string, Task<T>> operation)` is an instance method. It creates a 16-character ID, passes it to the delegate, and restores the previous value in a `finally` block.
+- `SetCorrelationId(string)` and `ClearCorrelationId()` set and clear the ambient ID directly.
+- `GetCorrelationId()` returns the ambient ID. If none is set, it returns a new 8-character ID and does not store it, so each call without an ambient ID returns a different value.
+
+`LoggingMiddleware` does not read the ambient ID. Its log lines use their own IDs, so the IDs from `CorrelationMiddleware` do not appear in them.
+
+### ErrorHandlingMiddleware
+
+`ErrorHandlingMiddleware` (`src/Middleware/ErrorHandlingMiddleware.cs`) converts exceptions into an `ErrorResponse<T>` instead of letting them propagate. Its constructor takes `ILogger<ErrorHandlingMiddleware>`.
+
+- `ExecuteWithErrorHandlingAsync<T>(string operationName, Func<Task<T>> operation)` and `ExecuteWithErrorHandling<T>(string operationName, Func<T> operation)` return `ErrorResponse<T>`. On success, `Success` is `true` and `Data` holds the result. Any exception is caught, and the returned response has `Success = false`.
+- An extension overload takes the operation name from `[CallerMemberName]`.
+
+Exception mapping is by exact type. A derived type, such as `ArgumentNullException` (a subclass of `ArgumentException`), is not matched by its base type and falls through to `INTERNAL_ERROR`.
+
+| Exception type | `ErrorCode` | `Message` | `IsRecoverable` |
+|----------------|-------------|-----------|-----------------|
+| `PipelineException` | `PIPELINE_ERROR` | The exception message | `true` |
+| `TimeoutException` | `TIMEOUT` | `Operation timed out` | `true` |
+| `InvalidOperationException` | `INVALID_OPERATION` | `Invalid operation` | `false` |
+| `ArgumentException` | `INVALID_ARGUMENT` | `Invalid argument provided` | `false` |
+| Anything else | `INTERNAL_ERROR` | `An internal error occurred` | `false` |
+
+Recoverable errors are logged at Warning and the rest at Error, both with the exception attached. The failure response copies `ErrorCode`, `Message`, and `IsRecoverable`. It does not copy `Details`, which stays empty, so read the log to see the exception detail.
+
+`ErrorResponse` has `ErrorCode` (default `"ERROR"`), `Message`, `IsRecoverable`, `Details`, and `Timestamp` (UTC, set at creation). `ErrorResponse<T>` adds `Success` and `Data`.
+
+`RetryMiddleware` and `CircuitBreakerMiddleware` are in the same file.
+
+### RetryMiddleware
+
+`RetryMiddleware` retries an async operation with exponential backoff.
+
+- Constructor: `RetryMiddleware(ILogger<RetryMiddleware> logger, int maxRetries = 3, int initialDelayMs = 100)`. The constants `DefaultMaxRetries` (3) and `DefaultInitialDelayMs` (100) hold the defaults.
+- `ExecuteWithRetryAsync<T>(string operationName, Func<Task<T>> operation, Func<Exception, bool> shouldRetry)` calls the operation. If it throws and `shouldRetry` returns `true` while fewer than `maxRetries` retries have been made, it waits and calls again. The delay doubles after each retry.
+- `maxRetries` counts retries after the first call, so the operation runs at most `maxRetries + 1` times. With the defaults, the waits are 100 ms, 200 ms, and 400 ms.
+- When retries run out or `shouldRetry` returns `false`, the original exception propagates unchanged.
+- There is no maximum delay and no jitter. There is no `CancellationToken` parameter.
+
+### CircuitBreakerMiddleware
+
+`CircuitBreakerMiddleware` has `ExecuteAsync<T>(string operationName, Func<Task<T>> operation)`. The constructor takes `ILogger<CircuitBreakerMiddleware>` and `int failureThreshold = 5`.
+
+- The breaker opens after `failureThreshold` failures. In the closed state, a success does not reset the failure count.
+- While open, calls throw `InvalidOperationException` without running the operation. After a fixed 30 seconds, the next call runs in the half-open state. A success there closes the breaker.
+- It uses plain fields with no locking, so use one instance from one caller at a time.
+
+### RateLimitingMiddleware
+
+`RateLimitingMiddleware` (`src/Middleware/RateLimitingMiddleware.cs`) is a token bucket with one bucket per identifier. The constructor is `RateLimitingMiddleware(int tokensPerSecond = 1000, int maxBurstSize = 5000)`. The constants `DefaultTokensPerSecond` and `DefaultMaxBurstSize` hold these defaults.
+
+- `tokensPerSecond` is the refill rate. Tokens are added in whole units: each refill adds `(long)(tokensPerSecond * elapsedSeconds)`. Each refill also moves the timestamp forward even when no whole token was added. If calls for one identifier arrive more often than once every `1 / tokensPerSecond` seconds, the bucket never refills, because the fractional tokens are discarded.
+- `maxBurstSize` is the bucket capacity. A new bucket starts full at `maxBurstSize`, and the available count never exceeds it.
+- `TryAcquire(string identifier, int tokensRequired = 1)` returns `true` and consumes the tokens if enough are available. Otherwise it returns `false` and consumes nothing. It never waits. A request for more than `maxBurstSize` tokens always returns `false`. A null or empty identifier throws `ArgumentException`.
+- `GetStatus(string identifier)` returns a `RateLimitStatus` with `AvailableTokens`, `Capacity`, and `ResetTime`. `IsLimited` is `true` when `AvailableTokens` is below half of `Capacity`. For an identifier that has never been used, `AvailableTokens` is `tokensPerSecond` rather than `maxBurstSize`, and `ResetTime` keeps its default value.
+- `Reset(string identifier)` removes the bucket, so the next call starts with a full bucket.
+- `GetAllStatuses()` returns the status of every known identifier.
+
+The extension methods are `IsRateLimitExceeded(string identifier)`, which returns `true` when `AvailableTokens` is 0 or less, and `GetStatusesNearLimit(int threshold)`, which returns the statuses at or below a token count.
+
+`StageRateLimitingMiddleware` (same file) applies a separate limit to each pipeline stage. `RegisterStageLimit(string stageName, int itemsPerSecond, int burstSize)` adds a limit, and `CanProcessInStage(string stageName, int itemCount = 1)` checks it. A stage with no registered limit is always allowed. The registry is a plain `Dictionary`, so register all stages before you start processing.
+
+### Composition example
+
+The middleware types are independent of each other and of the pipeline. Compose them in the caller. The example below rate-limits by source, retries transient timeouts, times the call, and returns an `ErrorResponse<bool>` in every case:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Middleware;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.Logging;
+
+var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+
+var limiter = new RateLimitingMiddleware(tokensPerSecond: 100, maxBurstSize: 200);
+var retry = new RetryMiddleware(loggerFactory.CreateLogger<RetryMiddleware>(), maxRetries: 2, initialDelayMs: 50);
+var perf = new PerformanceLoggingMiddleware(loggerFactory.CreateLogger<PerformanceLoggingMiddleware>());
+var errors = new ErrorHandlingMiddleware(loggerFactory.CreateLogger<ErrorHandlingMiddleware>());
+var logging = new LoggingMiddleware(loggerFactory.CreateLogger<LoggingMiddleware>());
+var correlation = new CorrelationMiddleware();
+
+async Task<ErrorResponse<bool>> IngestAsync(PipelineOrchestrator pipeline, DataPoint point)
+{
+    return await correlation.WithCorrelationAsync(async _ =>
+    {
+        // 1. Rate limit per source. A denied request never reaches the pipeline.
+        if (!limiter.TryAcquire(point.Source))
+        {
+            return new ErrorResponse<bool>
+            {
+                Success = false,
+                ErrorCode = "RATE_LIMITED",
+                Message = $"Source {point.Source} is over its limit",
+                IsRecoverable = true
+            };
+        }
+
+        logging.LogDataIngestion(point, "ingest");
+
+        // 2. Error handling is outermost, so anything that escapes the retry becomes an ErrorResponse.
+        // 3. Timing wraps the retried call, so the duration includes retry delays.
+        return await errors.ExecuteWithErrorHandlingAsync("IngestDataPoint", () =>
+            perf.MeasureAsync("IngestDataPoint", () =>
+                retry.ExecuteWithRetryAsync(
+                    "IngestDataPoint",
+                    () => pipeline.IngestDataPointAsync(point),
+                    ex => ex is TimeoutException)));
+    });
+}
+
+ErrorResponse<bool> response = await IngestAsync(pipeline, new DataPoint(
+    id: 42,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 21.5,
+    source: "sensor-a"));
+
+if (!response.Success)
+{
+    Console.WriteLine($"{response.ErrorCode}: {response.Message} (recoverable: {response.IsRecoverable})");
+}
+```
+
+The order in the example matters. The rate limit runs first, so denied requests are never retried. Retry sits inside the error handler, so a timeout that is still failing after the last retry is converted into a `TIMEOUT` response. `IngestDataPointAsync` returns `false` under backpressure without throwing, so the retry does not run for that case.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
