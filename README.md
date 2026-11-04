@@ -1,206 +1,96 @@
-## CommandLineParserTests
+## PipelineOrchestrator
 
-The CommandLineParserTests class contains unit tests for the CommandLineParser class. These tests verify that the parser correctly handles various command-line scenarios, including parsing empty arguments, unknown commands, and commands with required and optional options.
+`PipelineOrchestrator` coordinates ingestion, processing, windowing, backpressure, queries, and metrics for a configured pipeline.
 
-Example usage:
+- `StartAsync()` starts the processing loop and creates backpressure contexts for the configured stages. Calling it while the pipeline is already running has no effect.
+- `StopAsync()` gracefully stops the pipeline by calling `DrainAsync` with a five-second timeout.
+- `DrainAsync(TimeSpan timeout)` immediately stops new ingestion, waits for queued items to be processed up to the positive timeout, discards any items still queued, flushes active windows, captures a final health report, and returns a `DrainResult` with processed, failed, dropped, and flushed counts plus timeout status.
+- `DisposeAsync()` performs the same five-second drain when the pipeline has not already been stopped or drained, then suppresses finalization. Repeated disposal has no effect.
+- `IngestDataPointAsync(DataPoint dataPoint)` requires a running pipeline and enqueues one point when the ingestion backpressure buffer accepts it. It returns `false` after applying backpressure when capacity is unavailable.
+- `ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)` submits each point through `IngestDataPointAsync` and returns a `BatchProcessingResult` containing successful and failed acceptance counts.
+- `GetStatus()` returns a `PipelineStatus` snapshot with running state, lifetime processed and failed totals, queued item count, configuration identity, backpressure status, and a UTC timestamp. Call `GetSummary()` on that returned `PipelineStatus` for its compact status string.
+- `GetHealthReportAsync()` generates the current metrics health report.
+- `GetThroughput()` returns pipeline-wide events per second; `GetThroughput(string stageName)` returns events per second for one stage.
+- `GetPerformanceTrendAsync()` analyzes the recorded metrics and returns a `PerformanceTrend`.
+
+The orchestrator is registered by the library's service collection setup, so an application can resolve and use it through dependency injection:
+
 ```csharp
-CommandLineParser parser = new CommandLineParser();
-parser.Parse("--help");
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+await using PipelineOrchestrator pipeline =
+    serviceProvider.GetRequiredService<PipelineOrchestrator>();
+
+await pipeline.StartAsync();
+
+await pipeline.IngestDataPointAsync(new DataPoint(
+    id: 1,
+    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    value: 21.5,
+    source: "sensor-a"));
+
+BatchProcessingResult batch = await pipeline.ProcessBatchDataPointsAsync(
+    new List<DataPoint>
+    {
+        new(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.0, "sensor-a"),
+        new(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 19.8, "sensor-b")
+    });
+
+PipelineStatus status = pipeline.GetStatus();
+Console.WriteLine(status.GetSummary());
+Console.WriteLine($"Throughput: {pipeline.GetThroughput():F2} events/sec");
+
+HealthReport health = await pipeline.GetHealthReportAsync();
+PerformanceTrend trend = await pipeline.GetPerformanceTrendAsync();
+DrainResult drain = await pipeline.DrainAsync(TimeSpan.FromSeconds(10));
 ```
 
-## MetricsServiceTestsExtensions
+## PipelineConfigurationBuilder
 
-The MetricsServiceTestsExtensions class provides extension methods for testing the MetricsService class. It includes methods for getting the service instance, setting up a mock repository, generating test data points, and verifying the results.
+`PipelineConfigurationBuilder` creates a `PipelineConfig` with configuration ID `1` from the required, non-empty pipeline name and version passed to its constructor. Its fluent methods are:
 
-Example usage:
+- `WithBufferConfiguration(long maxBufferSize, long flushIntervalMs, int maxConcurrentConsumers)` sets buffer capacity, flush interval, and consumer concurrency.
+- `WithWindowingConfiguration(long windowSizeMs, long windowSlideMs, string windowType)` sets the window duration, slide, and non-empty window type.
+- `WithPerformanceConfiguration(int maxRetries, long retryDelayMs, long processingTimeoutMs, double backpressureTriggerThreshold)` sets retry, timeout, and backpressure values.
+- `WithQualityConfiguration(int minDataQualityThreshold, bool validateOnIngestion, bool enableMetricsCollection)` sets quality validation and metrics options.
+- `WithStage(string stageName, string stageType)` adds a stage with a non-empty name and type.
+- `WithCustomSetting(string key, object value)` adds or replaces a non-null custom setting under a non-empty key.
+- `WithHighPerformanceDefaults()` sets buffer size `100000`, flush interval `500` ms, `16` consumers, window size `1000` ms, window slide `500` ms, `2` retries, and retry delay `50` ms.
+- `WithLowLatencyDefaults()` sets buffer size `5000`, flush interval `100` ms, `2` consumers, window size `1000` ms, window slide `100` ms, and processing timeout `5000` ms.
+- `WithHighReliabilityDefaults()` sets buffer size `50000`, flush interval `2000` ms, `4` consumers, `5` retries, retry delay `500` ms, minimum data quality `85`, and ingestion validation enabled.
+- `Build()` adds default stages when no stages were supplied, validates the configuration, and returns the `PipelineConfig`; invalid values cause an `InvalidOperationException`.
+
+The builder also provides `Activate()` and `Deactivate()` to set `IsActive`. Before fluent overrides, the underlying `PipelineConfig` defaults are a buffer size of `10000`, a `1000` ms flush interval, `4` consumers, a `5000` ms tumbling window sliding every `1000` ms, `3` retries with a `100` ms delay, a `30000` ms processing timeout, an `80.0` backpressure threshold, a minimum data quality of `70`, ingestion validation and metrics collection enabled, and an active configuration. Any property not changed by a preset retains this underlying default (or a value set earlier in the chain).
+
+If no `WithStage` call is made, `Build()` adds `Ingestion` (`SOURCE`), `Validation` (`FILTER`), `Transformation` (`TRANSFORM`), `Windowing` (`WINDOW`), `Aggregation` (`AGGREGATE`), and `Output` (`SINK`) in that order.
+
 ```csharp
-public static MetricsService GetService
-public static Mock<IMetricsRepository> GetMockRepository
-public static void VerifyMetricsService
-public static IReadOnlyList<DataPoint> GenerateTestDataPoints
-public static void ConfigureMockRepository
-public static void VerifyTestResult
-public static void VerifyTestResult
-```
+using DotNetRealtimePipeline.Configuration;
+using DotNetRealtimePipeline.Domain.Models;
 
-## ValidationHelperValidation
-
-The ValidationHelperValidation class provides a suite of static methods for validating data integrity, including time range checks and boundary validations. It supports multiple validation strategies, returning boolean flags, detailed result objects, or lists of error messages to accommodate different error handling requirements.
-
-Example usage:
-```csharp
-// Perform specific checks
-bool timeValid = ValidationHelperValidation.IsInTimeRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(-1));
-bool boundsValid = ValidationHelperValidation.IsWithinBounds(50, 0, 100);
-
-// Validate and retrieve results
-var result = ValidationHelperValidation.Validate(inputData);
-var errors = ValidationHelperValidation.Validate(inputData);
-
-// Check validity or enforce it
-if (ValidationHelperValidation.IsValid(inputData))
-{
-    ValidationHelperValidation.EnsureValid(inputData);
-}
-```
-
-## DataProcessingServiceTestsExtensions
-
-The DataProcessingServiceTestsExtensions class provides static methods for creating test data and pipeline configurations for unit testing the DataProcessingService class.
-
-Example usage:
-```csharp
-public static DataPoint CreateValidDataPoint
-public static DataPoint CreateLowQualityDataPoint
-public static DataPoint CreateInvalidDataPoint
-public static PipelineConfig CreateTestPipelineConfig
-public static ProcessingResult CreateSuccessfulResult
-public static ProcessingResult CreateFailedResult
-```
-
-## PipelineEventPublisherJsonExtensionsTests
-
-The PipelineEventPublisherJsonExtensionsTests class validates the JSON serialization and deserialization functionality for PipelineEventPublisher, ensuring proper formatting, null handling, and robust parsing through both direct and Try-based methods.
-
-Example usage:
-```csharp
-var publisher = new PipelineEventPublisher();
-
-// Serialize to JSON (supports indentation)
-string json = publisher.ToJson(indented: true);
-
-// Deserialize from JSON
-var deserialized = PipelineEventPublisherJsonExtensions.FromJson(json);
-
-// Try to parse from JSON safely
-if (PipelineEventPublisherJsonExtensions.TryFromJson(json, out var result))
-{
-    // Result is now an instance of PipelineEventPublisher
-}
-```
-
-## PipelineEventPublisherValidationTests
-
-The `PipelineEventPublisherValidationTests` class is an xUnit test fixture that verifies the publisher validation extension methods, including successful validation, null handling, exception behavior, and read-only validation results. xUnit discovers its public test methods automatically, while direct invocation can be useful when debugging a particular validation scenario.
-
-Example usage:
-```csharp
-using DotNetRealtimePipeline.Tests;
-
-var tests = new PipelineEventPublisherValidationTests();
-
-tests.Validate_WithValidPublisher_ReturnsEmptyList();
-tests.IsValid_WithNullPublisher_ThrowsArgumentNullException();
-tests.EnsureValid_WithInvalidPublisher_ThrowsArgumentException();
-tests.Validate_ReturnsReadOnlyList();
-tests.Methods_AreExtensionMethodsForPipelineEventPublisher();
-```
-
-## ApiEndpointHandlerExtensionsTests
-
-The ApiEndpointHandlerExtensionsTests class verifies that the ApiEndpointHandlerExtensions class correctly manages API response construction, ensuring that successful results, error responses, and paginated outputs are generated as expected. It includes comprehensive test coverage for edge cases, including null handling and invalid input parameters, guaranteeing reliability across all response scenarios.
-
-Example usage:
-```csharp
-// Verify standard successful response creation
-[Fact]
-public void Ok_CreatesSuccessfulResponseWithData_Example()
-{
-    var handler = new ApiEndpointHandler();
-    var data = new { Message = "Test" };
-    var result = handler.Ok(data);
-    Assert.Equal(200, result.StatusCode);
-}
-```
-
-## RateLimitingMiddlewareConcurrencyTests
-
-The RateLimitingMiddlewareConcurrencyTests class validates the thread-safety and correctness of the RateLimitingMiddleware under concurrent access.
-It ensures that the rate limiter does not exceed its limit, that properties are thread-safe, and that concurrent operations on different identifiers do not interfere.
-
-Example usage:
-```csharp
-// Create a rate limiter that allows 10 tokens per second with a max burst of 10.
-var limiter = new RateLimitingMiddleware(tokensPerSecond: 10, maxBurstSize: 10);
-string identifier = "my-api";
-
-// Try to acquire a token (returns true if allowed, false if rate limited).
-bool allowed = limiter.TryAcquire(identifier);
-
-// Get current status (available tokens, capacity, reset time, etc.)
-var status = limiter.GetStatus(identifier);
-int availableTokens = status.AvailableTokens;
-
-// Reset the limiter for a specific identifier (e.g., after a configuration change).
-limiter.Reset(identifier);
-```
-
-## ApiEndpointHandlerValidationTests
-
-The ApiEndpointHandlerValidationTests class is an xUnit test fixture that verifies validation behavior for API responses, batch ingestion results, and pipeline status information. It covers valid and invalid models as well as the exceptions raised for invalid or null values; xUnit normally discovers these public test methods automatically, but they can also be invoked directly when debugging a specific scenario.
-
-Example usage:
-```csharp
-using DotNetRealtimePipeline.Tests;
-
-var tests = new ApiEndpointHandlerValidationTests();
-
-tests.Validate_ApiResponse_Valid_ReturnsEmptyList();
-tests.Validate_BatchIngestResult_Invalid_ReturnsErrors();
-tests.EnsureValid_PipelineStatusInfo_ThrowsWhenInvalid();
-```
-
-## BatchProcessorTests
-
-The `BatchProcessorTests` class is an xUnit test fixture that verifies generic and data-point batch processing, including batching boundaries, parallel execution, progress callbacks, empty input, and failure handling. It also checks the available `BatchProcessingException` constructors; xUnit discovers these public test methods automatically, though they can be called directly when debugging.
-
-Example usage:
-```csharp
-using DotNetRealtimePipeline.Tests;
-
-var tests = new BatchProcessorTests();
-
-await tests.ProcessAsync_AllItemsSucceed_ReturnsAllResults();
-tests.CreateBatches_ItemsNotDivisibleByBatchSize_ReturnsPartialFinalBatch();
-await tests.DataPointBatchProcessor_ProcessBatchAsync_AllItemsSucceed_ReturnsAllResults();
-tests.BatchProcessingException_ConstructsWithMessageAndInnerException();
-```
-
-## SlidingWindowAggregatorTests
-
-The `SlidingWindowAggregatorTests` class is an xUnit test fixture that verifies sliding-window aggregation, eviction, empty and single-value windows, out-of-order timestamps, multiple-window emission, trend calculations, and window metadata. xUnit discovers its public test methods automatically, though they can also be invoked directly when debugging the aggregator's behavior.
-
-Example usage:
-```csharp
-using DotNetRealtimePipeline.Tests;
-
-var tests = new SlidingWindowAggregatorTests();
-
-tests.ValuesWithinWindowAggregateCorrectly();
-tests.ValuesOlderThanWindowAreEvictedFromAggregate();
-tests.EmptyWindowResult();
-tests.SingleValueInWindow();
-tests.OutOfOrderTimestampHandling();
-tests.MultipleWindowsEmitted();
-tests.AggregationCalculationsAreCorrect();
-tests.TrendCalculationIsCorrect();
-tests.WindowMetadataIsCorrect();
-```
-
-## ApiEndpointHandlerTests
-
-The `ApiEndpointHandlerTests` class is an xUnit test fixture that verifies single-point and batch ingestion responses for successful, rejected, invalid, and exceptional requests. It also checks the public response and batch-result properties; xUnit discovers these methods automatically, while direct invocation is useful when debugging a specific case.
-
-Example usage:
-```csharp
-using DotNetRealtimePipeline.Tests;
-
-var tests = new ApiEndpointHandlerTests();
-
-await tests.IngestAsync_WithValidDataPoint_ReturnsSuccessResponse();
-await tests.IngestBatchAsync_WithValidBatch_ReturnsSuccessResponseWithBatchResults();
-tests.ApiResponse_StatusCodeProperty_ReturnsCorrectValue();
-tests.BatchIngestResult_TotalCountProperty_ReturnsCorrectValue();
+PipelineConfig config = new PipelineConfigurationBuilder("telemetry", "1.0.0")
+    .WithBufferConfiguration(
+        maxBufferSize: 25_000,
+        flushIntervalMs: 500,
+        maxConcurrentConsumers: 8)
+    .WithWindowingConfiguration(
+        windowSizeMs: 10_000,
+        windowSlideMs: 2_000,
+        windowType: "SLIDING")
+    .WithPerformanceConfiguration(
+        maxRetries: 4,
+        retryDelayMs: 250,
+        processingTimeoutMs: 20_000,
+        backpressureTriggerThreshold: 75.0)
+    .WithQualityConfiguration(
+        minDataQualityThreshold: 80,
+        validateOnIngestion: true,
+        enableMetricsCollection: true)
+    .WithCustomSetting("region", "us-east")
+    .Activate()
+    .Build();
 ```
 
 ## SlidingWindowAggregator
@@ -287,51 +177,50 @@ backpressure.RemoveFromBuffer("enrichment", 201); // 59.9%, below the low-water 
 Console.WriteLine($"Active={backpressure.IsBackpressured("enrichment")}");
 ```
 
-## PipelineConfigurationBuilder
+## Checkpointing and recovery
 
-`PipelineConfigurationBuilder` creates a `PipelineConfig` with configuration ID `1` from the required, non-empty pipeline name and version passed to its constructor. Its fluent methods are:
+The `CheckpointManager` service allows a pipeline to record processing offsets so that after a restart it can resume from the last committed position rather than reprocessing from the beginning.
 
-- `WithBufferConfiguration(long maxBufferSize, long flushIntervalMs, int maxConcurrentConsumers)` sets buffer capacity, flush interval, and consumer concurrency.
-- `WithWindowingConfiguration(long windowSizeMs, long windowSlideMs, string windowType)` sets the window duration, slide, and non-empty window type.
-- `WithPerformanceConfiguration(int maxRetries, long retryDelayMs, long processingTimeoutMs, double backpressureTriggerThreshold)` sets retry, timeout, and backpressure values.
-- `WithQualityConfiguration(int minDataQualityThreshold, bool validateOnIngestion, bool enableMetricsCollection)` sets quality validation and metrics options.
-- `WithStage(string stageName, string stageType)` adds a stage with a non-empty name and type.
-- `WithCustomSetting(string key, object value)` adds or replaces a non-null custom setting under a non-empty key.
-- `WithHighPerformanceDefaults()` sets buffer size `100000`, flush interval `500` ms, `16` consumers, window size `1000` ms, window slide `500` ms, `2` retries, and retry delay `50` ms.
-- `WithLowLatencyDefaults()` sets buffer size `5000`, flush interval `100` ms, `2` consumers, window size `1000` ms, window slide `100` ms, and processing timeout `5000` ms.
-- `WithHighReliabilityDefaults()` sets buffer size `50000`, flush interval `2000` ms, `4` consumers, `5` retries, retry delay `500` ms, minimum data quality `85`, and ingestion validation enabled.
-- `Build()` adds default stages when no stages were supplied, validates the configuration, and returns the `PipelineConfig`; invalid values cause an `InvalidOperationException`.
+### Configuration
 
-The builder also provides `Activate()` and `Deactivate()` to set `IsActive`. Before fluent overrides, the underlying `PipelineConfig` defaults are a buffer size of `10000`, a `1000` ms flush interval, `4` consumers, a `5000` ms tumbling window sliding every `1000` ms, `3` retries with a `100` ms delay, a `30000` ms processing timeout, an `80.0` backpressure threshold, a minimum data quality of `70`, ingestion validation and metrics collection enabled, and an active configuration. Any property not changed by a preset retains this underlying default (or a value set earlier in the chain).
-
-If no `WithStage` call is made, `Build()` adds `Ingestion` (`SOURCE`), `Validation` (`FILTER`), `Transformation` (`TRANSFORM`), `Windowing` (`WINDOW`), `Aggregation` (`AGGREGATE`), and `Output` (`SINK`) in that order.
+Create a `CheckpointManager` instance, optionally specifying a persistence path for durable storage (e.g., a file). If no path is provided, checkpoints are kept in-memory only and will be lost on process exit.
 
 ```csharp
-using DotNetRealtimePipeline.Configuration;
-using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
 
-PipelineConfig config = new PipelineConfigurationBuilder("telemetry", "1.0.0")
-    .WithBufferConfiguration(
-        maxBufferSize: 25_000,
-        flushIntervalMs: 500,
-        maxConcurrentConsumers: 8)
-    .WithWindowingConfiguration(
-        windowSizeMs: 10_000,
-        windowSlideMs: 2_000,
-        windowType: "SLIDING")
-    .WithPerformanceConfiguration(
-        maxRetries: 4,
-        retryDelayMs: 250,
-        processingTimeoutMs: 20_000,
-        backpressureTriggerThreshold: 75.0)
-    .WithQualityConfiguration(
-        minDataQualityThreshold: 80,
-        validateOnIngestion: true,
-        enableMetricsCollection: true)
-    .WithCustomSetting("region", "us-east")
-    .Activate()
-    .Build();
+// Persist checkpoints to a file in the current directory.
+var checkpointManager = new CheckpointManager("checkpoints.json");
+
+// On startup, load any previously persisted checkpoints.
+await checkpointManager.LoadAsync();
 ```
+
+### Usage in a pipeline stage
+
+Within each pipeline stage, after successfully processing a batch or a single data point, commit the offset (e.g., the sequence number or timestamp) to the checkpoint manager.
+
+```csharp
+// Example: committing after processing a data point.
+long lastProcessedOffset = dataPoint.Timestamp; // or any monotonic offset
+await checkpointManager.CommitAsync("enrichment", lastProcessedOffset, cancellationToken);
+```
+
+### Resuming after restart
+
+When the pipeline starts again, load the persisted checkpoints and use `GetLastOffset` (or `GetCheckpoint`) to determine where to resume for each stage.
+
+```csharp
+// After LoadAsync as shown above:
+long enrichmentOffset = checkpointManager.GetLastOffset("enrichment");
+// If the offset is -1, no checkpoint exists; start from the beginning.
+// Otherwise, begin processing from the next offset after enrichmentOffset.
+```
+
+### Delivery guarantees
+
+The checkpoint manager itself provides an **at-least-once** delivery guarantee when used in the typical pattern of committing after successful processing. If the process crashes after a data point is processed but before its offset is checkpointed, that data point will be reprocessed after restart. Conversely, because offsets are only advanced after successful processing, no data point is skipped, guaranteeing at-least-once processing.
+
+Exactly-once processing is not automatically provided; it requires that the processing side effects be idempotent or that transactions span both the processing and checkpoint commitment. The `CheckpointManager` does not coordinate with external systems to achieve exactly-once semantics.
 
 ## DeadLetterQueue
 
@@ -387,100 +276,215 @@ Console.WriteLine(
     $"InRetry={stats.InRetryEntries}, Resolved={stats.TotalResolved}, Replayed={replayed}");
 ```
 
-## PipelineOrchestrator
+## ValidationHelperValidation
 
-`PipelineOrchestrator` coordinates ingestion, processing, windowing, backpressure, queries, and metrics for a configured pipeline.
+The ValidationHelperValidation class provides a suite of static methods for validating data integrity, including time range checks and boundary validations. It supports multiple validation strategies, returning boolean flags, detailed result objects, or lists of error messages to accommodate different error handling requirements.
 
-- `StartAsync()` starts the processing loop and creates backpressure contexts for the configured stages. Calling it while the pipeline is already running has no effect.
-- `StopAsync()` gracefully stops the pipeline by calling `DrainAsync` with a five-second timeout.
-- `DrainAsync(TimeSpan timeout)` immediately stops new ingestion, waits for queued items to be processed up to the positive timeout, discards any items still queued, flushes active windows, captures a final health report, and returns a `DrainResult` with processed, failed, dropped, and flushed counts plus timeout status.
-- `DisposeAsync()` performs the same five-second drain when the pipeline has not already been stopped or drained, then suppresses finalization. Repeated disposal has no effect.
-- `IngestDataPointAsync(DataPoint dataPoint)` requires a running pipeline and enqueues one point when the ingestion backpressure buffer accepts it. It returns `false` after applying backpressure when capacity is unavailable.
-- `ProcessBatchDataPointsAsync(List<DataPoint> dataPoints)` submits each point through `IngestDataPointAsync` and returns a `BatchProcessingResult` containing successful and failed acceptance counts.
-- `GetStatus()` returns a `PipelineStatus` snapshot with running state, lifetime processed and failed totals, queued item count, configuration identity, backpressure status, and a UTC timestamp. Call `GetSummary()` on that returned `PipelineStatus` for its compact status string.
-- `GetHealthReportAsync()` generates the current metrics health report.
-- `GetThroughput()` returns pipeline-wide events per second; `GetThroughput(string stageName)` returns events per second for one stage.
-- `GetPerformanceTrendAsync()` analyzes the recorded metrics and returns a `PerformanceTrend`.
-
-The orchestrator is registered by the library's service collection setup, so an application can resolve and use it through dependency injection:
-
+Example usage:
 ```csharp
-using DotNetRealtimePipeline.Domain.Models;
-using DotNetRealtimePipeline.Services;
-using Microsoft.Extensions.DependencyInjection;
+// Perform specific checks
+bool timeValid = ValidationHelperValidation.IsInTimeRange(DateTime.UtcNow, DateTime.UtcNow.AddHours(-1));
+bool boundsValid = ValidationHelperValidation.IsWithinBounds(50, 0, 100);
 
-await using PipelineOrchestrator pipeline =
-    serviceProvider.GetRequiredService<PipelineOrchestrator>();
+// Validate and retrieve results
+var result = ValidationHelperValidation.Validate(inputData);
+var errors = ValidationHelperValidation.Validate(inputData);
 
-await pipeline.StartAsync();
-
-await pipeline.IngestDataPointAsync(new DataPoint(
-    id: 1,
-    timestamp: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-    value: 21.5,
-    source: "sensor-a"));
-
-BatchProcessingResult batch = await pipeline.ProcessBatchDataPointsAsync(
-    new List<DataPoint>
-    {
-        new(2, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 22.0, "sensor-a"),
-        new(3, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 19.8, "sensor-b")
-    });
-
-PipelineStatus status = pipeline.GetStatus();
-Console.WriteLine(status.GetSummary());
-Console.WriteLine($"Throughput: {pipeline.GetThroughput():F2} events/sec");
-
-HealthReport health = await pipeline.GetHealthReportAsync();
-PerformanceTrend trend = await pipeline.GetPerformanceTrendAsync();
-DrainResult drain = await pipeline.DrainAsync(TimeSpan.FromSeconds(10));
+// Check validity or enforce it
+if (ValidationHelperValidation.IsValid(inputData))
+{
+    ValidationHelperValidation.EnsureValid(inputData);
+}
 ```
-
-## Checkpointing and recovery
-
-The `CheckpointManager` service allows a pipeline to record processing offsets so that after a restart it can resume from the last committed position rather than reprocessing from the beginning.
-
-### Configuration
-
-Create a `CheckpointManager` instance, optionally specifying a persistence path for durable storage (e.g., a file). If no path is provided, checkpoints are kept in-memory only and will be lost on process exit.
-
-```csharp
-using DotNetRealtimePipeline.Services;
-
-// Persist checkpoints to a file in the current directory.
-var checkpointManager = new CheckpointManager("checkpoints.json");
-
-// On startup, load any previously persisted checkpoints.
-await checkpointManager.LoadAsync();
-```
-
-### Usage in a pipeline stage
-
-Within each pipeline stage, after successfully processing a batch or a single data point, commit the offset (e.g., the sequence number or timestamp) to the checkpoint manager.
-
-```csharp
-// Example: committing after processing a data point.
-long lastProcessedOffset = dataPoint.Timestamp; // or any monotonic offset
-await checkpointManager.CommitAsync("enrichment", lastProcessedOffset, cancellationToken);
-```
-
-### Resuming after restart
-
-When the pipeline starts again, load the persisted checkpoints and use `GetLastOffset` (or `GetCheckpoint`) to determine where to resume for each stage.
-
-```csharp
-// After LoadAsync as shown above:
-long enrichmentOffset = checkpointManager.GetLastOffset("enrichment");
-// If the offset is -1, no checkpoint exists; start from the beginning.
-// Otherwise, begin processing from the next offset after enrichmentOffset.
-```
-
-### Delivery guarantees
-
-The checkpoint manager itself provides an **at-least-once** delivery guarantee when used in the typical pattern of committing after successful processing. If the process crashes after a data point is processed but before its offset is checkpointed, that data point will be reprocessed after restart. Conversely, because offsets are only advanced after successful processing, no data point is skipped, guaranteeing at-least-once processing.
-
-Exactly-once processing is not automatically provided; it requires that the processing side effects be idempotent or that transactions span both the processing and checkpoint commitment. The `CheckpointManager` does not coordinate with external systems to achieve exactly-once semantics.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Test Suite
+
+Unit test fixtures and test helpers for the pipeline library.
+
+### CommandLineParserTests
+
+The CommandLineParserTests class contains unit tests for the CommandLineParser class. These tests verify that the parser correctly handles various command-line scenarios, including parsing empty arguments, unknown commands, and commands with required and optional options.
+
+Example usage:
+```csharp
+CommandLineParser parser = new CommandLineParser();
+parser.Parse("--help");
+```
+
+### MetricsServiceTestsExtensions
+
+The MetricsServiceTestsExtensions class provides extension methods for testing the MetricsService class. It includes methods for getting the service instance, setting up a mock repository, generating test data points, and verifying the results.
+
+Example usage:
+```csharp
+public static MetricsService GetService
+public static Mock<IMetricsRepository> GetMockRepository
+public static void VerifyMetricsService
+public static IReadOnlyList<DataPoint> GenerateTestDataPoints
+public static void ConfigureMockRepository
+public static void VerifyTestResult
+public static void VerifyTestResult
+```
+
+### DataProcessingServiceTestsExtensions
+
+The DataProcessingServiceTestsExtensions class provides static methods for creating test data and pipeline configurations for unit testing the DataProcessingService class.
+
+Example usage:
+```csharp
+public static DataPoint CreateValidDataPoint
+public static DataPoint CreateLowQualityDataPoint
+public static DataPoint CreateInvalidDataPoint
+public static PipelineConfig CreateTestPipelineConfig
+public static ProcessingResult CreateSuccessfulResult
+public static ProcessingResult CreateFailedResult
+```
+
+### PipelineEventPublisherJsonExtensionsTests
+
+The PipelineEventPublisherJsonExtensionsTests class validates the JSON serialization and deserialization functionality for PipelineEventPublisher, ensuring proper formatting, null handling, and robust parsing through both direct and Try-based methods.
+
+Example usage:
+```csharp
+var publisher = new PipelineEventPublisher();
+
+// Serialize to JSON (supports indentation)
+string json = publisher.ToJson(indented: true);
+
+// Deserialize from JSON
+var deserialized = PipelineEventPublisherJsonExtensions.FromJson(json);
+
+// Try to parse from JSON safely
+if (PipelineEventPublisherJsonExtensions.TryFromJson(json, out var result))
+{
+    // Result is now an instance of PipelineEventPublisher
+}
+```
+
+### PipelineEventPublisherValidationTests
+
+The `PipelineEventPublisherValidationTests` class is an xUnit test fixture that verifies the publisher validation extension methods, including successful validation, null handling, exception behavior, and read-only validation results. xUnit discovers its public test methods automatically, while direct invocation can be useful when debugging a particular validation scenario.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new PipelineEventPublisherValidationTests();
+
+tests.Validate_WithValidPublisher_ReturnsEmptyList();
+tests.IsValid_WithNullPublisher_ThrowsArgumentNullException();
+tests.EnsureValid_WithInvalidPublisher_ThrowsArgumentException();
+tests.Validate_ReturnsReadOnlyList();
+tests.Methods_AreExtensionMethodsForPipelineEventPublisher();
+```
+
+### ApiEndpointHandlerExtensionsTests
+
+The ApiEndpointHandlerExtensionsTests class verifies that the ApiEndpointHandlerExtensions class correctly manages API response construction, ensuring that successful results, error responses, and paginated outputs are generated as expected. It includes comprehensive test coverage for edge cases, including null handling and invalid input parameters, guaranteeing reliability across all response scenarios.
+
+Example usage:
+```csharp
+// Verify standard successful response creation
+[Fact]
+public void Ok_CreatesSuccessfulResponseWithData_Example()
+{
+    var handler = new ApiEndpointHandler();
+    var data = new { Message = "Test" };
+    var result = handler.Ok(data);
+    Assert.Equal(200, result.StatusCode);
+}
+```
+
+### RateLimitingMiddlewareConcurrencyTests
+
+The RateLimitingMiddlewareConcurrencyTests class validates the thread-safety and correctness of the RateLimitingMiddleware under concurrent access.
+It ensures that the rate limiter does not exceed its limit, that properties are thread-safe, and that concurrent operations on different identifiers do not interfere.
+
+Example usage:
+```csharp
+// Create a rate limiter that allows 10 tokens per second with a max burst of 10.
+var limiter = new RateLimitingMiddleware(tokensPerSecond: 10, maxBurstSize: 10);
+string identifier = "my-api";
+
+// Try to acquire a token (returns true if allowed, false if rate limited).
+bool allowed = limiter.TryAcquire(identifier);
+
+// Get current status (available tokens, capacity, reset time, etc.)
+var status = limiter.GetStatus(identifier);
+int availableTokens = status.AvailableTokens;
+
+// Reset the limiter for a specific identifier (e.g., after a configuration change).
+limiter.Reset(identifier);
+```
+
+### ApiEndpointHandlerValidationTests
+
+The ApiEndpointHandlerValidationTests class is an xUnit test fixture that verifies validation behavior for API responses, batch ingestion results, and pipeline status information. It covers valid and invalid models as well as the exceptions raised for invalid or null values; xUnit normally discovers these public test methods automatically, but they can also be invoked directly when debugging a specific scenario.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new ApiEndpointHandlerValidationTests();
+
+tests.Validate_ApiResponse_Valid_ReturnsEmptyList();
+tests.Validate_BatchIngestResult_Invalid_ReturnsErrors();
+tests.EnsureValid_PipelineStatusInfo_ThrowsWhenInvalid();
+```
+
+### BatchProcessorTests
+
+The `BatchProcessorTests` class is an xUnit test fixture that verifies generic and data-point batch processing, including batching boundaries, parallel execution, progress callbacks, empty input, and failure handling. It also checks the available `BatchProcessingException` constructors; xUnit discovers these public test methods automatically, though they can be called directly when debugging.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new BatchProcessorTests();
+
+await tests.ProcessAsync_AllItemsSucceed_ReturnsAllResults();
+tests.CreateBatches_ItemsNotDivisibleByBatchSize_ReturnsPartialFinalBatch();
+await tests.DataPointBatchProcessor_ProcessBatchAsync_AllItemsSucceed_ReturnsAllResults();
+tests.BatchProcessingException_ConstructsWithMessageAndInnerException();
+```
+
+### SlidingWindowAggregatorTests
+
+The `SlidingWindowAggregatorTests` class is an xUnit test fixture that verifies sliding-window aggregation, eviction, empty and single-value windows, out-of-order timestamps, multiple-window emission, trend calculations, and window metadata. xUnit discovers its public test methods automatically, though they can also be invoked directly when debugging the aggregator's behavior.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new SlidingWindowAggregatorTests();
+
+tests.ValuesWithinWindowAggregateCorrectly();
+tests.ValuesOlderThanWindowAreEvictedFromAggregate();
+tests.EmptyWindowResult();
+tests.SingleValueInWindow();
+tests.OutOfOrderTimestampHandling();
+tests.MultipleWindowsEmitted();
+tests.AggregationCalculationsAreCorrect();
+tests.TrendCalculationIsCorrect();
+tests.WindowMetadataIsCorrect();
+```
+
+### ApiEndpointHandlerTests
+
+The `ApiEndpointHandlerTests` class is an xUnit test fixture that verifies single-point and batch ingestion responses for successful, rejected, invalid, and exceptional requests. It also checks the public response and batch-result properties; xUnit discovers these methods automatically, while direct invocation is useful when debugging a specific case.
+
+Example usage:
+```csharp
+using DotNetRealtimePipeline.Tests;
+
+var tests = new ApiEndpointHandlerTests();
+
+await tests.IngestAsync_WithValidDataPoint_ReturnsSuccessResponse();
+await tests.IngestBatchAsync_WithValidBatch_ReturnsSuccessResponseWithBatchResults();
+tests.ApiResponse_StatusCodeProperty_ReturnsCorrectValue();
+tests.BatchIngestResult_TotalCountProperty_ReturnsCorrectValue();
+```
