@@ -1360,6 +1360,135 @@ Console.WriteLine(error);
 
 The example was not compiled or run against the repository. The sample output for the batch call assumes both data points are ingested successfully. Check the exact names and namespaces before relying on it.
 
+## Webhooks
+
+`src/Integration/WebhookHandler.cs` (namespace `DotNetRealtimePipeline.Integration`) has the outbound and inbound webhook types. The file contains these types:
+
+- `WebhookHandler` (sealed) sends pipeline events as HTTP POST requests to subscribed URLs. It has `Subscribe`, `Unsubscribe`, `SendWebhookEventAsync`, and `GetSubscriptions`. The constructor takes an `HttpClient` and an `ILogger<WebhookHandler>`. A `null` argument throws `ArgumentNullException`.
+- `WebhookSubscription` (sealed) is one registered endpoint.
+- `WebhookEventType` is a `[Flags]` enum of the events a subscription can receive.
+- `WebhookPayload` (sealed) is the JSON body sent to subscribers.
+- `InboundWebhookHandler` (sealed) takes payloads from external senders and passes them to registered callbacks.
+
+Like the REST handlers, these types are not registered in `ServiceCollectionExtensions`. Create them yourself. Use a long-lived `HttpClient`, for example from `IHttpClientFactory`, and set a timeout on it.
+
+### WebhookHandler
+
+`Subscribe(string url, WebhookEventType eventTypes, string secret = null)`:
+
+- A `null`, empty, or whitespace `url` throws `ArgumentException`.
+- It adds a subscription with a new GUID `Id`, `IsActive` set to `true`, and `CreatedAt` set to the current UTC time. It returns nothing. Read the `Id` from `GetSubscriptions()`.
+- Subscribing the same URL twice creates two subscriptions, and each one receives its own delivery.
+- `secret` is stored on the subscription, but it is not used. Payloads are not signed, and no signature header is sent. Do not rely on the secret to verify senders.
+
+`Unsubscribe(string url)`:
+
+- A `null`, empty, or whitespace `url` throws `ArgumentException`.
+- It removes every subscription whose `Url` matches exactly, and returns `true`. It returns `false` when nothing matched.
+
+`GetSubscriptions()` returns a new list that holds the same `WebhookSubscription` objects. Changing a property on one of them changes the handler's state.
+
+`SendWebhookEventAsync(WebhookEventType eventType, object eventData)`:
+
+- A `null` `eventData` throws `ArgumentNullException`.
+- It selects the subscriptions that are active and whose `EventTypes` include every flag in `eventType`. Passing a combined value such as `PipelineError | DataIngested` only matches subscriptions that have both flags.
+- It sends to all selected subscriptions in parallel and waits for all of them to finish (`Task.WhenAll`). If nothing matches, it returns immediately.
+- No `CancellationToken` parameter exists, so the call cannot be cancelled.
+
+Each request is an HTTP `POST` with a JSON body and the `application/json` content type. The body is a `WebhookPayload`:
+
+```json
+{
+  "EventType": "PipelineError",
+  "Data": { "Code": "E42", "Message": "Sink unavailable" },
+  "Timestamp": "2026-11-04T10:15:30.1234567Z",
+  "SubscriptionId": "5b7e2c1a-0f4d-4e8b-9a3c-2d6f1b9e7a10"
+}
+```
+
+Delivery rules:
+
+- A `2xx` response sets `LastDeliveredAt` to the current UTC time and resets `FailureCount` to `0`.
+- A `400` or `409` response is not retried. The subscription is set to `IsActive = false`. It stays in the list, but later sends skip it. Nothing in the class sets it back to `true`, although the property has a public setter.
+- An `HttpRequestException` counts as one attempt. A delivery makes up to 3 attempts. The handler waits 1 second after the first failure and 2 seconds after the second. It does not wait after the third.
+- When all 3 attempts fail, `FailureCount` goes up by one. When it reaches 5, the subscription is set to `IsActive = false`. The count is per delivery, so five consecutive failed events disable a subscription.
+- Other non-success statuses, such as `500` or `503`, are not counted, and the loop does not wait before it sends again. The loop only ends on a `2xx`, a `400`, a `409`, or an exception. A subscriber that keeps returning `500` will receive requests without a limit until its response changes. Do not point a subscription at an endpoint that can return a `5xx` status until this is fixed.
+- Exceptions other than `HttpRequestException` are not caught. An `HttpClient` timeout throws `TaskCanceledException`, which is an example. It is raised from `SendWebhookEventAsync` after the other deliveries in the same call have finished.
+
+`WebhookEventType` values:
+
+| Flag | Value |
+|---|---|
+| `DataIngested` | 1 |
+| `ProcessingCompleted` | 2 |
+| `BackpressureDetected` | 4 |
+| `MetricsCollected` | 8 |
+| `PipelineError` | 16 |
+| `All` | all five flags |
+
+### WebhookSubscription
+
+Public properties: `Id`, `Url`, `EventTypes`, `Secret`, `CreatedAt`, `LastDeliveredAt` (`DateTime?`, `null` until the first success), `IsActive`, and `FailureCount`. `ToString()` shows whether a secret is set, but never its value.
+
+### WebhookPayload
+
+Public properties: `EventType` (the enum name as a string), `Data` (the object passed to `SendWebhookEventAsync`, serialized with `System.Text.Json`), `Timestamp` (UTC), and `SubscriptionId`. `ToString()` prints all four.
+
+### InboundWebhookHandler
+
+The constructor takes an `ILogger<InboundWebhookHandler>`. A `null` logger throws `ArgumentNullException`.
+
+`RegisterHandler(Func<WebhookPayload, Task> handler)` adds a callback. A `null` handler throws `ArgumentNullException`. The list is not locked, so register all handlers during startup, before you call `ProcessWebhookAsync` from several threads.
+
+`ProcessWebhookAsync(WebhookPayload payload)`:
+
+- A `null` payload logs a warning and returns.
+- Otherwise it logs the `EventType` at `Information` level and awaits each handler in registration order.
+- If a handler throws, the exception is logged at `Error` level and the next handler still runs. The method does not throw because of a handler failure.
+- It does not check a signature or any authentication header, and it does not parse HTTP requests. Verify the request in your endpoint first, then build the `WebhookPayload` from the body.
+
+### Example
+
+```csharp
+using DotNetRealtimePipeline.Integration;
+using Microsoft.Extensions.Logging.Abstractions;
+
+var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+var outbound = new WebhookHandler(httpClient, NullLogger<WebhookHandler>.Instance);
+
+// Receives PipelineError and ProcessingCompleted events. The secret is stored but not sent.
+outbound.Subscribe(
+    "https://hooks.example.com/pipeline",
+    WebhookEventType.PipelineError | WebhookEventType.ProcessingCompleted,
+    "shared-secret");
+
+// Delivered to every active subscription whose flags include PipelineError.
+await outbound.SendWebhookEventAsync(
+    WebhookEventType.PipelineError,
+    new { Code = "E42", Message = "Sink unavailable" });
+
+var subscription = outbound.GetSubscriptions()[0];
+Console.WriteLine(subscription);  // WebhookSubscription { ..., Secret = set, ... }
+
+outbound.Unsubscribe("https://hooks.example.com/pipeline");  // true
+
+var inbound = new InboundWebhookHandler(NullLogger<InboundWebhookHandler>.Instance);
+inbound.RegisterHandler(payload =>
+{
+    Console.WriteLine($"Received {payload.EventType} for {payload.SubscriptionId}");
+    return Task.CompletedTask;
+});
+
+// Call this from your endpoint after the request has been verified.
+await inbound.ProcessWebhookAsync(new WebhookPayload
+{
+    EventType = nameof(WebhookEventType.DataIngested),
+    Data = new { Source = "sensor-1" },
+    Timestamp = DateTime.UtcNow,
+    SubscriptionId = "external"
+});
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
