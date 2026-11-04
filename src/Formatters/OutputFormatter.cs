@@ -49,14 +49,18 @@ public sealed class JsonOutputFormatter : IOutputFormatter
     };
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public string Format<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
         return JsonSerializer.Serialize(data, Options);
     }
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
         return await Task.FromResult(Format(data));
     }
 }
@@ -67,8 +71,11 @@ public sealed class JsonOutputFormatter : IOutputFormatter
 public sealed class CsvOutputFormatter : IOutputFormatter
 {
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public string Format<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         if (data is List<DataPoint> dataPoints)
         {
             return FormatDataPoints(dataPoints);
@@ -83,8 +90,10 @@ public sealed class CsvOutputFormatter : IOutputFormatter
     }
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
         return await Task.FromResult(Format(data));
     }
 
@@ -136,8 +145,11 @@ public sealed class TableOutputFormatter : IOutputFormatter
     private const int ColumnPadding = 2;
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public string Format<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         if (data is List<DataPoint> dataPoints)
         {
             return FormatDataPointsTable(dataPoints);
@@ -152,8 +164,10 @@ public sealed class TableOutputFormatter : IOutputFormatter
     }
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
         return await Task.FromResult(Format(data));
     }
 
@@ -243,8 +257,11 @@ public sealed class TableOutputFormatter : IOutputFormatter
 public sealed class HtmlOutputFormatter : IOutputFormatter
 {
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public string Format<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         var sb = new StringBuilder();
         sb.AppendLine("<!DOCTYPE html>");
         sb.AppendLine("<html>");
@@ -273,8 +290,10 @@ public sealed class HtmlOutputFormatter : IOutputFormatter
     }
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is <see langword="null"/>.</exception>
     public async Task<string> FormatAsync<T>(T data) where T : class
     {
+        ArgumentNullException.ThrowIfNull(data);
         return await Task.FromResult(Format(data));
     }
 
