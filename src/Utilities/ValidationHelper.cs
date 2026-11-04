@@ -127,6 +127,8 @@ public sealed class ValidationHelper
     /// </summary>
     public static bool IsInTimeRange(DataPoint dataPoint, long startMs, long endMs)
     {
+        ArgumentNullException.ThrowIfNull(dataPoint);
+
         return dataPoint.Timestamp >= startMs && dataPoint.Timestamp <= endMs;
     }
 
