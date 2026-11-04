@@ -1620,6 +1620,170 @@ The helpers in `src/Utilities/` are shared support code for batching, compressio
 | `StatisticsHelper` | Computes mean, median, standard deviation, percentile, coefficient of variation, moving average, rate of change, IQR outliers, and Pearson correlation. Results are returned as a record. |
 | `ValidationHelper` | Validates data points, pipeline configurations, processing results, and window events, returning `ValidationResult` objects. Also checks time ranges and value bounds. |
 
+## Dependency Injection
+
+Two files set up the container and start the pipeline:
+
+- `src/Configuration/ServiceCollectionExtensions.cs` (namespace `DotNetRealtimePipeline.Configuration`) is the composition root. `AddPipelineServices` registers the repositories, the core services, the dead-letter queue, the retry policy, and the HTTP client factory.
+- `src/Initialization/PipelineInitializer.cs` (namespace `DotNetRealtimePipeline.Initialization`) runs the startup sequence. It resolves many types that `AddPipelineServices` does not register, so those have to be added to the container separately.
+
+### What `AddPipelineServices` registers
+
+Every registration is a singleton. Nothing is scoped or transient, so one instance of each type lives for the lifetime of the root `IServiceProvider`.
+
+| Service | Registration |
+|---------|--------------|
+| `IDataPointRepository` | `InMemoryDataPointRepository` |
+| `IMetricsRepository` | `InMemoryMetricsRepository` |
+| `PipelineConfig` | The instance passed in, or the default configuration |
+| `DataProcessingService`, `WindowingService`, `MetricsService`, `BackpressureService`, `QueryService` | Concrete type |
+| `PipelineOrchestrator` | Concrete type. Its constructor takes the five services above and the `PipelineConfig`. |
+| `PipelineVisualizer` | Concrete type |
+| `BackpressureMetricsCollector` | Concrete type |
+| `IDeadLetterQueue` | `DeadLetterQueue` |
+| `RetryPolicyOptions` | One instance, created during registration |
+| `IRetryPolicy` | Factory that returns `ExponentialBackoffRetryPolicy` built on the same `RetryPolicyOptions` instance |
+| `PipelineHttpClientFactory` | Concrete type |
+
+There are three overloads, and they differ only in where the `PipelineConfig` comes from:
+
+- `AddPipelineServices(PipelineConfig, Action<RetryPolicyOptions>? = null)` uses the instance you pass in.
+- `AddPipelineServices(Action<RetryPolicyOptions>? = null)` uses the default configuration.
+- `AddPipelineServices(Action<PipelineConfig>, Action<RetryPolicyOptions>? = null)` starts from the default configuration and lets you change it.
+
+The default configuration has ID `1`, the name `DefaultPipeline`, version `1.0.0`, and six stages: `Ingestion` (SOURCE), `Validation` (FILTER), `Transformation` (TRANSFORM), `Windowing` (WINDOW), `Aggregation` (AGGREGATE), and `Output` (SINK).
+
+The `configureRetryPolicy` callback runs once, during the `AddPipelineServices` call. It does not run when the retry policy is resolved.
+
+### What `PipelineInitializer` needs
+
+`PipelineInitializer` is not registered by `AddPipelineServices`, so create it yourself. Its constructor takes `IServiceProvider` and `ILogger<PipelineInitializer>`. It calls `GetRequiredService<PipelineStateManager>()` in the constructor, so construction throws if `PipelineStateManager` is not registered.
+
+These types are resolved during initialization, and `AddPipelineServices` does not register any of them:
+
+| Type | Resolved in |
+|------|-------------|
+| `PipelineStateManager` | Constructor, and every state transition |
+| `PipelineEventPublisher` | Event subscribers step |
+| `DataIngestSubscriber`, `ProcessingCompletionSubscriber`, `BackpressureAlertSubscriber`, `MetricsAggregationSubscriber`, `ErrorAlertSubscriber` | Event subscribers step |
+| `LoggingMiddleware`, `ErrorHandlingMiddleware`, `RateLimitingMiddleware` | Middleware step |
+| `BackgroundProcessingWorker`, `MetricsAggregationWorker`, `HealthCheckWorker` | Workers step |
+| `WorkerCoordinator` | `StartAsync` and `StopAsync` |
+| `HealthCheckService`, `ResourceMonitor` | Monitoring step |
+
+All of these are registered as singletons in the example below. The constructor parameters that have default values, such as `RateLimitingMiddleware`'s token settings and the worker intervals, use their defaults.
+
+### Initialization sequence
+
+`InitializeAsync` runs these steps in order:
+
+1. Logs the start and moves the state to `Initializing`.
+2. **Core services**: resolves `PipelineOrchestrator`, `DataProcessingService`, and `MetricsService`.
+3. **Event subscribers**: resolves `PipelineEventPublisher` and the five subscribers, then calls `Subscribe()` on each subscriber.
+4. **Middleware**: resolves the three middleware types.
+5. **Workers**: resolves the three background workers. It does not start them.
+6. **Integrations**: resolves `PipelineHttpClientFactory`. A failure here is logged as a warning, and initialization continues.
+7. **Monitoring**: resolves `HealthCheckService` and `ResourceMonitor`. A failure here is logged as a warning, and initialization continues.
+8. Sets `IsInitialized` to `true` and returns `InitializationResult` with `Success = true`. `ComponentsInitialized` is a fixed `8`, not a count of the steps above.
+
+A failure in steps 2 to 5 stops the sequence. The state moves to `Failed`, and the method returns `Success = false` with `ErrorMessage` set. The exception is not rethrown.
+
+`InitializeAsync` has no guard against repeated calls. Calling it again runs every step again, including `Subscribe()` on each subscriber.
+
+`StartAsync` returns `false` if the pipeline is not initialized. Otherwise it starts the orchestrator, moves the state to `Running`, and calls `WorkerCoordinator.StartAll()`. `StopAsync` calls `WorkerCoordinator.StopAllAsync()`, then `PipelineOrchestrator.StopAsync()`, then moves the state to `Stopped`.
+
+Neither `InitializeAsync` nor `StartAsync` calls `PipelineEventPublisher.Start()`. Nothing else in `src/` calls it either, so the subscribers' channels do not run until your code calls it. Call it after `InitializeAsync` and before you publish events.
+
+`PipelineInitializerExtensions.cs` adds `InitializeAndStartAsync`, `InitializeWithRetryAsync`, and `SafeStopAsync`. Those wrap the methods above.
+
+### Example
+
+This follows the layout of `Program.cs`. It registers the core services, then the types that `PipelineInitializer` resolves, then runs the initialization sequence.
+
+```csharp
+using DotNetRealtimePipeline.Configuration;
+using DotNetRealtimePipeline.Events;
+using DotNetRealtimePipeline.Initialization;
+using DotNetRealtimePipeline.Middleware;
+using DotNetRealtimePipeline.Monitoring;
+using DotNetRealtimePipeline.State;
+using DotNetRealtimePipeline.Workers;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+
+var services = new ServiceCollection();
+
+services.AddLogging(builder =>
+{
+    builder.AddConsole();
+    builder.SetMinimumLevel(LogLevel.Information);
+});
+
+// Core registrations. The first callback customizes the default PipelineConfig,
+// and the second customizes the retry policy.
+services.AddPipelineServices(
+    config =>
+    {
+        config.PipelineName = "RealTime-DataPipeline";
+        config.Version = "1.0.0";
+        config.WindowSizeMs = 5000;
+        config.WindowSlideMs = 1000;
+    },
+    retry =>
+    {
+        retry.MaxAttempts = 3;
+        retry.BaseDelay = TimeSpan.FromMilliseconds(200);
+    });
+
+// Types that PipelineInitializer resolves but AddPipelineServices does not register.
+services.AddSingleton<PipelineStateManager>();
+services.AddSingleton<PipelineEventPublisher>();
+services.AddSingleton<DataIngestSubscriber>();
+services.AddSingleton<ProcessingCompletionSubscriber>();
+services.AddSingleton<BackpressureAlertSubscriber>();
+services.AddSingleton<MetricsAggregationSubscriber>();
+services.AddSingleton<ErrorAlertSubscriber>();
+services.AddSingleton<LoggingMiddleware>();
+services.AddSingleton<ErrorHandlingMiddleware>();
+services.AddSingleton<RateLimitingMiddleware>();
+services.AddSingleton<BackgroundProcessingWorker>();
+services.AddSingleton<MetricsAggregationWorker>();
+services.AddSingleton<HealthCheckWorker>();
+services.AddSingleton<WorkerCoordinator>();
+services.AddSingleton<HealthCheckService>();
+services.AddSingleton<ResourceMonitor>();
+
+var serviceProvider = services.BuildServiceProvider();
+var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+var initializer = new PipelineInitializer(
+    serviceProvider,
+    serviceProvider.GetRequiredService<ILogger<PipelineInitializer>>());
+
+var initResult = await initializer.InitializeAsync();
+if (!initResult.Success)
+{
+    logger.LogError("Initialization failed: {Error}", initResult.ErrorMessage);
+    return;
+}
+
+logger.LogInformation("{Result}", initResult.ToString());
+
+// Subscribers are attached during InitializeAsync, but their channels only run after Start().
+serviceProvider.GetRequiredService<PipelineEventPublisher>().Start();
+
+if (await initializer.StartAsync())
+{
+    logger.LogInformation("Pipeline is running");
+    await Task.Delay(TimeSpan.FromSeconds(10));
+}
+
+await initializer.StopAsync();
+await serviceProvider.DisposeAsync();
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
