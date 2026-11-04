@@ -276,6 +276,51 @@ Console.WriteLine(
     $"InRetry={stats.InRetryEntries}, Resolved={stats.TotalResolved}, Replayed={replayed}");
 ```
 
+## Dead-Letter Retry Policy
+
+The retry policy decides whether a failed operation is attempted again before its item is routed to the dead-letter queue. It is defined by `IRetryPolicy` (`src/DeadLetter/IRetryPolicy.cs`), configured by `RetryPolicyOptions` (`src/DeadLetter/RetryPolicyOptions.cs`), and implemented by `ExponentialBackoffRetryPolicy` (`src/DeadLetter/ExponentialBackoffRetryPolicy.cs`).
+
+- `MaxAttempts` is the total number of attempts, including the first one. `RetryPolicyOptions.MaxAttempts` defaults to `3` and must be at least `1`.
+- `IsTransient(exception)` classifies an exception as retryable. `ExponentialBackoffRetryPolicy` delegates to `RetryPolicyOptions.TransientExceptionPredicate`, which defaults to `RetryPolicyOptions.DefaultTransientPredicate`.
+- `GetBackoffDelay(attemptNumber)` returns the delay after the 1-based attempt that just failed. The base delay is `BaseDelay * 2^(attemptNumber - 1)`, capped at `MaxDelay`. Jitter is then applied as a random offset of up to `±JitterFactor` of the capped delay, and the result is never negative. Defaults are `BaseDelay` `200 ms`, `MaxDelay` `30 s`, and `JitterFactor` `0.25`. The exponent is capped at 20 to avoid overflow. Because jitter is applied after the cap, a delay can exceed `MaxDelay` by up to `JitterFactor`.
+- `ExecuteAsync(operation, cancellationToken)` runs `operation(attempt)` with the 1-based attempt number and returns a `RetryResult<T>`. It stops on the first success, on a non-transient exception, or when `MaxAttempts` is reached. It waits `GetBackoffDelay` between attempts only, so there is no delay after the final failure. A cancellation requested through `cancellationToken` propagates as `OperationCanceledException`.
+- `RetryResult<T>` exposes `Succeeded`, `Value`, `Attempts`, and `LastException`.
+- `DefaultTransientPredicate(exception)` treats `TimeoutException`, `IOException`, `SocketException`, and `HttpRequestException` as transient. It unwraps `AggregateException` and `PipelineProcessingException` to their inner exception and classifies that instead. `OperationCanceledException` and every other type are permanent.
+
+`RetryPolicyOptions.ToString()` and `ExponentialBackoffRetryPolicy.ToString()` return a one-line summary of the configuration, which is useful in logs.
+
+```csharp
+using DotNetRealtimePipeline.DeadLetter;
+
+var options = new RetryPolicyOptions
+{
+    MaxAttempts = 5,
+    BaseDelay = TimeSpan.FromMilliseconds(100),
+    MaxDelay = TimeSpan.FromSeconds(10),
+    JitterFactor = 0.2,
+    // Treat InvalidOperationException as transient in addition to the defaults.
+    TransientExceptionPredicate = ex =>
+        RetryPolicyOptions.DefaultTransientPredicate(ex) || ex is InvalidOperationException
+};
+
+IRetryPolicy policy = new ExponentialBackoffRetryPolicy(options);
+
+RetryResult<string> result = await policy.ExecuteAsync(async attempt =>
+{
+    // Called once per attempt; throw to request another attempt if the error is transient.
+    if (attempt < 3)
+        throw new TimeoutException($"Upstream timed out on attempt {attempt}");
+
+    await Task.Delay(10);
+    return "payload";
+});
+
+if (result.Succeeded)
+    Console.WriteLine($"Succeeded after {result.Attempts} attempts: {result.Value}");
+else
+    Console.WriteLine($"Gave up after {result.Attempts} attempts: {result.LastException?.Message}");
+```
+
 ## ValidationHelperValidation
 
 The ValidationHelperValidation class provides a suite of static methods for validating data integrity, including time range checks and boundary validations. It supports multiple validation strategies, returning boolean flags, detailed result objects, or lists of error messages to accommodate different error handling requirements.
