@@ -17,6 +17,11 @@ using System.Threading;
 /// </summary>
 public sealed class ThroughputCounter : IPipelineMetrics
 {
+    /// <summary>
+    /// Default length of the sliding window in seconds.
+    /// </summary>
+    public const int DefaultWindowSeconds = 60;
+
     // Each bucket represents one second of events.
     private readonly int _windowSeconds;
     private readonly long[] _globalBuckets;
@@ -24,7 +29,7 @@ public sealed class ThroughputCounter : IPipelineMetrics
     private long _lastGlobalSecond;
 
     /// <param name="windowSeconds">Length of the sliding window in seconds (default 60).</param>
-    public ThroughputCounter(int windowSeconds = 60)
+    public ThroughputCounter(int windowSeconds = DefaultWindowSeconds)
     {
         if (windowSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(windowSeconds));
 
