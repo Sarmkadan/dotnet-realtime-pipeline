@@ -16,6 +16,12 @@ using DotNetRealtimePipeline.Constants;
 /// </summary>
 public sealed class BackpressureContext
 {
+    /// <summary>
+    /// Maximum number of backpressure event timestamps retained in <see cref="BackpressureEventTimestamps"/>.
+    /// Older entries are dropped once this limit is exceeded.
+    /// </summary>
+    public const int MaxEventTimestampHistory = 100;
+
     private const double EmptyPercentage = 0d;
     private const double PercentageMultiplier = 100d;
     private const int MinimumEventsForFrequencyCalculation = 2;
@@ -181,8 +187,8 @@ public sealed class BackpressureContext
             BackpressureStartTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             BackpressureEventTimestamps.Enqueue(BackpressureStartTimeMs);
 
-            // Keep only last 100 events
-            while (BackpressureEventTimestamps.Count > 100)
+            // Keep only the last MaxEventTimestampHistory events
+            while (BackpressureEventTimestamps.Count > MaxEventTimestampHistory)
                 BackpressureEventTimestamps.Dequeue();
         }
     }
