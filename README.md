@@ -502,6 +502,64 @@ await composite.ExportAsync(aggregation);
 await composite.ExportBatchAsync(new List<MetricAggregation> { aggregation });
 ```
 
+## External Data Sources
+
+`src/Integration/ExternalDataSource.cs` contains the connectors that pull `DataPoint` records from systems outside the pipeline. Every connector implements `IExternalDataSource`, which has two methods: `FetchDataAsync(DateTime startTime, DateTime endTime)` returns a `List<DataPoint>` for the time range, and `IsAvailableAsync()` reports whether the source can be reached.
+
+- `HttpDataSource` is the HTTP connector. The constructor takes a base URL, an `HttpClient` you own, and an `ILogger<HttpDataSource>`; null arguments throw `ArgumentNullException`. `FetchDataAsync` converts both times to Unix milliseconds and calls `GET {baseUrl}/data?start={startMs}&end={endMs}`, then deserializes the body as a JSON array of `DataPoint`. `IsAvailableAsync` calls `GET {baseUrl}/health` and returns `true` only for a success status.
+- `HttpDataSource` does not throw on failure. A non-success status, a network error, or invalid JSON is logged and turns into an empty list. Because of this, `DataSourceManager` cannot fail over on a failed fetch from an `HttpDataSource`. It only fails over when `IsAvailableAsync()` returns `false` or the source throws.
+- `DataSourceManager` holds several named sources, ordered by priority. It has no lock, so register all sources during setup, before the manager is used from several threads.
+  - `Register(string name, IExternalDataSource source, int priority = 0)` adds a source and re-sorts the list so that the highest priority comes first. A null or whitespace `name` throws `ArgumentException`, and a null `source` throws `ArgumentNullException`. Duplicate names are not rejected, but see `GetSourceHealth` below.
+  - `FetchDataAsync(DateTime startTime, DateTime endTime)` walks the sources that are still marked healthy, in priority order. For each one it calls `IsAvailableAsync()`. If that returns `false`, or the source throws, the source is marked unhealthy and skipped. The first source that is available returns its data, even if the list is empty. If no source is left, it logs a warning and returns an empty list.
+  - `GetSourceHealth()` returns a `Dictionary<string, bool>` that maps each name to its health flag. A source is marked unhealthy and is never set back to healthy, so a source that fails stays excluded until the manager is recreated. Because the result is built with `ToDictionary`, registering two sources with the same name makes `GetSourceHealth()` throw `ArgumentException`.
+- `CachedDataSource` wraps another `IExternalDataSource` and keeps the results of `FetchDataAsync` in a `CacheService` with a capacity of 1000 entries and a time-to-live of one hour. The cache key is the start and end time in ISO 8601 round-trip format. `IsAvailableAsync` is not cached and always calls the inner source.
+  - A cache hit returns the stored list without calling the inner source. A miss calls the inner source and stores whatever it returns, including an empty list from a failed `HttpDataSource` fetch. Empty results are therefore cached for an hour as well.
+  - `ClearCache()` removes all cached entries and logs at `Information` level. It does not change the entries' time-to-live, and the next fetch calls the inner source again.
+
+A typical setup places a cached HTTP connector first and a second connector behind it, then asks the manager for data:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Integration;
+
+// Shared, long-lived HttpClient; the connectors do not dispose it.
+HttpClient httpClient = httpClientFactory.CreateClient("sensors");
+
+var primary = new HttpDataSource(
+    "https://sensors-eu.example.com",
+    httpClient,
+    loggerFactory.CreateLogger<HttpDataSource>());
+
+var secondary = new HttpDataSource(
+    "https://sensors-us.example.com",
+    httpClient,
+    loggerFactory.CreateLogger<HttpDataSource>());
+
+// Results of the primary source are cached for one hour per time range.
+var cachedPrimary = new CachedDataSource(
+    primary,
+    loggerFactory.CreateLogger<CachedDataSource>());
+
+var manager = new DataSourceManager(loggerFactory.CreateLogger<DataSourceManager>());
+
+// Higher priority is tried first; the secondary is used when the primary is unavailable.
+manager.Register("primary", cachedPrimary, priority: 10);
+manager.Register("secondary", secondary, priority: 5);
+
+DateTime end = DateTime.UtcNow;
+DateTime start = end.AddMinutes(-5);
+
+List<DataPoint> points = await manager.FetchDataAsync(start, end);
+
+// Example: { "primary": False, "secondary": True } after the primary failed its availability check.
+Dictionary<string, bool> health = manager.GetSourceHealth();
+
+// Drop cached results, for example after the upstream system reprocesses its data.
+cachedPrimary.ClearCache();
+```
+
+Note that `GetSourceHealth()` reports the state the manager has seen so far, not a fresh check. A source only shows `False` after a `FetchDataAsync` call has found it unavailable.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
