@@ -93,4 +93,15 @@ public sealed class BackpressureMetricsSnapshot
 
     /// <summary>UTC time the snapshot was taken.</summary>
     public DateTime SnapshotAt { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the current instance for debugging and logging.
+    /// </summary>
+    /// <returns>A string containing the snapshot timestamp, stage count, and key totals.</returns>
+    public override string ToString()
+    {
+        return string.Format(CultureInfo.InvariantCulture,
+            "BackpressureMetricsSnapshot {{ SnapshotAt = {0}, StageCount = {1}, TotalActivations = {2}, TotalDroppedItems = {3}, ActiveBackpressureStages = {4} }}",
+            SnapshotAt, StageMetrics.Count, TotalActivations, TotalDroppedItems, ActiveBackpressureStages);
+    }
 }
