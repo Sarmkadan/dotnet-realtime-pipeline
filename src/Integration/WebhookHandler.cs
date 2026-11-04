@@ -21,6 +21,9 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class WebhookHandler
 {
+    private const int InitialRetryDelayMs = 1000;
+    private const int MaxDeliveryAttempts = 3;
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<WebhookHandler> _logger;
     private readonly List<WebhookSubscription> _subscriptions = new();
@@ -108,10 +111,9 @@ public sealed class WebhookHandler
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         int attempt = 0;
-        int delayMs = 1000;
-        int maxRetries = 3;
+        int delayMs = InitialRetryDelayMs;
 
-        while (attempt < maxRetries)
+        while (attempt < MaxDeliveryAttempts)
         {
             try
             {
@@ -139,7 +141,7 @@ public sealed class WebhookHandler
                 _logger.LogWarning("Webhook delivery failed (attempt {Attempt}): {Url} - {Message}",
                     attempt, subscription.Url, ex.Message);
 
-                if (attempt < maxRetries)
+                if (attempt < MaxDeliveryAttempts)
                 {
                     await Task.Delay(delayMs);
                     delayMs *= 2;
