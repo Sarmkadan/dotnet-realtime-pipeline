@@ -19,6 +19,18 @@ using System.Threading.Tasks;
 /// </summary>
 public abstract class ApiEndpointHandler
 {
+    /// <summary>HTTP 200 OK.</summary>
+    protected const int StatusOk = 200;
+
+    /// <summary>HTTP 400 Bad Request.</summary>
+    protected const int StatusBadRequest = 400;
+
+    /// <summary>HTTP 429 Too Many Requests.</summary>
+    protected const int StatusTooManyRequests = 429;
+
+    /// <summary>HTTP 500 Internal Server Error.</summary>
+    protected const int StatusInternalServerError = 500;
+
     protected readonly ILogger _logger;
 
     protected ApiEndpointHandler(ILogger logger)
@@ -86,7 +98,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
                 {
                     Success = false,
                     Message = "Data point is null",
-                    StatusCode = 400
+                    StatusCode = StatusBadRequest
                 };
             }
 
@@ -97,7 +109,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
                 Success = result,
                 Data = result,
                 Message = result ? "Data point ingested successfully" : "Failed to ingest data point due to backpressure",
-                StatusCode = result ? 200 : 429
+                StatusCode = result ? StatusOk : StatusTooManyRequests
             };
         }
         catch (Exception ex)
@@ -107,7 +119,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
             {
                 Success = false,
                 Message = ex.Message,
-                StatusCode = 500
+                StatusCode = StatusInternalServerError
             };
         }
     }
@@ -127,7 +139,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
                 {
                     Success = false,
                     Message = "Data points list is empty",
-                    StatusCode = 400
+                    StatusCode = StatusBadRequest
                 };
             }
 
@@ -143,7 +155,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
                     TotalCount = dataPoints.Count
                 },
                 Message = $"Batch processed: {result.SuccessfulCount} successful, {result.FailedCount} failed",
-                StatusCode = 200
+                StatusCode = StatusOk
             };
         }
         catch (Exception ex)
@@ -153,7 +165,7 @@ public sealed class DataIngestionHandler : ApiEndpointHandler
             {
                 Success = false,
                 Message = ex.Message,
-                StatusCode = 500
+                StatusCode = StatusInternalServerError
             };
         }
     }
@@ -228,7 +240,7 @@ public sealed class StatusHandler : ApiEndpointHandler
                 Success = true,
                 Data = response,
                 Message = "Pipeline status retrieved",
-                StatusCode = 200
+                StatusCode = StatusOk
             };
         }
         catch (Exception ex)
@@ -238,7 +250,7 @@ public sealed class StatusHandler : ApiEndpointHandler
             {
                 Success = false,
                 Message = ex.Message,
-                StatusCode = 500
+                StatusCode = StatusInternalServerError
             };
         }
     }
@@ -338,7 +350,7 @@ public sealed class QueryHandler : ApiEndpointHandler
                 Success = true,
                 Data = results,
                 Message = $"Query returned {results.Count} results",
-                StatusCode = 200
+                StatusCode = StatusOk
             };
         }
         catch (Exception ex)
@@ -348,7 +360,7 @@ public sealed class QueryHandler : ApiEndpointHandler
             {
                 Success = false,
                 Message = ex.Message,
-                StatusCode = 500
+                StatusCode = StatusInternalServerError
             };
         }
     }
@@ -359,6 +371,16 @@ public sealed class QueryHandler : ApiEndpointHandler
 /// </summary>
 public sealed class ApiErrorResponse
 {
+    private const int StatusBadRequest = 400;
+    private const int StatusNotFound = 404;
+    private const int StatusInternalServerError = 500;
+    private const int StatusTooManyRequests = 429;
+
+    private const string ErrorCodeBadRequest = "BAD_REQUEST";
+    private const string ErrorCodeNotFound = "NOT_FOUND";
+    private const string ErrorCodeInternalError = "INTERNAL_ERROR";
+    private const string ErrorCodeRateLimit = "RATE_LIMIT";
+
     /// <summary>
     /// Gets or sets the HTTP status code associated with the error.
     /// </summary>
@@ -386,7 +408,7 @@ public sealed class ApiErrorResponse
     /// <returns>A bad request error response.</returns>
     public static ApiErrorResponse BadRequest(string message)
     {
-        return new ApiErrorResponse { StatusCode = 400, Message = message, ErrorCode = "BAD_REQUEST" };
+        return new ApiErrorResponse { StatusCode = StatusBadRequest, Message = message, ErrorCode = ErrorCodeBadRequest };
     }
 
     /// <summary>
@@ -396,7 +418,7 @@ public sealed class ApiErrorResponse
     /// <returns>A resource not found error response.</returns>
     public static ApiErrorResponse NotFound(string message)
     {
-        return new ApiErrorResponse { StatusCode = 404, Message = message, ErrorCode = "NOT_FOUND" };
+        return new ApiErrorResponse { StatusCode = StatusNotFound, Message = message, ErrorCode = ErrorCodeNotFound };
     }
 
     /// <summary>
@@ -406,7 +428,7 @@ public sealed class ApiErrorResponse
     /// <returns>An internal server error response.</returns>
     public static ApiErrorResponse InternalError(string message)
     {
-        return new ApiErrorResponse { StatusCode = 500, Message = message, ErrorCode = "INTERNAL_ERROR" };
+        return new ApiErrorResponse { StatusCode = StatusInternalServerError, Message = message, ErrorCode = ErrorCodeInternalError };
     }
 
     /// <summary>
@@ -416,7 +438,7 @@ public sealed class ApiErrorResponse
     /// <returns>A rate limit error response.</returns>
     public static ApiErrorResponse TooManyRequests(string message)
     {
-        return new ApiErrorResponse { StatusCode = 429, Message = message, ErrorCode = "RATE_LIMIT" };
+        return new ApiErrorResponse { StatusCode = StatusTooManyRequests, Message = message, ErrorCode = ErrorCodeRateLimit };
     }
 
     /// <summary>
