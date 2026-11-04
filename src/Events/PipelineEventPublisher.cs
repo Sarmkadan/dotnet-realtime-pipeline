@@ -243,8 +243,11 @@ public sealed class PipelineEventPublisher : IDisposable
 /// </summary>
 public abstract class PipelineEventArgs
 {
+    private const int CorrelationIdLength = 8;
+    private const string CorrelationIdFormat = "N";
+
     public DateTime Timestamp { get; set; }
-    public string CorrelationId { get; set; } = Guid.NewGuid().ToString("N").Substring(0, 8);
+    public string CorrelationId { get; set; } = Guid.NewGuid().ToString(CorrelationIdFormat).Substring(0, CorrelationIdLength);
 
     /// <summary>
     /// Returns a summary of the event args including timestamp and correlation ID.
