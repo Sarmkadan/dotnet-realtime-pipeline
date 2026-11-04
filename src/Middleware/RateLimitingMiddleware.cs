@@ -16,6 +16,16 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class RateLimitingMiddleware
 {
+    /// <summary>
+    /// The default number of tokens replenished per second.
+    /// </summary>
+    public const int DefaultTokensPerSecond = 1000;
+
+    /// <summary>
+    /// The default maximum number of tokens the limiter can hold.
+    /// </summary>
+    public const int DefaultMaxBurstSize = 5000;
+
     private readonly ConcurrentDictionary<string, RateLimitBucket> _buckets = new();
     private readonly int _tokensPerSecond;
     private readonly int _maxBurstSize;
@@ -25,7 +35,7 @@ public sealed class RateLimitingMiddleware
     /// </summary>
     /// <param name="tokensPerSecond">The number of tokens replenished per second.</param>
     /// <param name="maxBurstSize">The maximum number of tokens the limiter can hold.</param>
-    public RateLimitingMiddleware(int tokensPerSecond = 1000, int maxBurstSize = 5000)
+    public RateLimitingMiddleware(int tokensPerSecond = DefaultTokensPerSecond, int maxBurstSize = DefaultMaxBurstSize)
     {
         _tokensPerSecond = tokensPerSecond;
         _maxBurstSize = maxBurstSize;
