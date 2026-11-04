@@ -189,4 +189,14 @@ public sealed class DeadLetterQueueStats
     /// Gets or sets the UTC time these stats were generated.
     /// </summary>
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Returns a one-line representation of the dead-letter queue statistics.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"TotalEntries={TotalEntries}, PendingEntries={PendingEntries}, InRetryEntries={InRetryEntries}, " +
+               $"PermanentFailureEntries={PermanentFailureEntries}, TotalResolved={TotalResolved}, " +
+               $"GeneratedAt={GeneratedAt.ToUniversalTime():O}";
+    }
 }
