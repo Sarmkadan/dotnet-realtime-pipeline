@@ -9,6 +9,7 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 charset = utf-8
+end_of_line = lf
 
 # C# files
 [*.cs]
@@ -61,6 +62,20 @@ csharp_style_prefer_index_operator = true:suggestion
 csharp_style_prefer_range_operator = true:suggestion
 csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
 csharp_style_prefer_tuple_swap = true:suggestion
+
+# Namespaces: file-scoped (one namespace per file, see CLAUDE.md conventions)
+csharp_style_namespace_declarations = file_scoped:warning
+
+# var preferences
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# File header (every source file starts with the author line)
+file_header_template = Copyright (c) Vladyslav Zaiets
+
+# Usings: System.* first
+dotnet_sort_system_directives_first = true
 
 # Naming rules
 dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
