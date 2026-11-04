@@ -198,6 +198,12 @@ public sealed class HttpClientConfiguration
     public bool UseCompression { get; set; } = true;
     public string UserAgent { get; set; } = "DotNetRealtimePipeline/1.0";
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
+
+    /// <summary>
+    /// Returns a string representation of the configuration.
+    /// </summary>
+    public override string ToString() =>
+        $"HttpClientConfiguration {{ Timeout = {Timeout}, MaxRetries = {MaxRetries}, RetryDelay = {RetryDelay}, MaxConnectionsPerHost = {MaxConnectionsPerHost}, UseCompression = {UseCompression}, UserAgent = {UserAgent}, DefaultHeadersCount = {DefaultHeaders.Count} }}";
 }
 
 /// <summary>
