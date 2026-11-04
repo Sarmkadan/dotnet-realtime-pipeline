@@ -321,13 +321,49 @@ The MetricsServiceTestsExtensions class provides extension methods for testing t
 
 Example usage:
 ```csharp
-public static MetricsService GetService
-public static Mock<IMetricsRepository> GetMockRepository
-public static void VerifyMetricsService
-public static IReadOnlyList<DataPoint> GenerateTestDataPoints
-public static void ConfigureMockRepository
-public static void VerifyTestResult
-public static void VerifyTestResult
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using DotNetRealtimePipeline.Data.Repositories;
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Tests.Unit;
+using FluentAssertions;
+using Moq;
+using Xunit;
+
+[Fact]
+public async Task CreateMetricAggregation_SavesOneAggregation()
+{
+    // Arrange: a fresh test instance creates a MetricsService backed by a mock repository
+    var tests = new MetricsServiceTests();
+    tests.VerifyMetricsService();
+    MetricsService service = tests.GetService();
+
+    // Configure the mock so SaveAsync echoes back whatever it receives
+    tests.ConfigureMockRepository(repo =>
+        repo.Setup(r => r.SaveAsync(It.IsAny<MetricAggregation>()))
+            .ReturnsAsync((MetricAggregation m) => m));
+
+    // Act
+    MetricAggregation result = await service.CreateMetricAggregationAsync(0, 1000, 10, 0, 0);
+
+    // Assert
+    tests.VerifyTestResult(result);
+    tests.VerifyRepositoryCall(m => m.MetricType == "STANDARD", Times.Once());
+}
+
+[Fact]
+public void GenerateTestDataPoints_ReturnsRequestedCount()
+{
+    var tests = new MetricsServiceTests();
+
+    // Generate sample data points on the test instance
+    IReadOnlyList<DataPoint> points = tests.GenerateTestDataPoints(5);
+    points.Should().HaveCount(5);
+
+    // Make the mock repository return a fixed aggregation for SaveAsync and GetLatestAsync
+    tests.SetupRepositoryToReturn(new MetricAggregation(1, 0, 1000, "STANDARD"));
+}
 ```
 
 ### DataProcessingServiceTestsExtensions
@@ -336,12 +372,24 @@ The DataProcessingServiceTestsExtensions class provides static methods for creat
 
 Example usage:
 ```csharp
-public static DataPoint CreateValidDataPoint
-public static DataPoint CreateLowQualityDataPoint
-public static DataPoint CreateInvalidDataPoint
-public static PipelineConfig CreateTestPipelineConfig
-public static ProcessingResult CreateSuccessfulResult
-public static ProcessingResult CreateFailedResult
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Tests.Unit;
+
+var tests = new DataProcessingServiceTests();
+
+// Data points: valid (quality 90), low quality (quality 30), and an empty/zero-valued point
+DataPoint valid = tests.CreateValidDataPoint(id: 42, value: 25.5, source: "Sensor2", quality: 90);
+DataPoint lowQuality = tests.CreateLowQualityDataPoint(id: 43);
+DataPoint invalid = tests.CreateInvalidDataPoint();
+
+// Pipeline configuration with a custom quality threshold and retry count
+PipelineConfig config = tests.CreateTestPipelineConfig(minDataQualityThreshold: 60, maxRetries: 3);
+
+// Processing results: one marked successful, one marked failed with a custom message
+ProcessingResult ok = tests.CreateSuccessfulResult(resultId: 1, stageName: "Output");
+ProcessingResult failed = tests.CreateFailedResult(resultId: 2, errorMessage: "Timeout");
+
+bool passes = valid.MeetsQualityThreshold(config.MinDataQualityThreshold); // true (90 >= 60)
 ```
 
 ### PipelineEventPublisherJsonExtensionsTests
