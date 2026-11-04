@@ -318,6 +318,11 @@ public sealed class RetryPolicy
 
         return RetryableExceptions.Any(t => t.IsAssignableFrom(ex.GetType()));
     }
+
+    /// <summary>
+    /// Returns a string representation of the retry policy configuration.
+    /// </summary>
+    public override string ToString() => $"RetryPolicy {{ MaxAttempts = {MaxAttempts}, InitialDelayMs = {InitialDelayMs}, MaxDelayMs = {MaxDelayMs}, UseJitter = {UseJitter}, RetryableExceptions = {RetryableExceptions} }}";
 }
 
 /// <summary>
@@ -346,6 +351,11 @@ public sealed class RetryStatistics
             DelayMs = delayMs
         });
     }
+
+    /// <summary>
+    /// Returns a string representation of the retry statistics.
+    /// </summary>
+    public override string ToString() => $"RetryStatistics {{ TotalAttempts = {TotalAttempts}, SuccessfulAttempts = {SuccessfulAttempts}, FailedAttempts = {FailedAttempts}, SuccessRate = {SuccessRate:F2}%, Events = {Events.Count} }}";
 }
 
 public sealed class RetryEvent
@@ -353,4 +363,9 @@ public sealed class RetryEvent
     public DateTime Timestamp { get; set; }
     public bool Success { get; set; }
     public int DelayMs { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the retry event.
+    /// </summary>
+    public override string ToString() => $"RetryEvent {{ Timestamp = {Timestamp:O}, Success = {Success}, DelayMs = {DelayMs} }}";
 }
