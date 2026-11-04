@@ -258,6 +258,9 @@ public sealed class HttpClientBuilder
     /// </summary>
     public HttpClientBuilder WithRetry(int maxRetries, TimeSpan delay)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
+        ArgumentOutOfRangeException.ThrowIfLessThan(delay, TimeSpan.Zero);
+
         _config.MaxRetries = maxRetries;
         _config.RetryDelay = delay;
         return this;
@@ -278,6 +281,8 @@ public sealed class HttpClientBuilder
     public HttpClientBuilder WithHeader(string name, string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(value);
+
         _config.DefaultHeaders[name] = value;
         return this;
     }
@@ -287,6 +292,8 @@ public sealed class HttpClientBuilder
     /// </summary>
     public HttpClientBuilder WithMaxConnectionsPerHost(int connections)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(connections);
+
         _config.MaxConnectionsPerHost = connections;
         return this;
     }
