@@ -701,6 +701,88 @@ hooks.RegisterHook("AfterProcessing", new Func<DataPoint, Task>(point =>
 await hooks.ExecuteHookAsync("AfterProcessing", dataPoint);
 ```
 
+## HTTP Client Factory
+
+`src/Integration/HttpClientFactory.cs` contains two types. `PipelineHttpClientFactory` creates and caches `HttpClient` instances. `HttpClientBuilder` builds one `HttpClient` from a fluent configuration, starting from the defaults in `HttpClientConfiguration`. `PipelineHttpClientFactory` is registered as a singleton in `ServiceCollectionExtensions`; `HttpClientBuilder` is not registered, so create it yourself.
+
+### PipelineHttpClientFactory
+
+The constructor takes an `ILogger<PipelineHttpClientFactory>`; null throws `ArgumentNullException`. The factory's properties (`Timeout`, `MaxRetries`, `RetryDelay`, `MaxConnectionsPerHost`, `UseCompression`, `UserAgent`, `DefaultHeaders`) document the defaults. None of the methods below read them, so changing `DefaultHeaders` has no effect on the clients the factory creates.
+
+- `CreateDefaultClient()` returns a new client that is not cached. It has a 30-second timeout, GZip and Deflate decompression, up to 3 redirects, `User-Agent: DotNetRealtimePipeline/1.0`, and `Accept: application/json`. The caller owns the instance and must dispose it.
+- `CreateServiceClient(string serviceName, TimeSpan timeout, bool useCompression = true)` returns a cached client keyed by `serviceName`. A null or whitespace name throws `ArgumentException`. On the first call it creates a client with default credentials and sets `User-Agent: DotNetRealtimePipeline/{serviceName}`, `Accept: application/json`, and `Accept-Encoding: gzip, deflate`. The `Accept-Encoding` header is set even when `useCompression` is `false`, and the handler then does not decompress. On later calls with the same name, the cached client is returned and `timeout` and `useCompression` are ignored.
+- `GetOrCreateClient(string key, Action<HttpClient> configure)` returns a cached client for `key`. If there is none, it creates one with `CreateDefaultClient()`, calls `configure` on it once (`configure` may be null), and caches it. A cache hit does not call `configure`. This cache is shared with `CreateServiceClient`, so the same key in both methods returns the same instance.
+- `RemoveClient(string serviceName)` disposes the cached client for that name and removes it. A null or whitespace name throws `ArgumentException`. An unknown name does nothing.
+- `ClearClients()` disposes every cached client and empties the cache.
+
+`RemoveClient` and `ClearClients` dispose clients that callers may still hold, so their next request fails with `ObjectDisposedException`. The cache is a plain `Dictionary` with no lock, so call the factory from one thread at a time or add your own synchronization.
+
+```csharp
+var factory = new PipelineHttpClientFactory(loggerFactory.CreateLogger<PipelineHttpClientFactory>());
+
+HttpClient sensors = factory.CreateServiceClient("sensors", TimeSpan.FromSeconds(10));
+
+// Same instance back; the 60-second timeout is ignored because "sensors" is already cached.
+HttpClient sameSensors = factory.CreateServiceClient("sensors", TimeSpan.FromSeconds(60));
+
+HttpClient reports = factory.GetOrCreateClient("reports", client =>
+{
+    client.BaseAddress = new Uri("https://reports.example.com");
+});
+
+factory.RemoveClient("sensors");   // disposes the "sensors" client
+factory.ClearClients();            // disposes everything else
+```
+
+### HttpClientConfiguration
+
+`HttpClientConfiguration` is a plain class with settable properties. It is the starting point for `HttpClientBuilder`, which creates its own instance internally. The defaults are:
+
+| Property | Default | Constant |
+|----------|---------|----------|
+| `Timeout` | 30 seconds | `DefaultTimeout` |
+| `MaxRetries` | 3 | `DefaultMaxRetries` |
+| `RetryDelay` | 1 second | `DefaultRetryDelay` |
+| `MaxConnectionsPerHost` | 10 | `DefaultMaxConnectionsPerHost` |
+| `UseCompression` | `true` | none |
+| `UserAgent` | `DotNetRealtimePipeline/1.0` | `DefaultUserAgent` |
+| `DefaultHeaders` | empty | none |
+
+### HttpClientBuilder
+
+The constructor takes an `ILogger<HttpClientBuilder>`; null throws `ArgumentNullException`. Each configuration method returns the builder, so calls chain. The builder keeps one configuration. Each `Build()` call creates a new `HttpClient` from the configuration as it is at that moment, and the builder does not dispose the clients it creates.
+
+- `WithTimeout(TimeSpan timeout)` sets the request timeout. The value is not validated.
+- `WithRetry(int maxRetries, TimeSpan delay)` stores the retry count and delay. A negative `maxRetries` or a negative `delay` throws `ArgumentOutOfRangeException`.
+- `WithCompression(bool enabled)` turns GZip and Deflate decompression on or off.
+- `WithHeader(string name, string value)` adds a default header. A null or whitespace `name` throws `ArgumentException`, and a null `value` throws `ArgumentNullException`. Headers are stored by name, so a second call with the same name replaces the stored value.
+- `WithMaxConnectionsPerHost(int connections)` stores the connection limit. A negative value throws `ArgumentOutOfRangeException`.
+- `Build()` returns a new `HttpClient` with the stored timeout, decompression setting, user agent and headers. It logs the timeout, retry count and compression setting at `Information` level.
+
+`Build()` applies the timeout, the compression setting, the user agent, and the headers. It does not apply `MaxRetries`, `RetryDelay`, or `MaxConnectionsPerHost`. `WithRetry` and `WithMaxConnectionsPerHost` store values that nothing reads, so they have no effect on the client yet; add retry handling in your own code if you need it. Also, `Build()` adds the user agent and the stored headers with `DefaultRequestHeaders.Add`, so `WithHeader("User-Agent", ...)` sends a second `User-Agent` value instead of replacing the default.
+
+```csharp
+var builder = new HttpClientBuilder(loggerFactory.CreateLogger<HttpClientBuilder>());
+
+HttpClient client = builder
+    .WithTimeout(TimeSpan.FromSeconds(10))
+    .WithCompression(true)
+    .WithHeader("X-Api-Version", "2")
+    .WithHeader("Authorization", $"Bearer {apiToken}")
+    .Build();
+
+// Later builds reuse the same builder state; this client also gets a 10-second timeout.
+HttpClient second = builder
+    .WithHeader("X-Api-Version", "3")   // replaces the "2" stored above
+    .Build();
+
+// Retry and connection-limit values are stored but not applied by Build().
+HttpClient tuned = builder
+    .WithRetry(maxRetries: 5, delay: TimeSpan.FromMilliseconds(500))
+    .WithMaxConnectionsPerHost(20)
+    .Build();
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
