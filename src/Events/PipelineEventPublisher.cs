@@ -245,6 +245,14 @@ public abstract class PipelineEventArgs
 {
     public DateTime Timestamp { get; set; }
     public string CorrelationId { get; set; } = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+    /// <summary>
+    /// Returns a summary of the event args including timestamp and correlation ID.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"Timestamp={Timestamp:O}, CorrelationId={CorrelationId}";
+    }
 }
 
 /// <summary>
@@ -253,6 +261,14 @@ public abstract class PipelineEventArgs
 public sealed class DataIngestedEventArgs : PipelineEventArgs
 {
     public DataPoint DataPoint { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the event args including the ingested data point.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{base.ToString()}, DataPoint={DataPoint}";
+    }
 }
 
 /// <summary>
@@ -261,6 +277,14 @@ public sealed class DataIngestedEventArgs : PipelineEventArgs
 public sealed class ProcessingCompletedEventArgs : PipelineEventArgs
 {
     public ProcessingResult Result { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the event args including the processing result.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{base.ToString()}, Result={Result}";
+    }
 }
 
 /// <summary>
@@ -270,6 +294,14 @@ public sealed class BackpressureDetectedEventArgs : PipelineEventArgs
 {
     public string StageName { get; set; }
     public BackpressureContext Context { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the event args including the stage name and backpressure context.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{base.ToString()}, StageName={StageName}, Context={Context}";
+    }
 }
 
 /// <summary>
@@ -278,6 +310,14 @@ public sealed class BackpressureDetectedEventArgs : PipelineEventArgs
 public sealed class MetricsCollectedEventArgs : PipelineEventArgs
 {
     public MetricAggregation Metrics { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the event args including the collected metrics.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{base.ToString()}, Metrics={Metrics}";
+    }
 }
 
 /// <summary>
@@ -287,6 +327,14 @@ public sealed class PipelineErrorEventArgs : PipelineEventArgs
 {
     public string OperationName { get; set; }
     public Exception Exception { get; set; }
+
+    /// <summary>
+    /// Returns a summary of the event args including the operation name and exception type and message.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{base.ToString()}, OperationName={OperationName}, Exception={Exception?.GetType().FullName}: {Exception?.Message}";
+    }
 }
 
 // Event definitions
