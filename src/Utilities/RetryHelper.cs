@@ -85,6 +85,8 @@ public sealed class RetryHelper
         int initialDelayMs = DefaultInitialDelayMs,
         Func<Exception, bool> shouldRetry = null)
     {
+        ArgumentNullException.ThrowIfNull(operation);
+
         var attempt = 0;
         var delay = initialDelayMs;
 
@@ -116,6 +118,8 @@ public sealed class RetryHelper
         int initialDelayMs = DefaultInitialDelayMs,
         Func<Exception, bool> shouldRetry = null)
     {
+        ArgumentNullException.ThrowIfNull(operation);
+
         var attempt = 0;
         var delay = initialDelayMs;
 
@@ -196,6 +200,8 @@ public sealed class RetryPolicyBuilder
     /// </summary>
     public RetryPolicyBuilder WithMaxAttempts(int attempts)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(attempts);
+
         _maxAttempts = attempts;
         return this;
     }
@@ -205,6 +211,8 @@ public sealed class RetryPolicyBuilder
     /// </summary>
     public RetryPolicyBuilder WithInitialDelay(int delayMs)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(delayMs);
+
         _initialDelayMs = delayMs;
         return this;
     }
@@ -214,6 +222,8 @@ public sealed class RetryPolicyBuilder
     /// </summary>
     public RetryPolicyBuilder WithMaxDelay(int delayMs)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(delayMs);
+
         _maxDelayMs = delayMs;
         return this;
     }
@@ -283,6 +293,8 @@ public sealed class RetryPolicy
     /// </summary>
     public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
     {
+        ArgumentNullException.ThrowIfNull(operation);
+
         var attempt = 0;
         var delay = InitialDelayMs;
 
@@ -338,6 +350,8 @@ public sealed class RetryStatistics
 
     public void RecordAttempt(bool success, int delayMs)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(delayMs);
+
         TotalAttempts++;
         if (success)
             SuccessfulAttempts++;
