@@ -424,6 +424,37 @@ int failures = manager.GetTotalErrorCount("ItemProcessed");    // 0 unless a han
 await manager.StopAllAsync();
 ```
 
+## Output Formatters
+
+`src/Formatters/OutputFormatter.cs` contains the formatters that turn pipeline data into text for files, logs, and reports. Every formatter implements `IOutputFormatter`, and `OutputFormatterFactory.Create(OutputFormat)` returns the one that matches a format.
+
+- `IOutputFormatter` declares `string Format<T>(T data) where T : class` and `Task<string> FormatAsync<T>(T data) where T : class`. `FormatAsync` wraps the synchronous `Format` call in a completed task, so it does no real asynchronous work.
+- `OutputFormat` is the enum of supported formats: `Json`, `Csv`, `Table`, and `Html`.
+- `OutputFormatterFactory.Create(format)` maps each enum value to a new formatter instance. An unknown value falls back to `JsonOutputFormatter` and does not throw.
+- `JsonOutputFormatter` serializes any object with `System.Text.Json`, indented, with case-insensitive property names. Null data throws `ArgumentNullException`.
+- `CsvOutputFormatter` writes a header row and one line per record. It supports `List<DataPoint>` (columns `Id,Timestamp,Value,Source,Quality,Tags`) and `List<ProcessingResult>` (columns `ResultId,Success,ErrorMessage,ProcessingTimeMs,StageName`). Values are formatted with `InvariantCulture`, and text containing commas, quotes, or newlines is quoted. Any other type returns an empty string.
+- `TableOutputFormatter` writes a fixed-width ASCII table. A `List<DataPoint>` shows the first 10 rows (with a `... and N more rows` line for the rest), and an empty list returns `No data points`. A `Dictionary<string, object>` becomes a `Key`/`Value` table. Any other type is serialized to a single line of JSON.
+- `HtmlOutputFormatter` produces a complete HTML page titled `Pipeline Data Report` with inline CSS. A `List<DataPoint>` becomes a table of the first 50 rows; other types produce a page with only the heading. Values are written into the markup without HTML encoding, so do not pass untrusted text through this formatter without escaping it first.
+
+The factory is the usual entry point, so the caller can pick the format at runtime from configuration or a command-line option:
+
+```csharp
+using DotNetRealtimePipeline.Domain.Models;
+using DotNetRealtimePipeline.Formatters;
+
+List<DataPoint> points = GetRecentPoints();
+
+// Choose the format at runtime, for example from a --format option.
+OutputFormat format = OutputFormat.Csv;
+IOutputFormatter formatter = OutputFormatterFactory.Create(format);
+
+string text = formatter.Format(points);
+string json = await OutputFormatterFactory.Create(OutputFormat.Json).FormatAsync(points);
+
+// Falls back to JSON for a value outside the enum.
+IOutputFormatter fallback = OutputFormatterFactory.Create((OutputFormat)99);
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
