@@ -225,18 +225,43 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
     {
         private long _accessCount;
 
+        /// <summary>
+        /// Gets or sets the value stored in the cache entry.
+        /// </summary>
         public TValue Value { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time when the cache entry was created.
+        /// </summary>
         public DateTime CreatedTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time when the cache entry was last accessed.
+        /// </summary>
         public DateTime LastAccessTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time when the cache entry will expire.
+        /// </summary>
         public DateTime ExpirationTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of times the cache entry has been accessed.
+        /// </summary>
         public long AccessCount
         {
             get => Interlocked.Read(ref _accessCount);
             set => Interlocked.Exchange(ref _accessCount, value);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the cache entry has expired.
+        /// </summary>
         public bool IsExpired => DateTime.UtcNow > ExpirationTime;
 
+        /// <summary>
+        /// Increments the access count of the cache entry.
+        /// </summary>
         public void IncrementAccessCount()
         {
             Interlocked.Increment(ref _accessCount);
@@ -249,13 +274,40 @@ public sealed class CacheService<TKey, TValue> where TKey : notnull
 /// </summary>
 public sealed class CacheStatistics
 {
+    /// <summary>
+    /// Gets or sets the total number of cache hits.
+    /// </summary>
     public long TotalHits { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of cache misses.
+    /// </summary>
     public long TotalMisses { get; set; }
+
+    /// <summary>
+    /// Gets or sets the cache hit rate as a percentage.
+    /// </summary>
     public double HitRate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current size of the cache.
+    /// </summary>
     public int CurrentSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum capacity of the cache.
+    /// </summary>
     public int MaxCapacity { get; set; }
+
+    /// <summary>
+    /// Gets or sets the cache utilization percentage.
+    /// </summary>
     public double UtilizationPercent { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of the cache statistics.
+    /// </summary>
+    /// <returns>A string representation of the cache statistics.</returns>
     public override string ToString()
     {
         return $"Hits: {TotalHits}, Misses: {TotalMisses}, HitRate: {HitRate:F2}%, Size: {CurrentSize}/{MaxCapacity} ({UtilizationPercent:F1}%)";
