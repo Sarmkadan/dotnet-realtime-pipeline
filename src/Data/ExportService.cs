@@ -337,4 +337,14 @@ public sealed class BatchExportResult
     public DateTime EndTime { get; set; }
 
     public TimeSpan Duration => EndTime - StartTime;
+
+    public override string ToString()
+    {
+        if (Success)
+        {
+            return $"Batch export successful: {ExportedRecords} records in {BatchFiles.Count} files, {Duration.TotalSeconds:F2}s";
+        }
+
+        return $"Batch export failed: {ErrorMessage}";
+    }
 }
