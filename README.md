@@ -783,6 +783,70 @@ HttpClient tuned = builder
     .Build();
 ```
 
+## WorkerOptions
+
+`WorkerOptions` (`src/Configuration/EventServiceConfiguration.cs`) is a sealed class with settings for the background workers. It is declared in the global namespace. The validation helpers are in `src/Configuration/EventServiceConfigurationValidation.cs` (`EventServiceConfigurationValidation`, namespace `DotNetRealtimePipeline.Configuration`).
+
+| Property | Default | Constant | Meaning |
+|----------|---------|----------|---------|
+| `MetricsAggregationIntervalMs` | `5000` | `DefaultMetricsAggregationIntervalMs` | Milliseconds between metrics aggregation passes. |
+| `HealthCheckIntervalMs` | `10000` | `DefaultHealthCheckIntervalMs` | Milliseconds between health check passes. |
+| `EnableProcessingWorker` | `true` | none | Intended switch for `BackgroundProcessingWorker`. |
+| `EnableMetricsWorker` | `true` | none | Intended switch for `MetricsAggregationWorker`. |
+| `EnableHealthCheckWorker` | `true` | none | Intended switch for `HealthCheckWorker`. |
+
+`ToString()` returns a one-line summary of all five values.
+
+### How the workers use these values
+
+Nothing in `src/Workers/` reads `WorkerOptions`, and `WorkerOptions` is not registered in `ServiceCollectionExtensions`. The workers take their settings through their own constructors, so the caller has to copy the values across:
+
+- `MetricsAggregationWorker(MetricsService, ILogger<...>, int intervalMs = 5000)` uses `intervalMs` as its delay between passes. Pass `MetricsAggregationIntervalMs` here. The constructor does not clamp the value.
+- `HealthCheckWorker(PipelineOrchestrator, ILogger<...>, int intervalMs = 10000)` uses `intervalMs` the same way. Pass `HealthCheckIntervalMs` here.
+- `DynamicScalingWorker(DynamicScalingService, ILogger<...>, int intervalMs = 5000)` has its own interval, which is clamped to a minimum of 500 ms. It is not controlled by `WorkerOptions`.
+- `BackgroundProcessingWorker` has no interval parameter. It polls the orchestrator with a fixed 100 ms delay.
+- The three `Enable*Worker` flags are not read anywhere. `WorkerCoordinator.StartAll()` starts the processing, metrics, and health check workers unconditionally. To honor the flags, call `Start()` on each enabled worker yourself instead of using `StartAll()`.
+
+`EventServiceConfigurationValidation` checks only the two intervals, which must be positive. It does not check the `Enable*Worker` flags. Use `Validate()` to get a list of problems, `IsValid()` for a boolean, or `EnsureValid()` to throw an `ArgumentException` that lists them. Call the validators before you pass the intervals to the workers.
+
+### Configuration example
+
+```csharp
+using DotNetRealtimePipeline.Configuration;
+using DotNetRealtimePipeline.Services;
+using DotNetRealtimePipeline.Workers;
+
+var options = new WorkerOptions
+{
+    MetricsAggregationIntervalMs = 2000,
+    HealthCheckIntervalMs = 15000,
+    EnableHealthCheckWorker = false   // not read by any worker; see the note above
+};
+
+options.EnsureValid();
+
+var processing = new BackgroundProcessingWorker(
+    orchestrator,
+    loggerFactory.CreateLogger<BackgroundProcessingWorker>());
+
+var metrics = new MetricsAggregationWorker(
+    metricsService,
+    loggerFactory.CreateLogger<MetricsAggregationWorker>(),
+    options.MetricsAggregationIntervalMs);
+
+var health = new HealthCheckWorker(
+    orchestrator,
+    loggerFactory.CreateLogger<HealthCheckWorker>(),
+    options.HealthCheckIntervalMs);
+
+// Start only the workers that are enabled. The flag is applied here, in caller code.
+if (options.EnableProcessingWorker) processing.Start();
+if (options.EnableMetricsWorker) metrics.Start();
+if (options.EnableHealthCheckWorker) health.Start();
+```
+
+Because `EnableHealthCheckWorker = false` is applied by the `if` above, the health worker is skipped in this example. Without that `if`, the flag would have no effect. Also, `WorkerCoordinator` requires all three workers in its constructor, so if you use it, you cannot leave one out. Start the workers individually in that case.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
