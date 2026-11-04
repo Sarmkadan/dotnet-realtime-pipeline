@@ -128,13 +128,44 @@ public sealed class PerformanceHelper
 /// </summary>
 public sealed class BenchmarkResult
 {
+    /// <summary>
+    /// Gets or sets the number of iterations executed in the benchmark.
+    /// </summary>
     public int Iterations { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of individual measurement values in milliseconds.
+    /// </summary>
     public List<long> Measurements { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the average execution time in milliseconds.
+    /// </summary>
     public double AverageMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum execution time in milliseconds.
+    /// </summary>
     public long MinMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum execution time in milliseconds.
+    /// </summary>
     public long MaxMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the median execution time in milliseconds.
+    /// </summary>
     public double MedianMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 95th percentile execution time in milliseconds.
+    /// </summary>
     public double P95Ms { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 99th percentile execution time in milliseconds.
+    /// </summary>
     public double P99Ms { get; set; }
 
     public override string ToString()
@@ -148,12 +179,39 @@ public sealed class BenchmarkResult
 /// </summary>
 public sealed class MemoryStats
 {
+    /// <summary>
+    /// Gets or sets the current working set memory in megabytes.
+    /// </summary>
     public double WorkingSetMb { get; set; }
+
+    /// <summary>
+    /// Gets or sets the private memory in megabytes (approximation using working set).
+    /// </summary>
     public double PrivateMemoryMb { get; set; }
+
+    /// <summary>
+    /// Gets or sets the peak working set memory in megabytes.
+    /// </summary>
     public double PeakWorkingSetMb { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of Gen 0 garbage collections.
+    /// </summary>
     public int GC0Collections { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of Gen 1 garbage collections.
+    /// </summary>
     public int GC1Collections { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of Gen 2 garbage collections.
+    /// </summary>
     public int GC2Collections { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total managed memory in megabytes.
+    /// </summary>
     public double TotalMemoryMb { get; set; }
 
     public override string ToString()
@@ -269,8 +327,19 @@ public sealed class PerformanceTracker
 /// </summary>
 public sealed class PerformanceSample
 {
+    /// <summary>
+    /// Gets or sets the name of the metric being measured.
+    /// </summary>
     public string MetricName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the measured value.
+    /// </summary>
     public double Value { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timestamp when the sample was recorded (UTC).
+    /// </summary>
     public DateTime Timestamp { get; set; }
 }
 
@@ -279,11 +348,38 @@ public sealed class PerformanceSample
 /// </summary>
 public sealed class PerformanceStats
 {
+    /// <summary>
+    /// Gets or sets the number of samples in the statistics.
+    /// </summary>
     public int SampleCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average value.
+    /// </summary>
     public double Average { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum value.
+    /// </summary>
     public double Min { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum value.
+    /// </summary>
     public double Max { get; set; }
+
+    /// <summary>
+    /// Gets or sets the standard deviation.
+    /// </summary>
     public double StdDev { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 95th percentile value.
+    /// </summary>
     public double P95 { get; set; }
+
+    /// <summary>
+    /// Gets or sets the 99th percentile value.
+    /// </summary>
     public double P99 { get; set; }
 }
