@@ -20,6 +20,16 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class QueryService
 {
+    private const int FirstPage = 1;
+    private const int DefaultQueryPageSize = 1000;
+    private const int MinTrendDataPoints = 2;
+    private const int MinTrendIntervals = 2;
+    private const double StableChangePercentThreshold = 1;
+    private const int PercentileP95 = 95;
+    private const int PercentileP99 = 99;
+    private const int DefaultMovingAverageWindow = 5;
+    private const int DefaultRecentMetricsCount = 10;
+
     private readonly IDataPointRepository _dataPointRepository;
     private readonly IMetricsRepository _metricsRepository;
 
@@ -65,7 +75,7 @@ public sealed class QueryService
         else
         {
             // Get all data (paginated)
-            results = await _dataPointRepository.GetPagedAsync(1, 1000);
+            results = await _dataPointRepository.GetPagedAsync(FirstPage, DefaultQueryPageSize);
         }
 
         // Apply additional filters
@@ -119,8 +129,8 @@ public sealed class QueryService
             Max = values.Max(),
             StdDev = StatisticsHelper.CalculateStandardDeviation(values),
             Median = StatisticsHelper.CalculateMedian(values),
-            P95 = StatisticsHelper.CalculatePercentile(values, 95),
-            P99 = StatisticsHelper.CalculatePercentile(values, 99),
+            P95 = StatisticsHelper.CalculatePercentile(values, PercentileP95),
+            P99 = StatisticsHelper.CalculatePercentile(values, PercentileP99),
             UniqueSourceCount = dataPoints.Select(dp => dp.Source).Distinct().Count(),
             AverageQuality = dataPoints.Average(dp => dp.Quality)
         };
@@ -140,7 +150,7 @@ public sealed class QueryService
     {
         var dataPoints = await _dataPointRepository.GetByTimeRangeAsync(startMs, endMs);
 
-        if (dataPoints.Count < 2)
+        if (dataPoints.Count < MinTrendDataPoints)
         {
             return new TrendAnalysis { Status = "INSUFFICIENT_DATA" };
         }
@@ -163,7 +173,7 @@ public sealed class QueryService
             .Select(kvp => kvp.Value.Average(dp => dp.Value))
             .ToList();
 
-        if (intervalAverages.Count < 2)
+        if (intervalAverages.Count < MinTrendIntervals)
         {
             return new TrendAnalysis { Status = "INSUFFICIENT_INTERVALS" };
         }
@@ -174,7 +184,7 @@ public sealed class QueryService
         double changePercent = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100;
 
         string direction;
-        if (Math.Abs(changePercent) < 1)
+        if (Math.Abs(changePercent) < StableChangePercentThreshold)
             direction = "STABLE";
         else if (changePercent > 0)
             direction = "INCREASING";
@@ -202,7 +212,7 @@ public sealed class QueryService
     public async Task<TimeSeriesDecomposition> DecomposeTimeSeriesAsync(
         long startMs,
         long endMs,
-        int movingAverageWindow = 5)
+        int movingAverageWindow = DefaultMovingAverageWindow)
     {
         var dataPoints = await _dataPointRepository.GetByTimeRangeAsync(startMs, endMs);
 
@@ -236,7 +246,7 @@ public sealed class QueryService
     /// </summary>
     /// <param name="count">Number of recent metrics to retrieve (default 10).</param>
     /// <returns>List of recent metric aggregations.</returns>
-    public async Task<List<MetricAggregation>> GetRecentMetricsAsync(int count = 10)
+    public async Task<List<MetricAggregation>> GetRecentMetricsAsync(int count = DefaultRecentMetricsCount)
     {
         return await _metricsRepository.GetHistoryAsync(count);
     }
