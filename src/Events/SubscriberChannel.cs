@@ -29,6 +29,15 @@ internal sealed class SubscriberChannel : IDisposable
     private Task? _consumerTask;
     private CancellationTokenSource? _cts;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SubscriberChannel"/> class.
+    /// </summary>
+    /// <param name="eventName">The name of the event.</param>
+    /// <param name="handler">The event handler function.</param>
+    /// <param name="options">The subscriber options.</param>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="subscriberName">The name of the subscriber.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any of the required parameters are null.</exception>
     public SubscriberChannel(
         string eventName,
         Func<PipelineEventArgs, Task> handler,
@@ -135,6 +144,9 @@ internal sealed class SubscriberChannel : IDisposable
     /// </summary>
     public int GetErrorCount() => _errorCount;
 
+    /// <summary>
+    /// Disposes the <see cref="SubscriberChannel"/> and releases resources.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)
@@ -211,13 +223,25 @@ internal sealed class SubscriberChannel : IDisposable
 
     private readonly struct SubscriberWorkItem
     {
-        public readonly PipelineEventArgs Args;
-        public readonly int ErrorCountAtEnqueue;
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SubscriberWorkItem"/> struct.
+        /// </summary>
+        /// <param name="args">The pipeline event arguments.</param>
+        /// <param name="errorCountAtEnqueue">The error count at the time of enqueue.</param>
         public SubscriberWorkItem(PipelineEventArgs args, int errorCountAtEnqueue)
         {
             Args = args;
             ErrorCountAtEnqueue = errorCountAtEnqueue;
         }
+
+        /// <summary>
+        /// Gets the pipeline event arguments.
+        /// </summary>
+        public PipelineEventArgs Args { get; }
+
+        /// <summary>
+        /// Gets the error count at the time of enqueue.
+        /// </summary>
+        public int ErrorCountAtEnqueue { get; }
     }
 }
