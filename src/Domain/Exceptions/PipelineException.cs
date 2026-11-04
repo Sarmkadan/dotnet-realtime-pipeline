@@ -14,20 +14,47 @@ using System;
 /// </summary>
 public class PipelineException : Exception
 {
+    /// <summary>
+    /// Gets or sets the error code associated with this exception.
+    /// </summary>
     public string? ErrorCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional error details associated with this exception.
+    /// </summary>
     public object? ErrorDetails { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineException"/> class with a specified error message.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
     public PipelineException(string message) : base(message) { }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineException"/> class with a specified error message and a reference to the inner exception that is the cause of this exception.
+    /// </summary>
+    /// <param name="message">The error message that explains the reason for the exception.</param>
+    /// <param name="innerException">The exception that is the cause of the current exception, or a null reference if no inner exception is specified.</param>
     public PipelineException(string message, Exception innerException)
         : base(message, innerException) { }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineException"/> class with a specified error message and error code.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="errorCode">The error code associated with this exception.</param>
     public PipelineException(string message, string errorCode)
         : base(message)
     {
         ErrorCode = errorCode;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineException"/> class with a specified error message, error code, and error details.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="errorCode">The error code associated with this exception.</param>
+    /// <param name="errorDetails">Additional error details associated with this exception.</param>
     public PipelineException(string message, string errorCode, object? errorDetails)
         : base(message)
     {
@@ -51,9 +78,18 @@ public class PipelineException : Exception
 /// </summary>
 public sealed class InvalidDataPointException : PipelineException
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InvalidDataPointException"/> class with a specified error message.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
     public InvalidDataPointException(string message)
         : base(message, "INVALID_DATA_POINT") { }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InvalidDataPointException"/> class with a specified error message and additional details.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="details">Additional error details associated with this exception.</param>
     public InvalidDataPointException(string message, object? details)
         : base(message, "INVALID_DATA_POINT", details) { }
 }
@@ -63,9 +99,22 @@ public sealed class InvalidDataPointException : PipelineException
 /// </summary>
 public sealed class BackpressureException : PipelineException
 {
+    /// <summary>
+    /// Gets or sets the current buffer size when the backpressure limit was exceeded.
+    /// </summary>
     public long BufferSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum capacity allowed before backpressure is triggered.
+    /// </summary>
     public long MaxCapacity { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BackpressureException"/> class with a specified error message, buffer size, and maximum capacity.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="bufferSize">The current buffer size when the backpressure limit was exceeded.</param>
+    /// <param name="maxCapacity">The maximum capacity allowed before backpressure is triggered.</param>
     public BackpressureException(string message, long bufferSize, long maxCapacity)
         : base(message, "BACKPRESSURE_EXCEEDED")
     {
@@ -87,15 +136,33 @@ public sealed class BackpressureException : PipelineException
 /// </summary>
 public sealed class StageProcessingException : PipelineException
 {
+    /// <summary>
+    /// Gets or sets the name of the stage that encountered the error.
+    /// </summary>
     public string? StageName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of retry attempts made before the failure.
+    /// </summary>
     public int RetryCount { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StageProcessingException"/> class with a specified error message and stage name.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="stageName">The name of the stage that encountered the error.</param>
     public StageProcessingException(string message, string stageName)
         : base(message, "STAGE_PROCESSING_FAILED")
     {
         StageName = stageName;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StageProcessingException"/> class with a specified error message, stage name, and retry count.
+    /// </summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <param name="stageName">The name of the stage that encountered the error.</param>
+    /// <param name="retryCount">The number of retry attempts made before the failure.</param>
     public StageProcessingException(string message, string stageName, int retryCount)
         : base(message, "STAGE_PROCESSING_FAILED")
     {
