@@ -22,6 +22,7 @@ public sealed class RetryPolicyOptions
     private TimeSpan _baseDelay = TimeSpan.FromMilliseconds(200);
     private TimeSpan _maxDelay = TimeSpan.FromSeconds(30);
     private double _jitterFactor = 0.25;
+    private Func<Exception, bool> _transientExceptionPredicate = DefaultTransientPredicate;
 
     /// <summary>
     /// Gets or sets the maximum number of attempts (including the first one).
@@ -79,7 +80,13 @@ public sealed class RetryPolicyOptions
     /// Gets or sets the predicate that decides whether an exception is transient
     /// and therefore worth retrying. Defaults to <see cref="DefaultTransientPredicate"/>.
     /// </summary>
-    public Func<Exception, bool> TransientExceptionPredicate { get; set; } = DefaultTransientPredicate;
+    /// <exception cref="ArgumentNullException">Thrown when the value is <see langword="null"/>.</exception>
+    public Func<Exception, bool> TransientExceptionPredicate
+    {
+        get => _transientExceptionPredicate;
+        set => _transientExceptionPredicate = value
+            ?? throw new ArgumentNullException(nameof(value));
+    }
 
     /// <summary>
     /// The default transient-exception classification: timeouts, I/O, socket and
