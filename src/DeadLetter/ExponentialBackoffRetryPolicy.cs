@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class ExponentialBackoffRetryPolicy : IRetryPolicy
 {
+    private const int MaxExponent = 20;
+    private const double BackoffBase = 2;
+
     private readonly RetryPolicyOptions _options;
 
     /// <summary>
@@ -41,8 +44,8 @@ public sealed class ExponentialBackoffRetryPolicy : IRetryPolicy
         if (attemptNumber < 1)
             throw new ArgumentOutOfRangeException(nameof(attemptNumber), attemptNumber, "Attempt number must be at least 1.");
 
-        var exponent = Math.Min(attemptNumber - 1, 20); // avoid overflow for large attempt numbers
-        var baseMs = _options.BaseDelay.TotalMilliseconds * Math.Pow(2, exponent);
+        var exponent = Math.Min(attemptNumber - 1, MaxExponent); // avoid overflow for large attempt numbers
+        var baseMs = _options.BaseDelay.TotalMilliseconds * Math.Pow(BackoffBase, exponent);
         var cappedMs = Math.Min(baseMs, _options.MaxDelay.TotalMilliseconds);
 
         if (_options.JitterFactor > 0 && cappedMs > 0)
