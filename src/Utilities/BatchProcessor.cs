@@ -23,6 +23,12 @@ public sealed class BatchProcessor<TInput, TOutput>
     private readonly int _batchSize;
     private readonly int _maxDegreeOfParallelism;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BatchProcessor{TInput, TOutput}"/> class.
+    /// </summary>
+    /// <param name="batchSize">The number of items per batch. Must be greater than 0.</param>
+    /// <param name="maxDegreeOfParallelism">The maximum number of batches to process in parallel. Must be greater than 0.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="batchSize"/> or <paramref name="maxDegreeOfParallelism"/> is less than 1.</exception>
     public BatchProcessor(int batchSize = DefaultBatchSize, int maxDegreeOfParallelism = DefaultMaxDegreeOfParallelism)
     {
         if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than 0");
@@ -111,6 +117,13 @@ public sealed class BatchProcessor<TInput, TOutput>
 /// </summary>
 public sealed class BatchProcessingException : Exception
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BatchProcessingException"/> class.
+    /// </summary>
+    /// <param name="message">The error message that explains the reason for the exception.</param>
+    /// <param name="innerException">The exception that is the cause of the current exception.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="message"/> is null or empty.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="innerException"/> is null.</exception>
     public BatchProcessingException(string message, Exception innerException)
         : base(message, innerException)
     {
@@ -124,18 +137,56 @@ public sealed class BatchProcessingException : Exception
 /// </summary>
 public sealed class BatchProcessingProgress
 {
+    /// <summary>
+    /// Gets or sets the total number of batches to process.
+    /// </summary>
     public int TotalBatches { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of batches that have been processed.
+    /// </summary>
     public int ProcessedBatches { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total number of items to process.
+    /// </summary>
     public int TotalItems { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of items that have been processed.
+    /// </summary>
     public int ProcessedItems { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time when processing started.
+    /// </summary>
     public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC time of the last progress update.
+    /// </summary>
     public DateTime LastUpdateTime { get; set; }
 
+    /// <summary>
+    /// Gets the progress as a percentage (0-100).
+    /// </summary>
     public double ProgressPercent => TotalBatches > 0 ? (ProcessedBatches * 100.0) / TotalBatches : 0;
+
+    /// <summary>
+    /// Gets the elapsed time since processing started.
+    /// </summary>
     public TimeSpan ElapsedTime => DateTime.UtcNow - StartTime;
+
+    /// <summary>
+    /// Gets the estimated time remaining based on current progress.
+    /// </summary>
     public TimeSpan EstimatedTimeRemaining => ElapsedTime.TotalMilliseconds > 0 && ProgressPercent > 0
         ? TimeSpan.FromMilliseconds((ElapsedTime.TotalMilliseconds / ProgressPercent) * (100 - ProgressPercent))
         : TimeSpan.Zero;
+
+    /// <summary>
+    /// Gets the processing speed in items per second.
+    /// </summary>
     public double ItemsPerSecond => ElapsedTime.TotalSeconds > 0
         ? ProcessedItems / ElapsedTime.TotalSeconds
         : 0;
