@@ -27,6 +27,11 @@ public sealed class WindowingService
     private long _nextWindowId = 1;
     private readonly Dictionary<long, WindowEvent> _activeWindows = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WindowingService"/> class.
+    /// </summary>
+    /// <param name="config">The pipeline configuration containing window settings.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
     public WindowingService(PipelineConfig config)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -410,14 +415,49 @@ public sealed class WindowingService
 /// </summary>
 public sealed class WindowStatistics
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the window.
+    /// </summary>
     public long WindowId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of data points in the window.
+    /// </summary>
     public int DataPointCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the sum of all data point values in the window.
+    /// </summary>
     public double Sum { get; set; }
+
+    /// <summary>
+    /// Gets or sets the average value of data points in the window.
+    /// </summary>
     public double Average { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum value in the window.
+    /// </summary>
     public double Min { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum value in the window.
+    /// </summary>
     public double Max { get; set; }
+
+    /// <summary>
+    /// Gets or sets the standard deviation of values in the window.
+    /// </summary>
     public double StdDev { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration of the window in milliseconds.
+    /// </summary>
     public long WindowDurationMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the throughput (data points per second) for the window.
+    /// </summary>
     public double Throughput { get; set; }
 
     /// <summary>
@@ -442,12 +482,39 @@ public sealed class WindowStatistics
 /// </summary>
 public sealed class WindowEmissionResult
 {
+    /// <summary>
+    /// Gets or sets the unique identifier of the emitted window.
+    /// </summary>
     public long WindowId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start time of the window in milliseconds.
+    /// </summary>
     public long StartMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the end time of the window in milliseconds.
+    /// </summary>
     public long EndMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of data points in the window.
+    /// </summary>
     public int DataPointCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the statistics calculated for the window.
+    /// </summary>
     public WindowStatistics Statistics { get; set; }
+
+    /// <summary>
+    /// Gets or sets the aggregated data dictionary for the window.
+    /// </summary>
     public Dictionary<string, object> AggregatedData { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp when the window was emitted.
+    /// </summary>
     public DateTime EmittedAt { get; set; }
 
     /// <summary>
@@ -470,10 +537,29 @@ public sealed class WindowEmissionResult
 /// </summary>
 public sealed class WindowingSummary
 {
+    /// <summary>
+    /// Gets or sets the total number of windows created since service start.
+    /// </summary>
     public long TotalWindowsCreated { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of currently active (in-flight) windows.
+    /// </summary>
     public int ActiveWindowCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured window size in milliseconds.
+    /// </summary>
     public long ConfiguredWindowSizeMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured window slide interval in milliseconds.
+    /// </summary>
     public long ConfiguredWindowSlideMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the configured window type (e.g., TUMBLING, SLIDING, SESSION).
+    /// </summary>
     public string ConfiguredWindowType { get; set; }
 
     /// <summary>
