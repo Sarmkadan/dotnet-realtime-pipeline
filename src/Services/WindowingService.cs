@@ -449,6 +449,20 @@ public sealed class WindowEmissionResult
     public WindowStatistics Statistics { get; set; }
     public Dictionary<string, object> AggregatedData { get; set; }
     public DateTime EmittedAt { get; set; }
+
+    /// <summary>
+    /// Returns an invariant-culture summary of the window emission result.
+    /// </summary>
+    public override string ToString() => string.Format(
+        CultureInfo.InvariantCulture,
+        "WindowEmissionResult {{ WindowId = {0}, StartMs = {1}, EndMs = {2}, DataPointCount = {3}, HasStatistics = {4}, AggregatedDataCount = {5}, EmittedAt = {6:O} }}",
+        WindowId,
+        StartMs,
+        EndMs,
+        DataPointCount,
+        Statistics is not null,
+        AggregatedData?.Count ?? 0,
+        EmittedAt);
 }
 
 /// <summary>
@@ -461,4 +475,16 @@ public sealed class WindowingSummary
     public long ConfiguredWindowSizeMs { get; set; }
     public long ConfiguredWindowSlideMs { get; set; }
     public string ConfiguredWindowType { get; set; }
+
+    /// <summary>
+    /// Returns an invariant-culture summary of the windowing state.
+    /// </summary>
+    public override string ToString() => string.Format(
+        CultureInfo.InvariantCulture,
+        "WindowingSummary {{ TotalWindowsCreated = {0}, ActiveWindowCount = {1}, ConfiguredWindowSizeMs = {2}, ConfiguredWindowSlideMs = {3}, ConfiguredWindowType = {4} }}",
+        TotalWindowsCreated,
+        ActiveWindowCount,
+        ConfiguredWindowSizeMs,
+        ConfiguredWindowSlideMs,
+        ConfiguredWindowType);
 }
