@@ -995,6 +995,148 @@ if (!response.Success)
 
 The order in the example matters. The rate limit runs first, so denied requests are never retried. Retry sits inside the error handler, so a timeout that is still failing after the last retry is converted into a `TIMEOUT` response. `IngestDataPointAsync` returns `false` under backpressure without throwing, so the retry does not run for that case.
 
+## Health Checks
+
+The health check types are in `src/Monitoring/HealthCheckService.cs` (namespace `DotNetRealtimePipeline.Monitoring`). `HealthCheckService` and `ResourceMonitor` are not registered in `ServiceCollectionExtensions`. `PipelineInitializer` calls `GetRequiredService<HealthCheckService>()` and `GetRequiredService<ResourceMonitor>()`, and logs a warning if either fails. So either register both in your container or construct them yourself, as the example below does. `HealthCheckServiceExtensions.cs` adds helpers such as `GetOverallHealthAsync`, `GetHealthSummaryAsync`, and `RegisterComponents`, and `HealthCheckServiceValidation.cs` has the validators.
+
+### HealthCheckService
+
+`HealthCheckService` is a sealed class. Its constructor takes a `PipelineOrchestrator` and an `ILogger<HealthCheckService>`, and throws `ArgumentNullException` for either null argument.
+
+- `RegisterComponent(string name, Func<Task<ComponentHealth>> healthCheck)` adds a named check. It throws `ArgumentException` for a null or whitespace name and `ArgumentNullException` for a null delegate. It does not reject duplicate names. Components run in registration order. If two components share a name, the later result overwrites the earlier one in `SystemHealthReport.Components`, but both still run.
+- `PerformCompleteHealthCheckAsync()` runs every registered check one after another, with no timeout. It then reads `PipelineOrchestrator.GetHealthReportAsync()` and returns a `SystemHealthReport`. The method does not throw when a component fails:
+  - If a check returns `IsHealthy = false`, the component is recorded as its result and its `ComponentStatus` is set to `Degraded`.
+  - If a check throws, the component is recorded with `IsHealthy = false` and a `Message` of `Error: <exception message>`. Its `ComponentStatus` is set to `Unhealthy`. The exception is logged at Error.
+  - If reading the pipeline health throws, the error is logged and `PipelineStatus`, `Throughput`, and `SuccessRate` keep their defaults (`null`, `0`, `0`).
+- `GetQuickStatusAsync()` does not run any registered component. It reads `PipelineOrchestrator.GetStatus()` and `GetHealthReportAsync()` and returns a `QuickHealthStatus`. If either call throws, it logs the error and returns a status with `HealthStatus = "Error"` and every other field at its default.
+- `GetComponentStatus(string componentName)` returns the stored `ComponentStatus` for a name. The lookup ignores case. It returns `Unknown` for a blank name, an unregistered name, or a component that has not been checked yet. The stored status changes only when `PerformCompleteHealthCheckAsync()` runs.
+
+`OverallStatus` is computed from the component results only. The pipeline status does not affect it. The rule is:
+
+| Components | Results with `IsHealthy = false` | `OverallStatus` |
+|------------|----------------------------------|-----------------|
+| 0 | any | `Unknown` |
+| 3 | 0 | `Healthy` |
+| 1 | 1 | `Unhealthy` |
+| 2 | 1 | `Degraded` |
+| 3 | 1 | `Degraded` |
+| 3 | 2 | `Unhealthy` |
+| 4 | 2 | `Degraded` |
+
+The code uses `unhealthyCount > totalCount / 2` with integer division. The system is `Unhealthy` only when more than half of the components fail. Any other failure makes it `Degraded`.
+
+### ComponentHealth
+
+`ComponentHealth` is the result a check returns. It has these properties:
+
+- `IsHealthy` (`bool`, default `false`).
+- `Message` (`string`). There is no default, so it can be `null`.
+- `CheckedAt` (`DateTime`, UTC). It is set when the object is created, not when the check finishes.
+- `Details` (`Dictionary<string, object>`), initialized to an empty dictionary.
+
+### ComponentStatus and SystemHealth
+
+`ComponentStatus` has the values `Unknown`, `Healthy`, `Degraded`, and `Unhealthy`. `SystemHealth` has the same four values. They are separate enums: `SystemHealthReport.OverallStatus` is a `SystemHealth`, and `GetComponentStatus` returns a `ComponentStatus`.
+
+### SystemHealthReport
+
+`SystemHealthReport` is the result of `PerformCompleteHealthCheckAsync()`:
+
+- `CheckedAt` (UTC) is set at the start of the check.
+- `OverallStatus` (`SystemHealth`) is described above.
+- `Components` (`Dictionary<string, ComponentHealth>`) holds one entry for each component that ran, keyed by name.
+- `PipelineStatus` (`string`) is the `HealthReport.Status` text, such as `HEALTHY` or `UNHEALTHY`. It is `"Unknown"` when the pipeline returns no report, and `null` when reading the report throws.
+- `Throughput` is items per second. `SuccessRate` is a percentage.
+
+`ToString()` shows the counts, not the component details.
+
+### QuickHealthStatus
+
+`QuickHealthStatus` is a flat summary with no component checks:
+
+- `IsRunning` comes from `PipelineStatus.IsRunning`.
+- `HealthStatus` is the `HealthReport.Status` text, or `"Unknown"` when there is no report.
+- `PendingItems` comes from `PipelineStatus.PendingItemsInQueue`.
+- `ThroughputOk` is `true` when a report exists and its throughput is above 0.
+- `ErrorRateAcceptable` is `true` when `SuccessRatePercent` is at least 80. A missing report counts as 100.
+
+### ResourceMonitor and ResourceUsage
+
+`ResourceMonitor` (constructor takes `ILogger<ResourceMonitor>`) reads the current process:
+
+- `GetResourceUsage()` returns a `ResourceUsage` snapshot. It reads `Process.GetCurrentProcess()`. If that throws, the error is logged and a zeroed snapshot is returned with `CheckedAt` set.
+- `IsResourceUsageAcceptable(double maxMemoryMB = 1024, int maxThreads = 100)` returns `true` when memory is below `maxMemoryMB` and the thread count is below `maxThreads`. Both comparisons are strict.
+
+`ResourceUsage` has these properties:
+
+- `MemoryMB` is the working set in megabytes.
+- `ThreadCount` is the process thread count.
+- `CpuUsagePercent` is always `0`. The CPU calculation is not implemented, and the private `CalculateCpuUsage` helper is never called.
+- `PrivateMemoryMB` is also the working set. It is not the private memory, so do not compare it with the Windows "Private Bytes" counter.
+- `CheckedAt` (UTC) is the time of the snapshot.
+
+### Example
+
+The example registers a component that checks the queue depth, runs a full health check, and reads the report. It does not start the pipeline. `HealthCheckService` is constructed directly because it is not registered in the DI container.
+
+```csharp
+using DotNetRealtimePipeline.Monitoring;
+using DotNetRealtimePipeline.Services;
+using Microsoft.Extensions.Logging;
+
+var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+var orchestrator = serviceProvider.GetRequiredService<PipelineOrchestrator>();
+
+var health = new HealthCheckService(
+    orchestrator,
+    loggerFactory.CreateLogger<HealthCheckService>());
+
+health.RegisterComponent("queue", () =>
+{
+    int pending = orchestrator.GetStatus().PendingItemsInQueue;
+
+    return Task.FromResult(new ComponentHealth
+    {
+        IsHealthy = pending < 1000,
+        Message = $"{pending} items pending",
+        Details = new Dictionary<string, object> { ["pending"] = pending }
+    });
+});
+
+// Runs every component, then reads the pipeline health. It does not throw on component failures.
+SystemHealthReport report = await health.PerformCompleteHealthCheckAsync();
+
+Console.WriteLine($"Overall: {report.OverallStatus} (checked at {report.CheckedAt:O})");
+
+string pipelineStatus = report.PipelineStatus ?? "unavailable";
+Console.WriteLine($"Pipeline: {pipelineStatus}, throughput {report.Throughput:F2}/s, success {report.SuccessRate:F1}%");
+
+foreach (var (name, component) in report.Components)
+{
+    Console.WriteLine($"{name}: {(component.IsHealthy ? "OK" : "FAIL")} - {component.Message}");
+}
+
+// The stored status is updated by the same call, so it matches the report.
+ComponentStatus queueStatus = health.GetComponentStatus("queue");
+if (queueStatus != ComponentStatus.Healthy)
+{
+    Console.WriteLine($"Queue needs attention: {queueStatus}");
+}
+
+// Cheap check without running the components.
+QuickHealthStatus quick = await health.GetQuickStatusAsync();
+Console.WriteLine($"Running: {quick.IsRunning}, pending: {quick.PendingItems}, health: {quick.HealthStatus}");
+
+// Process memory and thread count, for example as a guard before starting more work.
+var resources = new ResourceMonitor(loggerFactory.CreateLogger<ResourceMonitor>());
+ResourceUsage usage = resources.GetResourceUsage();
+Console.WriteLine($"Memory: {usage.MemoryMB:F1} MB, threads: {usage.ThreadCount}");
+```
+
+With only the `queue` component registered, a backlog of 1000 or more items makes `queue` `Degraded` and `OverallStatus` `Unhealthy`, because the single component is unhealthy and `1 > 1 / 2` (that is, `1 > 0`) holds. A check that throws also gives the component `ComponentStatus.Unhealthy`, and the overall status is `Unhealthy` in that case too.
+
+The example was not compiled or run against the repository. Check the exact names and namespaces before relying on it.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
