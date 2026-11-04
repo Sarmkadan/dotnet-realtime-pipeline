@@ -36,11 +36,21 @@ public enum SubscriberErrorPolicy
 public sealed class SubscriberOptions
 {
     /// <summary>
+    /// Default maximum number of events that can be queued per subscriber.
+    /// </summary>
+    public const int DefaultMaxQueueSize = 1000;
+
+    /// <summary>
+    /// Default maximum degree of parallelism (1 = sequential).
+    /// </summary>
+    public const int DefaultMaxDegreeOfParallelism = 1;
+
+    /// <summary>
     /// Gets or sets the maximum number of events that can be queued per subscriber.
     /// When the queue is full, new events will be dropped or rejected based on <see cref="MaxQueueSizeBehavior"/>.
     /// Default: 1000
     /// </summary>
-    public int MaxQueueSize { get; set; } = 1000;
+    public int MaxQueueSize { get; set; } = DefaultMaxQueueSize;
 
     /// <summary>
     /// Gets or sets the behavior when the queue is full.
@@ -64,7 +74,7 @@ public sealed class SubscriberOptions
     /// Gets or sets the maximum degree of parallelism when <see cref="DispatchMode"/> is Parallel.
     /// Default: 1 (sequential)
     /// </summary>
-    public int MaxDegreeOfParallelism { get; set; } = 1;
+    public int MaxDegreeOfParallelism { get; set; } = DefaultMaxDegreeOfParallelism;
 
     /// <summary>
     /// Gets or sets a custom name for this subscriber configuration.
