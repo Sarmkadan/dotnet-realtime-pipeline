@@ -65,9 +65,12 @@ internal static class PipelineJsonUtilities
     /// Validates JSON payload size before deserialization to prevent memory exhaustion attacks.
     /// </summary>
     /// <param name="json">The JSON string to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when JSON exceeds size limits.</exception>
     internal static void ValidateJsonPayloadSize(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (json.Length > MaxJsonPayloadSizeBytes)
         {
             throw new ArgumentOutOfRangeException(
@@ -81,8 +84,11 @@ internal static class PipelineJsonUtilities
     /// </summary>
     /// <param name="json">The JSON string to validate.</param>
     /// <returns>True if validation passes; false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     internal static bool ValidateJsonStringLength(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         return json.Length <= MaxStringLength;
     }
 }
