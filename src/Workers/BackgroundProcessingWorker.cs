@@ -24,6 +24,11 @@ public sealed class BackgroundProcessingWorker : IDisposable
     private Task _workerTask;
     private volatile bool _isRunning;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BackgroundProcessingWorker"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator whose status is polled by the worker.</param>
+    /// <param name="logger">The logger used for worker diagnostics.</param>
     public BackgroundProcessingWorker(
         PipelineOrchestrator orchestrator,
         ILogger<BackgroundProcessingWorker> logger)
@@ -124,6 +129,9 @@ public sealed class BackgroundProcessingWorker : IDisposable
     }
     }
 
+    /// <summary>
+    /// Cancels the worker if it is running, waits for its task to finish, and releases the cancellation token source.
+    /// </summary>
     public void Dispose()
     {
         if (_isRunning)
@@ -165,6 +173,12 @@ public sealed class MetricsAggregationWorker : IDisposable
     private Task _workerTask;
     private volatile bool _isRunning;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MetricsAggregationWorker"/> class.
+    /// </summary>
+    /// <param name="metricsService">The metrics service whose health report is aggregated.</param>
+    /// <param name="logger">The logger used for worker diagnostics.</param>
+    /// <param name="intervalMs">The delay between aggregation passes, in milliseconds. Defaults to 5000.</param>
     public MetricsAggregationWorker(
         MetricsService metricsService,
         ILogger<MetricsAggregationWorker> logger,
@@ -222,6 +236,9 @@ public sealed class MetricsAggregationWorker : IDisposable
         _isRunning = false;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the metrics aggregation worker is running.
+    /// </summary>
     public bool IsRunning => _isRunning;
 
     /// <summary>
@@ -265,6 +282,9 @@ public sealed class MetricsAggregationWorker : IDisposable
     }
     }
 
+    /// <summary>
+    /// Cancels the worker if it is running, waits for its task to finish, and releases the cancellation token source.
+    /// </summary>
     public void Dispose()
     {
         if (_isRunning)
@@ -306,6 +326,12 @@ public sealed class HealthCheckWorker : IDisposable
     private Task _workerTask;
     private volatile bool _isRunning;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HealthCheckWorker"/> class.
+    /// </summary>
+    /// <param name="orchestrator">The pipeline orchestrator whose health report is requested.</param>
+    /// <param name="logger">The logger used for worker diagnostics.</param>
+    /// <param name="intervalMs">The delay between health checks, in milliseconds. Defaults to 10000.</param>
     public HealthCheckWorker(
         PipelineOrchestrator orchestrator,
         ILogger<HealthCheckWorker> logger,
@@ -363,6 +389,9 @@ public sealed class HealthCheckWorker : IDisposable
         _isRunning = false;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the health check worker is running.
+    /// </summary>
     public bool IsRunning => _isRunning;
 
     /// <summary>
@@ -400,6 +429,9 @@ public sealed class HealthCheckWorker : IDisposable
     }
     }
 
+    /// <summary>
+    /// Cancels the worker if it is running, waits for its task to finish, and releases the cancellation token source.
+    /// </summary>
     public void Dispose()
     {
         if (_isRunning)
@@ -439,6 +471,13 @@ public sealed class WorkerCoordinator : IDisposable
     private readonly HealthCheckWorker _healthCheckWorker;
     private readonly ILogger<WorkerCoordinator> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WorkerCoordinator"/> class.
+    /// </summary>
+    /// <param name="processingWorker">The background processing worker to coordinate.</param>
+    /// <param name="metricsWorker">The metrics aggregation worker to coordinate.</param>
+    /// <param name="healthCheckWorker">The health check worker to coordinate.</param>
+    /// <param name="logger">The logger used for coordinator diagnostics.</param>
     public WorkerCoordinator(
         BackgroundProcessingWorker processingWorker,
         MetricsAggregationWorker metricsWorker,
@@ -475,6 +514,9 @@ public sealed class WorkerCoordinator : IDisposable
         );
     }
 
+    /// <summary>
+    /// Disposes all coordinated workers.
+    /// </summary>
     public void Dispose()
     {
         _processingWorker?.Dispose();
