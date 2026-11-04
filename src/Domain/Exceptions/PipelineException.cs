@@ -36,16 +36,13 @@ public class PipelineException : Exception
     }
 
     /// <summary>
-    /// Returns a concise, informative representation of this exception, including the
-    /// error code, error details, and any backpressure or stage context available on
-    /// more derived exception types.
+    /// Returns the base exception string prefixed with the error code when one is set.
     /// </summary>
     public override string ToString()
     {
-        var backpressure = this as BackpressureException;
-        var stageProcessing = this as StageProcessingException;
+        var text = base.ToString();
 
-        return $"PipelineException {{ ErrorCode = {ErrorCode}, ErrorDetails = {ErrorDetails}, BufferSize = {backpressure?.BufferSize}, MaxCapacity = {backpressure?.MaxCapacity}, StageName = {stageProcessing?.StageName}, RetryCount = {stageProcessing?.RetryCount} }}";
+        return string.IsNullOrEmpty(ErrorCode) ? text : $"[{ErrorCode}] {text}";
     }
 }
 
@@ -75,6 +72,14 @@ public sealed class BackpressureException : PipelineException
         BufferSize = bufferSize;
         MaxCapacity = maxCapacity;
     }
+
+    /// <summary>
+    /// Returns the base exception string prefixed with the buffer size and maximum capacity.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"[BufferSize={BufferSize}, MaxCapacity={MaxCapacity}] {base.ToString()}";
+    }
 }
 
 /// <summary>
@@ -96,6 +101,14 @@ public sealed class StageProcessingException : PipelineException
     {
         StageName = stageName;
         RetryCount = retryCount;
+    }
+
+    /// <summary>
+    /// Returns the base exception string prefixed with the failing stage name.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"[StageName={StageName}] {base.ToString()}";
     }
 }
 
