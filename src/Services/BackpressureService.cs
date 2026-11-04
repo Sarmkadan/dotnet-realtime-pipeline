@@ -396,6 +396,8 @@ public sealed class BackpressureResponse
     /// Gets or sets the name of the backpressure strategy used.
     /// </summary>
     public string StrategyUsed { get; set; } = "";
+
+    public override string ToString() => $"BackpressureResponse {{ Applied = {Applied}, Reason = {Reason}, BufferFillPercent = {BufferFillPercent}, StrategyUsed = {StrategyUsed} }}";
 }
 
 /// <summary>
@@ -450,4 +452,6 @@ public sealed class BackpressureSystemStatus
         if (AverageBufferFillPercent > 50) return "CAUTION";
         return "HEALTHY";
     }
+
+    public override string ToString() => $"BackpressureSystemStatus {{ TotalStages = {TotalStages}, BackpressuredStages = {BackpressuredStages}, AverageBufferFillPercent = {AverageBufferFillPercent}, TotalBackpressureTimeMs = {TotalBackpressureTimeMs}, IsSystemBackpressured = {IsSystemBackpressured}, Timestamp = {Timestamp}, TotalDroppedItems = {TotalDroppedItems} }}";
 }
