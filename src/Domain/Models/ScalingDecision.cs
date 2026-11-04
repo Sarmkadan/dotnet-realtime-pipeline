@@ -77,4 +77,12 @@ public sealed class StageScalingState
 
     /// <summary>Total number of scale-down operations performed on this stage.</summary>
     public int ScaleDownCount { get; set; }
+
+    /// <summary>Returns a single-line summary of the stage scaling state.</summary>
+    public override string ToString()
+    {
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "{0} CurrentConsumers={1} LastScalingActionAt={2:O} ScaleUpCount={3} ScaleDownCount={4} LastDecision={5}",
+            StageName, CurrentConsumers, LastScalingActionAt, ScaleUpCount, ScaleDownCount, LastDecision?.ToString() ?? "none");
+    }
 }
