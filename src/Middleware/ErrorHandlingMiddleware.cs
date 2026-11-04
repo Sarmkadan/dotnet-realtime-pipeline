@@ -243,11 +243,26 @@ public sealed class ErrorResponse<T> : ErrorResponse
 /// </summary>
 public sealed class RetryMiddleware
 {
+    /// <summary>
+    /// Default maximum number of retry attempts after the initial call.
+    /// </summary>
+    public const int DefaultMaxRetries = 3;
+
+    /// <summary>
+    /// Default delay in milliseconds before the first retry.
+    /// </summary>
+    public const int DefaultInitialDelayMs = 100;
+
+    /// <summary>
+    /// Factor by which the delay is multiplied after each retry (exponential backoff).
+    /// </summary>
+    private const int BackoffMultiplier = 2;
+
     private readonly ILogger<RetryMiddleware> _logger;
     private readonly int _maxRetries;
     private readonly int _initialDelayMs;
 
-    public RetryMiddleware(ILogger<RetryMiddleware> logger, int maxRetries = 3, int initialDelayMs = 100)
+    public RetryMiddleware(ILogger<RetryMiddleware> logger, int maxRetries = DefaultMaxRetries, int initialDelayMs = DefaultInitialDelayMs)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _maxRetries = maxRetries;
@@ -277,7 +292,7 @@ public sealed class RetryMiddleware
                     operationName, attempt, _maxRetries, delayMs, ex.Message);
 
                 await Task.Delay(delayMs);
-                delayMs = (int)(delayMs * 2); // Exponential backoff
+                delayMs = (int)(delayMs * BackoffMultiplier); // Exponential backoff
             }
         }
     }
