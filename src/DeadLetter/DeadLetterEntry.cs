@@ -127,8 +127,12 @@ public sealed class DeadLetterEntry
     /// <summary>
     /// Resets the entry back to <see cref="DeadLetterStatus.Pending"/> after a failed retry.
     /// </summary>
+    /// <param name="reason">The reason the retry failed.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="reason"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="reason"/> is empty or consists only of white-space characters.</exception>
     public void RetryFailed(string reason)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         FailureReason = reason ?? FailureReason;
         Status = RetryCount >= MaxRetries
             ? DeadLetterStatus.PermanentFailure
