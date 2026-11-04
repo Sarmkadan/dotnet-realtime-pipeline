@@ -191,12 +191,37 @@ public sealed class PipelineHttpClientFactory
 /// </summary>
 public sealed class HttpClientConfiguration
 {
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
-    public int MaxRetries { get; set; } = 3;
-    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
-    public int MaxConnectionsPerHost { get; set; } = 10;
+    /// <summary>
+    /// Default request timeout (30 seconds).
+    /// </summary>
+    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Default maximum number of retry attempts for failed requests.
+    /// </summary>
+    public const int DefaultMaxRetries = 3;
+
+    /// <summary>
+    /// Default delay between retry attempts (1 second).
+    /// </summary>
+    public static readonly TimeSpan DefaultRetryDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Default maximum number of connections per host.
+    /// </summary>
+    public const int DefaultMaxConnectionsPerHost = 10;
+
+    /// <summary>
+    /// Default user agent string sent with requests.
+    /// </summary>
+    public const string DefaultUserAgent = "DotNetRealtimePipeline/1.0";
+
+    public TimeSpan Timeout { get; set; } = DefaultTimeout;
+    public int MaxRetries { get; set; } = DefaultMaxRetries;
+    public TimeSpan RetryDelay { get; set; } = DefaultRetryDelay;
+    public int MaxConnectionsPerHost { get; set; } = DefaultMaxConnectionsPerHost;
     public bool UseCompression { get; set; } = true;
-    public string UserAgent { get; set; } = "DotNetRealtimePipeline/1.0";
+    public string UserAgent { get; set; } = DefaultUserAgent;
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
 
     /// <summary>
