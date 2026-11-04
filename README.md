@@ -297,6 +297,46 @@ if (ValidationHelperValidation.IsValid(inputData))
 }
 ```
 
+## ThroughputCounter
+
+`ThroughputCounter` (`src/Metrics/ThroughputCounter.cs`) is a sealed class that implements `IPipelineMetrics` and reports events-per-second over a sliding time window. It keeps one bucket per second in a circular array of `windowSeconds` buckets; each event is added to the bucket for the current Unix second (`second % windowSeconds`), so recording and querying avoid per-event allocation or scanning of history.
+
+- The constructor takes `windowSeconds`, the window length in seconds. It defaults to `ThroughputCounter.DefaultWindowSeconds` (`60`) and must be positive; otherwise it throws `ArgumentOutOfRangeException`.
+- `RecordEvents(long count)` adds events to the pipeline-wide (global) counter. Counts of zero or less are ignored.
+- `RecordEvents(string stageName, long count)` adds events to a named stage. Counts of zero or less are ignored. A null, empty, or whitespace-only `stageName` throws `ArgumentException`. Stages are created on first use.
+- `GetThroughput()` returns the global events per second: the sum of the window's buckets divided by `windowSeconds`.
+- `GetThroughput(string stageName)` returns the same calculation for one stage. It returns `0` for an unknown or blank stage name.
+- `ToString()` returns a summary with the window length, the global rate, and the number of tracked stages.
+
+Recording and reading use `Interlocked` operations and `Volatile` reads, so one instance can be shared by several threads (for example, one per pipeline stage) without external locking. Stage buckets are stored in a `ConcurrentDictionary<string, long[]>`.
+
+```csharp
+using DotNetRealtimePipeline.Metrics;
+
+// 30-second window; the default constructor uses 60 seconds.
+var throughput = new ThroughputCounter(windowSeconds: 30);
+
+// Called by the pipeline for every batch that leaves the source.
+throughput.RecordEvents(128);
+
+// Per-stage counts, recorded from each stage's worker.
+throughput.RecordEvents("parse", 128);
+throughput.RecordEvents("enrich", 120);
+
+double overall = throughput.GetThroughput();          // events per second, global
+double parse = throughput.GetThroughput("parse");     // events per second, one stage
+double unknown = throughput.GetThroughput("missing"); // 0
+
+Console.WriteLine(throughput); // ThroughputCounter(window=30s, global=..., stages=2)
+```
+
+Because the counter is typed as `IPipelineMetrics`, it can be used anywhere the interface is accepted:
+
+```csharp
+IPipelineMetrics metrics = new ThroughputCounter();
+metrics.RecordEvents("sink", 1);
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
