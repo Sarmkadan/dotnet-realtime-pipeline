@@ -23,6 +23,10 @@ public sealed class ExportService
     private readonly IOutputFormatter _formatter;
     private readonly ILogger<ExportService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExportService"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance for diagnostic output.</param>
     public ExportService(ILogger<ExportService> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -32,6 +36,10 @@ public sealed class ExportService
     /// <summary>
     /// Exports data points to a file asynchronously.
     /// </summary>
+    /// <param name="dataPoints">The list of data points to export.</param>
+    /// <param name="outputPath">The path to the output file.</param>
+    /// <param name="format">The output format to use.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     public async Task<ExportResult> ExportDataPointsAsync(
         List<DataPoint> dataPoints,
         string outputPath,
@@ -87,6 +95,9 @@ public sealed class ExportService
     /// <summary>
     /// Exports processing results to a file.
     /// </summary>
+    /// <param name="results">The list of processing results to export.</param>
+    /// <param name="outputPath">The path to the output file.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     public async Task<ExportResult> ExportResultsAsync(
         List<ProcessingResult> results,
         string outputPath)
@@ -126,6 +137,9 @@ public sealed class ExportService
     /// <summary>
     /// Exports metrics to a file.
     /// </summary>
+    /// <param name="metrics">The metrics to export.</param>
+    /// <param name="outputPath">The path to the output file.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     public async Task<ExportResult> ExportMetricsAsync(
         MetricAggregation metrics,
         string outputPath)
@@ -164,6 +178,10 @@ public sealed class ExportService
     /// <summary>
     /// Exports data to multiple formats simultaneously.
     /// </summary>
+    /// <param name="dataPoints">The list of data points to export.</param>
+    /// <param name="outputDirectory">The directory to save the output files.</param>
+    /// <param name="formats">The output formats to use.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     public async Task<List<ExportResult>> ExportMultiFormatAsync(
         List<DataPoint> dataPoints,
         string outputDirectory,
@@ -190,6 +208,8 @@ public sealed class ExportService
     /// <summary>
     /// Gets the file extension for a format.
     /// </summary>
+    /// <param name="format">The output format.</param>
+    /// <returns>The file extension for the specified format.</returns>
     private static string GetFileExtension(OutputFormat format)
     {
         return format switch
@@ -208,16 +228,50 @@ public sealed class ExportService
 /// </summary>
 public sealed class ExportResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the export operation was successful.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the path to the output file.
+    /// </summary>
     public string OutputPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of records exported.
+    /// </summary>
     public int RecordCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the size of the output file in bytes.
+    /// </summary>
     public long FileSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if the export operation failed.
+    /// </summary>
     public string ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start time of the export operation.
+    /// </summary>
     public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// Gets or sets the end time of the export operation.
+    /// </summary>
     public DateTime EndTime { get; set; }
 
+    /// <summary>
+    /// Gets the duration of the export operation.
+    /// </summary>
     public TimeSpan Duration => EndTime - StartTime;
 
+    /// <summary>
+    /// Returns a string representation of the export result.
+    /// </summary>
+    /// <returns>A string representation of the export result.</returns>
     public override string ToString()
     {
         if (Success)
@@ -238,6 +292,11 @@ public sealed class BatchExportProcessor
     private readonly ILogger<BatchExportProcessor> _logger;
     private const int DefaultBatchSize = 10000;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BatchExportProcessor"/> class.
+    /// </summary>
+    /// <param name="exportService">The export service to use for exporting data.</param>
+    /// <param name="logger">The logger instance for diagnostic output.</param>
     public BatchExportProcessor(ExportService exportService, ILogger<BatchExportProcessor> logger)
     {
         _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
@@ -247,6 +306,12 @@ public sealed class BatchExportProcessor
     /// <summary>
     /// Exports large datasets in batches to manage memory.
     /// </summary>
+    /// <param name="dataFetcher">The function to fetch data in batches.</param>
+    /// <param name="totalRecords">The total number of records to export.</param>
+    /// <param name="outputDirectory">The directory to save the output files.</param>
+    /// <param name="format">The output format to use.</param>
+    /// <param name="batchSize">The size of each batch.</param>
+    /// <returns>A task that represents the asynchronous export operation.</returns>
     public async Task<BatchExportResult> ExportInBatchesAsync(
         Func<int, int, Task<List<DataPoint>>> dataFetcher,
         int totalRecords,
@@ -329,15 +394,45 @@ public sealed class BatchExportProcessor
 /// </summary>
 public sealed class BatchExportResult
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether the batch export operation was successful.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of records exported.
+    /// </summary>
     public int ExportedRecords { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of batch files created.
+    /// </summary>
     public List<string> BatchFiles { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the error message if the batch export operation failed.
+    /// </summary>
     public string ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the start time of the batch export operation.
+    /// </summary>
     public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// Gets or sets the end time of the batch export operation.
+    /// </summary>
     public DateTime EndTime { get; set; }
 
+    /// <summary>
+    /// Gets the duration of the batch export operation.
+    /// </summary>
     public TimeSpan Duration => EndTime - StartTime;
 
+    /// <summary>
+    /// Returns a string representation of the batch export result.
+    /// </summary>
+    /// <returns>A string representation of the batch export result.</returns>
     public override string ToString()
     {
         if (Success)
