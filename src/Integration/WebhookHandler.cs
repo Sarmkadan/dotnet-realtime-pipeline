@@ -180,6 +180,16 @@ public sealed class WebhookSubscription
     public DateTime? LastDeliveredAt { get; set; }
     public bool IsActive { get; set; }
     public int FailureCount { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the subscription. The secret value is never included; only whether it is set.
+    /// </summary>
+    public override string ToString()
+    {
+        var secretState = string.IsNullOrEmpty(Secret) ? "not set" : "set";
+        var lastDelivered = LastDeliveredAt?.ToString("O") ?? "never";
+        return $"WebhookSubscription {{ Id = {Id}, Url = {Url}, EventTypes = {EventTypes}, Secret = {secretState}, CreatedAt = {CreatedAt:O}, LastDeliveredAt = {lastDelivered}, IsActive = {IsActive}, FailureCount = {FailureCount} }}";
+    }
 }
 
 /// <summary>
@@ -205,6 +215,14 @@ public sealed class WebhookPayload
     public object Data { get; set; }
     public DateTime Timestamp { get; set; }
     public string SubscriptionId { get; set; }
+
+    /// <summary>
+    /// Returns a string representation of the payload.
+    /// </summary>
+    public override string ToString()
+    {
+        return $"WebhookPayload {{ EventType = {EventType}, Data = {Data?.ToString() ?? "null"}, Timestamp = {Timestamp:O}, SubscriptionId = {SubscriptionId} }}";
+    }
 }
 
 /// <summary>
