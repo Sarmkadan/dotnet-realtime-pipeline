@@ -337,6 +337,48 @@ IPipelineMetrics metrics = new ThroughputCounter();
 metrics.RecordEvents("sink", 1);
 ```
 
+## SubscriberChannelManager
+
+`SubscriberChannelManager` (`src/Events/SubscriberChannelManager.cs`) is an internal sealed class that owns the `SubscriberChannel` instances for each event name. `PipelineEventPublisher` creates one and delegates subscriber registration, posting, start/stop, and counters to it. Each subscriber gets its own channel, so a slow or failing handler does not block or affect the others.
+
+- `RegisterSubscriber<T>(eventName, handler, options)` adds a `Func<T, Task>` handler for an event name. `T` must derive from `PipelineEventArgs`. A null or whitespace `eventName` throws `ArgumentException`; a null `handler` throws `ArgumentNullException`. When `options` is `null`, the manager's default `SubscriberOptions` are used. The subscriber name is `options.Name`, or the handler's declaring type name, or `AnonymousSubscriber`.
+- `PostEventAsync(eventName, args)` offers `args` to every channel registered for `eventName` and waits until all posts complete. It does not wait for the handlers to process the event. If nothing is registered for the name, it does nothing. After disposal it logs a warning and returns.
+- `StartAll()` starts every registered channel. A failure to start one channel is logged and the others still start. After disposal it logs a warning and does nothing.
+- `StopAllAsync()` stops all channels concurrently and waits for them. It does nothing after disposal.
+- `GetTotalErrorCount(eventName)` sums the error counts of all channels for an event. It returns `0` for an unknown event.
+- `GetSubscriberCount(eventName)` returns the number of channels registered for an event. It returns `0` for an unknown event.
+- `DisposeAsync()` stops all channels, disposes them, and clears the registry. `Dispose()` calls `DisposeAsync()` and blocks on it. The class implements `IDisposable` and exposes `DisposeAsync()` as a `ValueTask`, but it does not declare `IAsyncDisposable`, so `await using` does not compile against it.
+
+Because the class is `internal`, the example below only compiles inside the `DotNetRealtimePipeline` assembly (for example, from another internal class in the library).
+
+```csharp
+using DotNetRealtimePipeline.Events;
+using Microsoft.Extensions.Logging;
+
+public sealed class ItemProcessedArgs : PipelineEventArgs
+{
+    public int ItemCount { get; init; }
+}
+
+using var manager = new SubscriberChannelManager(logger);
+
+// Each subscriber gets its own channel; the Name is used in logs.
+manager.RegisterSubscriber<ItemProcessedArgs>(
+    "ItemProcessed",
+    args => AuditAsync(args.ItemCount),
+    new SubscriberOptions { Name = "audit", MaxQueueSize = 500 });
+
+manager.StartAll();
+
+// Handlers run on their channels; this returns once every channel has accepted the event.
+await manager.PostEventAsync("ItemProcessed", new ItemProcessedArgs { ItemCount = 128 });
+
+int subscribers = manager.GetSubscriberCount("ItemProcessed"); // 1
+int failures = manager.GetTotalErrorCount("ItemProcessed");    // 0 unless a handler threw
+
+await manager.StopAllAsync();
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
