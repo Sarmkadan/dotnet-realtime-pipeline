@@ -21,6 +21,9 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class MetricsService
 {
+    private const int MaxProcessingTimeSamples = 1000;
+    private const double LowThroughputThreshold = 100;
+
     private readonly IMetricsRepository _repository;
     private readonly IPipelineMetrics _throughputCounter;
     private long _nextMetricId = 1;
@@ -72,7 +75,7 @@ public sealed class MetricsService
             _processingTimes.Add(processingTimeMs);
 
             // Keep only recent times (last 1000 measurements)
-            if (_processingTimes.Count > 1000)
+            if (_processingTimes.Count > MaxProcessingTimeSamples)
             {
                 _processingTimes.RemoveAt(0);
             }
@@ -178,7 +181,7 @@ public sealed class MetricsService
             report.Message = "ERROR RATE ELEVATED";
         else if (latest.CalculateBackpressureRatio() > 20)
             report.Message = "BACKPRESSURE DETECTED";
-        else if (latest.CalculateThroughput() < 100)
+        else if (latest.CalculateThroughput() < LowThroughputThreshold)
             report.Message = "LOW THROUGHPUT";
         else
             report.Message = "OPERATING NORMALLY";
