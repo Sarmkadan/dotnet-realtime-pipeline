@@ -29,6 +29,12 @@ public sealed class WebhookHandler
     private readonly List<WebhookSubscription> _subscriptions = new();
     private readonly object _lockObject = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WebhookHandler"/> class.
+    /// </summary>
+    /// <param name="httpClient">The HTTP client used to send webhook payloads.</param>
+    /// <param name="logger">The logger used to log webhook events.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="httpClient"/> or <paramref name="logger"/> is null.</exception>
     public WebhookHandler(HttpClient httpClient, ILogger<WebhookHandler> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -174,13 +180,44 @@ public sealed class WebhookHandler
 /// </summary>
 public sealed class WebhookSubscription
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for the webhook subscription.
+    /// </summary>
     public string Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the URL to which the webhook payloads are sent.
+    /// </summary>
     public string Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the event types for which the webhook is subscribed.
+    /// </summary>
     public WebhookEventType EventTypes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the secret used to sign the webhook payloads.
+    /// </summary>
     public string Secret { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp when the webhook subscription was created.
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp when the webhook payload was last delivered.
+    /// </summary>
     public DateTime? LastDeliveredAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the webhook subscription is active.
+    /// </summary>
     public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of consecutive failures in delivering the webhook payload.
+    /// </summary>
     public int FailureCount { get; set; }
 
     /// <summary>
@@ -213,9 +250,24 @@ public enum WebhookEventType
 /// </summary>
 public sealed class WebhookPayload
 {
+    /// <summary>
+    /// Gets or sets the type of the event.
+    /// </summary>
     public string EventType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the data associated with the event.
+    /// </summary>
     public object Data { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp when the event occurred.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the unique identifier for the webhook subscription.
+    /// </summary>
     public string SubscriptionId { get; set; }
 
     /// <summary>
@@ -235,6 +287,11 @@ public sealed class InboundWebhookHandler
     private readonly ILogger<InboundWebhookHandler> _logger;
     private readonly List<Func<WebhookPayload, Task>> _handlers = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InboundWebhookHandler"/> class.
+    /// </summary>
+    /// <param name="logger">The logger used to log webhook events.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="logger"/> is null.</exception>
     public InboundWebhookHandler(ILogger<InboundWebhookHandler> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
