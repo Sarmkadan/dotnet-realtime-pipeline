@@ -193,6 +193,11 @@ public sealed class PluginConfiguration
     public bool Enabled { get; set; } = true;
     public Dictionary<string, object> Settings { get; set; } = new();
     public List<string> Dependencies { get; set; } = new();
+
+    public override string ToString()
+    {
+        return $"PluginConfiguration(Name={Name}, Version={Version}, Enabled={Enabled}, SettingsCount={Settings.Count}, DependenciesCount={Dependencies.Count})";
+    }
 }
 
 /// <summary>
