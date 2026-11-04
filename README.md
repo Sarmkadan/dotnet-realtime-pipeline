@@ -1603,6 +1603,23 @@ publisher.Dispose();
 
 `PublishPipelineErrorAsync` returns once the event is queued on every channel, not once the handlers have run, so do not read `GetErrorCount()` straight after a publish call. `StopAsync()` cancels the consumer tasks instead of draining their queues, so events still queued at that point may never be handled. Wait for the work you need before stopping the publisher.
 
+## Utilities
+
+The helpers in `src/Utilities/` are shared support code for batching, compression, paths, retries, serialization, statistics, and validation. Most are `public sealed` classes with companion `*Extensions.cs` and `*Validation.cs` files. `PipelineJsonUtilities` is `internal`.
+
+| Class | Purpose |
+|-------|---------|
+| `BatchProcessor<TInput, TOutput>` | Splits a collection into batches and runs them through `ProcessAsync` with bounded parallelism. Also provides `BatchProcessingException`, `BatchProcessingProgress`, and the pipeline-specific `DataPointBatchProcessor`. |
+| `CompressionHelper` | GZIP and Deflate compression for strings and byte arrays, async GZIP file compress and decompress, and compression ratio and efficiency analysis (`CompressionStats`, `CompressionComparison`). |
+| `DateTimeExtensions` | Extension methods that convert to and from Unix milliseconds, compute time-window boundaries and age, and check whether a timestamp falls inside a window. |
+| `PathHelper` (incl. `FileSystemMonitor`) | Validates and normalizes paths, combines and sanitizes path segments, generates unique filenames, reports disk and directory sizes, and ensures directories exist. `FileSystemMonitor` raises create, change, and delete events for a watched path. |
+| `PerformanceHelper` | Times sync and async operations, benchmarks them over repeated runs, and reads memory stats. `PerformanceTracker` records metric samples and computes statistics over a time window. |
+| `PipelineJsonUtilities` (internal) | Shared `JsonSerializerOptions` (web defaults, string enums, camelCase) and size and length guards that reject oversized JSON before deserialization. |
+| `RetryHelper` (`RetryPolicyBuilder` / `RetryPolicy` / `RetryStatistics`) | Retries async and sync operations with exponential backoff and optional jitter. `RetryPolicyBuilder` fluently builds a `RetryPolicy`, and `RetryStatistics` tracks attempts, successes, failures, and events. |
+| `SerializationHelper` (`BatchSerializationHelper` / `DateTimeSerializationHelper` / `DictionaryConversionHelper`) | JSON and CSV serialization of data points, processing results, and metrics. Also covers file-based batch read and write, ISO 8601 timestamp conversion, and object-to-dictionary conversion. |
+| `StatisticsHelper` | Computes mean, median, standard deviation, percentile, coefficient of variation, moving average, rate of change, IQR outliers, and Pearson correlation. Results are returned as a record. |
+| `ValidationHelper` | Validates data points, pipeline configurations, processing results, and window events, returning `ValidationResult` objects. Also checks time ranges and value bounds. |
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
