@@ -207,10 +207,29 @@ public sealed class CompressionHelper
 /// </summary>
 public sealed class CompressionStats
 {
+    /// <summary>
+    /// Gets or sets the original size in bytes before compression.
+    /// </summary>
     public int OriginalSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the compressed size in bytes after compression.
+    /// </summary>
     public int CompressedSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of bytes saved by compression.
+    /// </summary>
     public int SavingsBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the compression ratio as a percentage.
+    /// </summary>
     public double CompressionRatioPercent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the compression algorithm used.
+    /// </summary>
     public string CompressionAlgorithm { get; set; }
 
     public override string ToString()
@@ -224,10 +243,33 @@ public sealed class CompressionStats
 /// </summary>
 public sealed class CompressionComparison
 {
+    /// <summary>
+    /// Gets or sets the original size in bytes before compression.
+    /// </summary>
     public int OriginalSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the compressed size in bytes using GZIP.
+    /// </summary>
     public int GzipSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the compressed size in bytes using Deflate.
+    /// </summary>
     public int DeflateSizeBytes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the best performing algorithm name.
+    /// </summary>
     public string BestAlgorithm { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GZIP compression ratio as a percentage.
+    /// </summary>
     public double GzipRatioPercent { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Deflate compression ratio as a percentage.
+    /// </summary>
     public double DeflateRatioPercent { get; set; }
 }
