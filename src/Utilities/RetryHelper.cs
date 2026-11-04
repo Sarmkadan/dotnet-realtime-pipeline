@@ -282,10 +282,30 @@ public sealed class RetryPolicy
     /// </summary>
     private const double JitterMaxMultiplier = 1.0;
 
+    /// <summary>
+    /// Gets or sets the maximum number of attempts.
+    /// </summary>
     public int MaxAttempts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the initial delay between retries in milliseconds.
+    /// </summary>
     public int InitialDelayMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum delay between retries in milliseconds.
+    /// </summary>
     public int MaxDelayMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to apply jitter to the calculated backoff delay.
+    /// </summary>
     public bool UseJitter { get; set; }
+
+    /// <summary>
+    /// Gets or sets the exception types that are retryable.
+    /// When empty, every exception is considered retryable.
+    /// </summary>
     public List<Type> RetryableExceptions { get; set; } = new();
 
     /// <summary>
@@ -342,12 +362,37 @@ public sealed class RetryPolicy
 /// </summary>
 public sealed class RetryStatistics
 {
+    /// <summary>
+    /// Gets or sets the total number of recorded attempts.
+    /// </summary>
     public int TotalAttempts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of recorded attempts that succeeded.
+    /// </summary>
     public int SuccessfulAttempts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of recorded attempts that failed.
+    /// </summary>
     public int FailedAttempts { get; set; }
+
+    /// <summary>
+    /// Gets the percentage of successful attempts (0-100), or 0 when no attempts have been recorded.
+    /// </summary>
     public double SuccessRate => TotalAttempts > 0 ? (SuccessfulAttempts * 100.0) / TotalAttempts : 0;
+
+    /// <summary>
+    /// Gets or sets the history of recorded retry events, in the order they were recorded.
+    /// </summary>
     public List<RetryEvent> Events { get; set; } = new();
 
+    /// <summary>
+    /// Records the outcome of a single attempt and appends a corresponding <see cref="RetryEvent"/>.
+    /// </summary>
+    /// <param name="success">Whether the attempt succeeded.</param>
+    /// <param name="delayMs">The delay in milliseconds applied before this attempt. Must not be negative.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="delayMs"/> is negative.</exception>
     public void RecordAttempt(bool success, int delayMs)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(delayMs);
@@ -372,10 +417,24 @@ public sealed class RetryStatistics
     public override string ToString() => $"RetryStatistics {{ TotalAttempts = {TotalAttempts}, SuccessfulAttempts = {SuccessfulAttempts}, FailedAttempts = {FailedAttempts}, SuccessRate = {SuccessRate:F2}%, Events = {Events.Count} }}";
 }
 
+/// <summary>
+/// Represents a single recorded retry attempt.
+/// </summary>
 public sealed class RetryEvent
 {
+    /// <summary>
+    /// Gets or sets the UTC time at which the attempt was recorded.
+    /// </summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the attempt succeeded.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the delay in milliseconds applied before the attempt.
+    /// </summary>
     public int DelayMs { get; set; }
 
     /// <summary>
